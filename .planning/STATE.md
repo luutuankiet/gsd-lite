@@ -10,28 +10,28 @@ See: .planning/PROJECT.md (updated 2026-01-19)
 ## Current Position
 
 Phase: 1 of 4 (Foundation & Templates)
-Plan: 3 of 4 complete
-Status: In progress
-Last activity: 2026-01-21 — Completed 01-03-PLAN.md (Protocol Reference & Agent Configuration)
+Plan: 4 of 4 complete
+Status: Phase complete
+Last activity: 2026-01-21 — Completed 01-04-PLAN.md (Template Verification & Gap Closure)
 
-Progress: [██████░░░░] 60% (3 plans complete)
+Progress: [████████░░] 80% (4 plans complete)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 3
-- Average duration: 6 min
-- Total execution time: 0.30 hours
+- Total plans completed: 4
+- Average duration: 5.5 min
+- Total execution time: 0.37 hours
 
 **By Phase:**
 
 | Phase | Plans | Total | Avg/Plan |
 |-------|-------|-------|----------|
-| 1. Foundation & Templates | 3 | 18 min | 6 min |
+| 1. Foundation & Templates | 4 | 22 min | 5.5 min |
 
 **Recent Trend:**
-- Last 5 plans: 01-01 (6 min), 01-02 (8 min), 01-03 (4 min)
-- Trend: Improving velocity (4-8 min per plan)
+- Last 5 plans: 01-01 (6 min), 01-02 (8 min), 01-03 (4 min), 01-04 (4 min)
+- Trend: Consistent velocity (4-8 min per plan, averaging 5.5 min)
 
 *Updated after each plan completion*
 
@@ -63,6 +63,10 @@ Recent decisions affecting current work:
 - AGENTS.md standard adoption (01-03): Follow agents.md format for cross-platform compatibility
 - Checkpoint categorization (01-03): Split into informational (progress) vs blocking (requires action)
 - Sticky note inclusion rules (01-03): Include when artifact/state/actions changed, omit for pure conversation
+- Namespace correction (01-04): Use .gsd-lite/ instead of .planning/ to avoid namespace conflict
+- Mermaid diagrams (01-04): Use Mermaid over ASCII for workflow/sequence diagrams (maintainability, interactivity)
+- Loop sources (01-04): Loops originate from both agent discovery AND user questions during checkpoints/decisions
+- Window-relative token budgets (01-04): Thresholds relative to context window (Claude 40/50%, Gemini 50/60%)
 
 ### Pending Todos
 
@@ -81,7 +85,7 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-01-21
-Stopped at: Completed 01-03-PLAN.md (Protocol Reference & Agent Configuration)
+Stopped at: Completed 01-04-PLAN.md (Template Verification & Gap Closure) - Phase 1 complete
 Resume file: None
 
 ---
