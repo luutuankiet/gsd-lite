@@ -97,10 +97,14 @@ approves  options   documented
 - `status="clarifying"` - Actively investigating
 - `status="closed"` - Resolved with outcome
 
-## Agent Workflow
+## Loop Capture Workflow
 
-**How agents propose loops:**
+**Loops originate from two sources:**
 
+### 1. Agent Discovery
+Agent identifies open question during work (assumption to validate, unclear requirement, edge case discovered).
+
+**Flow:**
 1. **Agent identifies open question** during work
 2. **Agent drafts loop** in XML format (above template)
 3. **Agent presents to user** with checkpoint:
@@ -116,6 +120,27 @@ approves  options   documented
 4. **User approves** → Agent writes to LOOPS.md
 5. **User rejects** → Loop discarded, not captured
 6. **User edits** → Agent updates loop with user's changes, then writes to LOOPS.md
+
+### 2. User Questions
+User asks questions about decisions, checkpoints, or clarifications during session.
+
+**Examples:**
+- "Why did you choose this approach instead of X?"
+- "What happens if the data has edge case Y?"
+- "Can you explain the reasoning behind Z decision?"
+- "What about scenario W - did we consider that?"
+
+**Flow:**
+1. **User asks question** during session
+2. **Agent recognizes** this may need tracking (not immediately answerable, requires investigation, or reveals assumption)
+3. **Agent proposes loop** capturing the question
+4. **User approves** → Agent writes to LOOPS.md with user's question as context
+
+**Why capture user questions:**
+- User questions often reveal gaps in reasoning or untested assumptions
+- Checkpoints and decisions may raise follow-up questions worth tracking
+- Session conversations can surface important edge cases or considerations
+- Loops preserve these insights for async processing outside session
 
 **Why user approval:**
 - User stays in key reasoning decisions
