@@ -22,64 +22,92 @@ This template provides structured format for tracking token budgets and context 
 ## Token Budget Thresholds
 
 **Why thresholds matter:**
-LLM reasoning quality degrades as context fills. At 0-20% budget, agent has room to explore. At 50%+, agent starts missing details, forgetting instructions, losing protocol discipline.
+LLM reasoning quality degrades as context fills. At 0-20% of context window, agent has room to explore. As budget fills past 40%, agent starts missing details, forgetting instructions, losing protocol discipline.
 
-**Four phases:**
+**Context window considerations:**
+Different LLMs have different context windows, which affects how budget percentage translates to quality:
+- **Claude 3.5 Sonnet**: 200k tokens → Conservative thresholds (20/40/50%)
+- **Gemini 1.5 Pro**: 1M tokens → Can tolerate higher fill (30/50/60%)
+- **GPT-4**: 128k tokens → Conservative thresholds (20/40/50%)
 
-### 1. Comfortable (0-20% budget)
+**Rule of thumb:** Smaller windows require more conservative thresholds. Quality degradation is relative to window size, not absolute token count.
+
+**Four phases (percentages relative to YOUR context window):**
+
+### 1. Comfortable (0-20% of window)
 
 **What it means:** Plenty of room for exploratory work
 **When to use:** Discovery, brainstorming, open-ended research
 **Agent behavior:** Can load additional context freely
 **Risk level:** Low - quality remains high
 
-**Example:**
-- Budget: 1000 / 5000 tokens (20%)
+**Example (200k window like Claude):**
+- Window: 200,000 tokens available
+- Budget target: 10,000 tokens (5% of window)
+- Current: 2,000 / 10,000 (20% of budget = 1% of window)
 - Loaded: 3 core models
 - Room for: Tests, downstream models, documentation
 - Quality: Full reasoning capacity available
 
-### 2. Deliberate (20-40% budget)
+**Example (1M window like Gemini):**
+- Window: 1,000,000 tokens available
+- Budget target: 50,000 tokens (5% of window)
+- Current: 10,000 / 50,000 (20% of budget = 1% of window)
+- Quality: Full reasoning capacity available
+
+### 2. Deliberate (20-40% of budget)
 
 **What it means:** Focused work mode, deliberate additions only
 **When to use:** Implementation, refactoring, debugging specific issues
 **Agent behavior:** Load additional context only when needed, justify inclusions
 **Risk level:** Low-Medium - quality still good, but monitor additions
 
-**Example:**
-- Budget: 1800 / 5000 tokens (36%)
+**Example (200k window):**
+- Budget: 3,600 / 10,000 (36% of budget = 1.8% of window)
 - Loaded: 8 models + tests + lineage
 - Room for: Selective additions with justification
 - Quality: Good reasoning, less exploration
 
-### 3. Warning (40-50% budget)
+### 3. Warning (40-60% of budget)
 
 **What it means:** Quality degradation zone, consider reducing context
 **When to use:** Temporarily acceptable, but prioritize exclusions
 **Agent behavior:** Pause before loading more, actively seek exclusions
 **Risk level:** Medium - quality degrading, protocol discipline slipping
 
-**Example:**
-- Budget: 2300 / 5000 tokens (46%)
+**Threshold adjustments by window size:**
+- **200k window (Claude)**: Warning at 40%, STOP at 50%
+- **1M window (Gemini)**: Warning at 50%, STOP at 60%
+- **128k window (GPT-4)**: Warning at 40%, STOP at 50%
+
+**Example (200k window):**
+- Budget: 4,600 / 10,000 (46% of budget = 2.3% of window)
 - Loaded: 15 models + tests + docs + lineage
 - Room for: Very limited, must exclude before adding
 - Quality: Starting to miss details, forget edge cases
 
-### 4. Stop (50%+ budget)
+**Why higher tolerance for larger windows:** Gemini's 1M window has more absolute capacity, so 50% fill (500k tokens) is less cognitively demanding than Claude's 50% (100k tokens). Percentage relative to window matters more than absolute count.
+
+### 4. Stop (50-60%+ of budget, window-dependent)
 
 **What it means:** Context must be reduced before proceeding
 **When to use:** Never intentional - red line boundary
 **Agent behavior:** STOP loading, identify exclusions, reduce context
 **Risk level:** High - quality severely degraded, protocol drift likely
 
-**Example:**
-- Budget: 2800 / 5000 tokens (56%)
+**STOP thresholds by window:**
+- **200k window (Claude)**: STOP at 50%+ of budget
+- **1M window (Gemini)**: STOP at 60%+ of budget
+- **128k window (GPT-4)**: STOP at 50%+ of budget
+
+**Example (200k window):**
+- Budget: 5,600 / 10,000 (56% of budget = 2.8% of window)
 - Loaded: Too much - agent overwhelmed
 - Room for: None - must exclude
 - Quality: Missing instructions, losing discipline, hallucinating
 
 **Why these percentages:**
-Based on GSD framework patterns (Pattern 7: Conservative token budgets). Data engineering work requires precision - better to scope narrow and expand than to overload and degrade.
+Based on GSD framework patterns (Pattern 7: Conservative token budgets) adapted for varying context windows. Data engineering work requires precision - better to scope narrow and expand than to overload and degrade. Percentages are relative to YOUR model's window, not absolute values.
 
 ## XML Structure
 
