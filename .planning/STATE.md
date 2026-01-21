@@ -67,6 +67,7 @@ Recent decisions affecting current work:
 - Mermaid diagrams (01-04): Use Mermaid over ASCII for workflow/sequence diagrams (maintainability, interactivity)
 - Loop sources (01-04): Loops originate from both agent discovery AND user questions during checkpoints/decisions
 - Window-relative token budgets (01-04): Thresholds relative to context window (Claude 40/50%, Gemini 50/60%)
+- Template distribution approach (Quick 002): Manual git clone + copy as primary method, avoid npx/pip (wrong tools for markdown)
 
 ### Pending Todos
 
@@ -81,11 +82,12 @@ None yet.
 | # | Description | Date | Commit | Directory |
 |---|-------------|------|--------|-----------|
 | 001 | Duplicate .claude to gsd_reference and suggest GSD context engineering patterns | 2026-01-20 | d6b75ce | [001-duplicate-claude-to-gsd-reference-and-su](./quick/001-duplicate-claude-to-gsd-reference-and-su/) |
+| 002 | Research gsd-lite template distribution methods | 2026-01-22 | 0cac6fd | [002-research-gsd-lite-template-distribution-](./quick/002-research-gsd-lite-template-distribution-/) |
 
 ## Session Continuity
 
 Last session: 2026-01-22
-Stopped at: Phase 1 execution complete, verified (21/21 must-haves), ready for Phase 2
+Stopped at: Completed Quick 002 (template distribution research)
 Resume file: None
 
 ---
