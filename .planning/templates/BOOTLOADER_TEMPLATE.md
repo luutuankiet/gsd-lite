@@ -111,7 +111,7 @@ NEXT: [What agent expects from user - "Waiting for your input" / "Awaiting appro
 This checklist embeds in sticky note behavior. Agent MUST follow after every turn:
 
 - [ ] **After every turn**: Update STATE.md with current activity (what was done, what's next)
-- [ ] **When loop identified**: Propose loop in XML format → wait for user approval → write to LOOPS.md
+- [ ] **When loop identified** (from agent discovery OR user question): Propose loop in XML format → wait for user approval → write to LOOPS.md
 - [ ] **When checkpoint reached**: Use visual barrier (🛑🛑🛑) → state action required clearly
 - [ ] **When artifact updated**: Show in sticky note UPDATED field (which file, what changed)
 - [ ] **When decision made**: Document in PROJECT.md Key Decisions table with rationale
@@ -120,24 +120,28 @@ This checklist embeds in sticky note behavior. Agent MUST follow after every tur
 
 **Why checklist exists:** Agent reads top-down, can't refer back to bootloader dynamically. Sticky note embeds reminder every turn, reducing protocol drift.
 
+**Loop sources:** Loops originate from two sources:
+1. **Agent discovery**: Agent identifies open question during work (assumption needs validation, unclear requirement, edge case found)
+2. **User questions**: User asks about decisions, checkpoints, clarifications during session ("Why this approach?", "What about X scenario?", "Can you explain Y?")
+
 ## Artifact References
 
 Where to find core templates:
 
 - **LOOPS_TEMPLATE.md**: How to capture open questions, track loop status (open/clarifying/closed)
-  - Location: `.planning/templates/LOOPS_TEMPLATE.md`
+  - Location: `.gsd-lite/templates/LOOPS_TEMPLATE.md`
   - When to use: When question arises, when idea needs capture, when loop status changes
 
 - **CONTEXT_TEMPLATE.md**: How to manage token budget, track what's loaded and excluded
-  - Location: `.planning/templates/CONTEXT_TEMPLATE.md`
+  - Location: `.gsd-lite/templates/CONTEXT_TEMPLATE.md`
   - When to use: When loading files, when excluding context, when approaching budget limits
 
 - **STATE_TEMPLATE.md**: How to maintain session working memory (current phase, activity, status)
-  - Location: `.planning/templates/STATE_TEMPLATE.md`
+  - Location: `.gsd-lite/templates/STATE_TEMPLATE.md`
   - When to use: Continuously - update after every significant activity
 
 - **SUMMARY_TEMPLATE.md**: How to export session (loops + context decisions) for GTD integration
-  - Location: `.planning/templates/SUMMARY_TEMPLATE.md`
+  - Location: `.gsd-lite/templates/SUMMARY_TEMPLATE.md`
   - When to use: End of session, before closing
 
 **Cross-reference pattern:** When agent proposes loop → link to LOOPS_TEMPLATE for format. When token budget warning → link to CONTEXT_TEMPLATE for exclusion patterns.

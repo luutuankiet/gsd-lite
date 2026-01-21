@@ -89,7 +89,7 @@ All loops from session with status and outcome. This section exports directly to
 
 **LOOP-004** (Clarifying): Confirm AGENTS.md support in ChatGPT web UI
 - **Context**: Research found AGENTS.md standard backed by OpenAI, unclear if web UI reads it
-- **Question**: Does ChatGPT web actually load .planning/AGENTS.md or only API/Cursor?
+- **Question**: Does ChatGPT web actually load .gsd-lite/AGENTS.md or only API/Cursor?
 - **Waiting for**: User to test with ChatGPT web and report back
 - **Captured**: 2026-01-21T18:15:00Z
 ```
@@ -114,17 +114,17 @@ Document what was loaded, what was excluded, and why. This captures learning for
 ### What Was Loaded
 
 **Core context** (1200 tokens):
-- `.planning/PROJECT.md` (450 tokens) - North star goals
-- `.planning/ROADMAP.md` (380 tokens) - Current phase context
-- `.planning/phases/01-foundation-templates/01-CONTEXT.md` (370 tokens) - Phase decisions
+- `.gsd-lite/PROJECT.md` (450 tokens) - North star goals
+- `.gsd-lite/ROADMAP.md` (380 tokens) - Current phase context
+- `.gsd-lite/phases/01-foundation-templates/01-CONTEXT.md` (370 tokens) - Phase decisions
 
 **Reference implementations** (850 tokens):
 - `gsd_lite/BOOTLOADER_PROMPT.md` (320 tokens) - Tested sticky note pattern
 - `gsd_lite/template_gsd_lite/03_BOOTLOADER_TEMPLATE.md` (280 tokens) - Template structure
-- `.planning/GSD_PATTERNS.md` (250 tokens) - Pattern analysis
+- `.gsd-lite/GSD_PATTERNS.md` (250 tokens) - Pattern analysis
 
 **Research** (250 tokens):
-- `.planning/phases/01-foundation-templates/01-RESEARCH.md` (selected sections) - Sticky note protocol, XML patterns
+- `.gsd-lite/phases/01-foundation-templates/01-RESEARCH.md` (selected sections) - Sticky note protocol, XML patterns
 
 **Total loaded**: 2300 tokens (46% of 5000 budget)
 
@@ -169,13 +169,13 @@ List all files written during session with brief description.
 ## Artifacts Created
 
 **Templates** (2 files):
-1. `.planning/templates/BOOTLOADER_TEMPLATE.md` (352 lines)
+1. `.gsd-lite/templates/BOOTLOADER_TEMPLATE.md` (352 lines)
    - Session initialization protocol
    - Sticky note template for protocol enforcement
    - Dual instructions (MCP + copy-paste)
    - Example session showing 3-turn workflow
 
-2. `.planning/templates/SUMMARY_TEMPLATE.md` (current file)
+2. `.gsd-lite/templates/SUMMARY_TEMPLATE.md` (current file)
    - Session export structure
    - GTD integration format
    - Context decision capture
@@ -248,13 +248,13 @@ What to load, what context to restore, where to resume.
 
 **Required context**:
 - This SUMMARY file (context decisions, closed loops for reference)
-- `.planning/templates/BOOTLOADER_TEMPLATE.md` (completed)
-- `.planning/templates/SUMMARY_TEMPLATE.md` (completed)
-- `.planning/phases/01-foundation-templates/01-02-PLAN.md` (current plan)
+- `.gsd-lite/templates/BOOTLOADER_TEMPLATE.md` (completed)
+- `.gsd-lite/templates/SUMMARY_TEMPLATE.md` (completed)
+- `.gsd-lite/phases/01-foundation-templates/01-02-PLAN.md` (current plan)
 
 **Optional context** (load if needed):
-- `.planning/phases/01-foundation-templates/01-CONTEXT.md` (decisions)
-- `.planning/phases/01-foundation-templates/01-RESEARCH.md` (patterns)
+- `.gsd-lite/phases/01-foundation-templates/01-CONTEXT.md` (decisions)
+- `.gsd-lite/phases/01-foundation-templates/01-RESEARCH.md` (patterns)
 
 **Skip loading**:
 - Previous session artifacts (STATE.md, LOOPS.md from this session) - ephemeral, exported to SUMMARY

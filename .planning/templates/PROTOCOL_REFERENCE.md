@@ -439,27 +439,27 @@ This protocol is implemented across all templates:
 ### Core Templates
 
 **LOOPS_TEMPLATE.md** - Loop capture with systematic IDs
-- Location: `.planning/templates/LOOPS_TEMPLATE.md`
+- Location: `.gsd-lite/templates/LOOPS_TEMPLATE.md`
 - Implements: LOOP-NNN format, XML structure, status transitions
 - See: Systematic ID Coding, Checkpoint Types (loop captured)
 
 **CONTEXT_TEMPLATE.md** - Token budget management
-- Location: `.planning/templates/CONTEXT_TEMPLATE.md`
+- Location: `.gsd-lite/templates/CONTEXT_TEMPLATE.md`
 - Implements: Token thresholds, progressive loading, exclusion rationale
 - See: Context Stack, Recovery Protocol
 
 **STATE_TEMPLATE.md** - Session working memory
-- Location: `.planning/templates/STATE_TEMPLATE.md`
+- Location: `.gsd-lite/templates/STATE_TEMPLATE.md`
 - Implements: Phase tracking, loop registry, token budget display
 - See: Systematic ID Coding, Context Stack
 
 **BOOTLOADER_TEMPLATE.md** - Session initialization
-- Location: `.planning/templates/BOOTLOADER_TEMPLATE.md`
+- Location: `.gsd-lite/templates/BOOTLOADER_TEMPLATE.md`
 - Implements: Sticky note template, protocol checklist, dual instructions
 - See: Sticky Note Protocol, Recovery Protocol, MCP vs Copy-Paste
 
 **SUMMARY_TEMPLATE.md** - Session export
-- Location: `.planning/templates/SUMMARY_TEMPLATE.md`
+- Location: `.gsd-lite/templates/SUMMARY_TEMPLATE.md`
 - Implements: GTD export, context decisions, next session prep
 - See: Available Actions Menu, Context Stack
 

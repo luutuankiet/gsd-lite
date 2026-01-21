@@ -594,7 +594,7 @@ STATE.md now accurate. Resuming protocol discipline.
 
 **Location:** `.project/sessions/YYYY-MM-DD-description/STATE.md` (ephemeral, per-session)
 
-**Alternative:** `.planning/STATE.md` (persistent, project-wide)
+**Alternative:** `.gsd-lite/STATE.md` (persistent, project-wide)
 
 **Structure:**
 1. YAML frontmatter (version, updated timestamp, session identifier)

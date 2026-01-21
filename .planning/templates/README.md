@@ -2,9 +2,44 @@
 
 **Purpose**: File-based protocol and heavily-commented templates for using AI copilots in data engineering workflows. Maintain ownership of reasoning while leveraging AI assistance - works with any agent (Claude, ChatGPT, Gemini, Cursor) via MCP or copy-paste.
 
-## Quick Start
+## Getting Started
 
-### 3-Step Workflow
+### For First-Time Users
+
+If you're new to this system, follow this sequence:
+
+```mermaid
+sequenceDiagram
+    participant U as You (User)
+    participant R as README (this file)
+    participant B as BOOTLOADER
+    participant A as Agent
+    participant S as STATE/LOOPS/CONTEXT
+    participant SUM as SUMMARY
+
+    U->>R: 1. Read README (overview)
+    R-->>U: Understand 3-step workflow
+    U->>B: 2. Read BOOTLOADER_TEMPLATE
+    B-->>U: Learn session initialization
+    U->>A: 3. Paste BOOTLOADER into agent
+    A->>S: Initialize artifacts
+    A-->>U: Display sticky note with state
+    U->>A: 4. Start working
+    A->>S: Update STATE after each turn
+    A->>S: Capture loops when questions arise
+    A->>S: Track token budget
+    A-->>U: Show updates in sticky notes
+    U->>A: 5. End session (/pause)
+    A->>SUM: Generate SUMMARY.md
+    SUM-->>U: Export loops to GTD
+    U->>U: Process in TickTick/Things
+
+    Note over U,SUM: Next session: Load SUMMARY,<br/>resume where you left off
+```
+
+**Time to competence:** 30 minutes (read README → test session → export SUMMARY)
+
+### Quick Start
 
 **Step 1: Start Session** → Copy `BOOTLOADER_TEMPLATE.md`
 - Paste template into agent at session start
@@ -21,6 +56,21 @@
 - Export open loops → GTD next actions
 - Document context decisions → learning library
 - Prepare next session → eliminate 15-30 min reconstruction
+
+### What to Read First
+
+**Reading order for new users:**
+1. **This README** (you are here) - Get overview and workflow understanding
+2. **BOOTLOADER_TEMPLATE.md** - Learn how to initialize sessions and protocol
+3. **Run a test session** - Experience sticky notes, loop capture, token budget tracking
+4. **SUMMARY_TEMPLATE.md** - Learn how to export and integrate with GTD
+5. **Generate your first SUMMARY** - Complete the cycle
+
+**Reading order for resuming work:**
+1. **Last session's SUMMARY.md** - "Next Session Prep" section tells you what to load
+2. **Paste BOOTLOADER** - Start new session with context from SUMMARY
+3. **Import loops from GTD** - Bring back clarified loops
+4. **Resume where you left off** - No 15-30 min reconstruction needed
 
 ## Template Index
 
@@ -149,59 +199,52 @@
 
 Visual representation of how templates interact during a session:
 
-```
-┌─────────────────────────────────────────────────────────────┐
-│                      SESSION START                          │
-│                          ↓                                  │
-│              BOOTLOADER (initialize)                        │
-│         • Check for existing artifacts                      │
-│         • Create STATE/LOOPS/CONTEXT if new                 │
-│         • Load PROJECT/ROADMAP context                      │
-│         • Set token budget (default 5000)                   │
-│         • Activate protocol enforcement                     │
-└─────────────────────────────────────────────────────────────┘
-                           ↓
-┌─────────────────────────────────────────────────────────────┐
-│                     DURING WORK                             │
-│                          ↓                                  │
-│    STATE (track current activity)                           │
-│    • Updated after every turn                               │
-│    • Shows: phase, loops, budget, activity                  │
-│    • Visible in sticky note                                 │
-│                          ↓                                  │
-│    ├─→ LOOPS (capture questions)                            │
-│    │   • Agent proposes when question arises               │
-│    │   • User approves capture                             │
-│    │   • Status: open/clarifying/closed                    │
-│    │   • Systematic ID: LOOP-NNN                           │
-│    │                                                        │
-│    └─→ CONTEXT (manage budget)                             │
-│        • Track files loaded (path + tokens)                │
-│        • Track files excluded (pattern + rationale)        │
-│        • Monitor budget phases (20/40/50%)                 │
-│        • Stop at 50%, scope down if needed                 │
-└─────────────────────────────────────────────────────────────┘
-                           ↓
-┌─────────────────────────────────────────────────────────────┐
-│                      SESSION END                            │
-│                          ↓                                  │
-│              SUMMARY (export to GTD)                        │
-│         • Export closed loops → achievements                │
-│         • Export open loops → next actions                  │
-│         • Export clarifying loops → waiting for             │
-│         • Document context decisions                        │
-│         • Capture learning (patterns, mistakes)             │
-│         • Prepare next session (what to load)               │
-└─────────────────────────────────────────────────────────────┘
-                           ↓
-                   GTD Processing
-              (async, outside session)
+```mermaid
+graph TD
+    Start[SESSION START] --> Boot[BOOTLOADER: Initialize]
+    Boot --> CheckArtifacts{Existing<br/>artifacts?}
+    CheckArtifacts -->|Yes| Resume[Resume session<br/>Load STATE/LOOPS/CONTEXT]
+    CheckArtifacts -->|No| Create[Create new session<br/>Initialize artifacts]
+    Resume --> Work[DURING WORK]
+    Create --> Work
+
+    Work --> UpdateState[STATE: Track activity<br/>• Phase, loops, budget<br/>• Updated every turn<br/>• Visible in sticky note]
+
+    UpdateState --> Decision{Question<br/>arises?}
+    Decision -->|Yes| CaptureLoop[LOOPS: Capture question<br/>• Agent proposes<br/>• User approves<br/>• Systematic ID: LOOP-NNN]
+    Decision -->|No| CheckBudget{Token<br/>budget OK?}
+
+    CaptureLoop --> CheckBudget
+
+    CheckBudget -->|0-40%| LoadContext[CONTEXT: Track loading<br/>• Files loaded + tokens<br/>• Comfortable/Deliberate zone]
+    CheckBudget -->|40-50%| Warning[CONTEXT: Warning zone<br/>• Consider exclusions<br/>• Document rationale]
+    CheckBudget -->|50%+| Stop[CONTEXT: STOP<br/>• Must exclude files<br/>• Reduce before proceeding]
+
+    LoadContext --> ContinueWork{More<br/>work?}
+    Warning --> ContinueWork
+    Stop --> ExcludeFiles[Exclude files<br/>Document saved tokens]
+    ExcludeFiles --> ContinueWork
+
+    ContinueWork -->|Yes| UpdateState
+    ContinueWork -->|No| End[SESSION END]
+
+    End --> Summary[SUMMARY: Export to GTD<br/>• Closed loops → achievements<br/>• Open loops → next actions<br/>• Clarifying → waiting for<br/>• Document context decisions<br/>• Prepare next session]
+
+    Summary --> GTD[GTD Processing<br/>async, outside session]
+
+    style Start fill:#e1f5e1
+    style Boot fill:#e3f2fd
+    style Work fill:#fff3e0
+    style Summary fill:#f3e5f5
+    style GTD fill:#e0f2f1
+    style Stop fill:#ffebee
+    style Warning fill:#fff9c4
 ```
 
 ## File Locations
 
 ### Templates (Read-only reference)
-**Location**: `.planning/templates/`
+**Location**: `.gsd-lite/templates/`
 
 **Purpose**: Reference templates you copy/adapt for sessions
 
@@ -231,7 +274,7 @@ Visual representation of how templates interact during a session:
 **Lifecycle**: Created at session start → updated during work → exported to SUMMARY → archived (or deleted) when no longer needed
 
 ### Project Context (Stable reference)
-**Location**: `.planning/`
+**Location**: `.gsd-lite/`
 
 **Purpose**: Stable project context that persists across sessions
 
@@ -340,7 +383,7 @@ Conservative thresholds prevent context overload.
 - Tracks: current activity, loops, token budget
 - Lifecycle: Created at session start → updated during work → exported to SUMMARY → archived
 
-**Project STATE.md** (`.planning/STATE.md`):
+**Project STATE.md** (`.gsd-lite/STATE.md`):
 - Stable project-level state across sessions
 - Tracks: current phase, plan progress, accumulated decisions
 - Lifecycle: Persists across all sessions, updated at phase/plan boundaries

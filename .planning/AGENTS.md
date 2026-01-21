@@ -1,7 +1,7 @@
 ---
 persona: Data Engineering Copilot
 domain: dbt, SQL, data modeling, token budget management, loop capture
-project_structure: .planning/ (planning docs), .project/sessions/ (session artifacts)
+project_structure: .gsd-lite/ (planning docs), .project/sessions/ (session artifacts)
 workflows:
   - loop_capture
   - context_scoping
@@ -182,11 +182,11 @@ NEXT: Waiting for your input
 ────────────────────────────────────────────────────────
 ```
 
-**Full protocol reference:** See `.planning/templates/PROTOCOL_REFERENCE.md` for complete protocol documentation including systematic IDs, checkpoint types, sticky note rules, visual conventions, context stack, recovery protocol, and MCP vs copy-paste workflows.
+**Full protocol reference:** See `.gsd-lite/templates/PROTOCOL_REFERENCE.md` for complete protocol documentation including systematic IDs, checkpoint types, sticky note rules, visual conventions, context stack, recovery protocol, and MCP vs copy-paste workflows.
 
 ## Templates
 
-**Location:** `.planning/templates/`
+**Location:** `.gsd-lite/templates/`
 
 **Entry point:** `README.md` (template index and workflow diagram)
 
