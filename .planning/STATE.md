@@ -9,29 +9,30 @@ See: .planning/PROJECT.md (updated 2026-01-19)
 
 ## Current Position
 
-Phase: 1.1 of 6 (Allow Flexible Token Budget)
-Plan: 0 of TBD
-Status: Phase inserted, not yet planned
-Last activity: 2026-01-22 — Phase 1.1 inserted as urgent work after Phase 1 completion
+Phase: 1.2 of 6 (Audit and Fix Template Coherence for Single-Agent Sessions)
+Plan: 2 of TBD
+Status: In progress
+Last activity: 2026-01-22 — Completed 01.2-02-PLAN.md (Supporting Templates)
 
-Progress: [███░░░░░░░] 30% (Phase 0 + Phase 1 complete, Phase 0.1 skipped, Phase 1.1 pending)
+Progress: [███░░░░░░░] 30% (Phase 0 + Phase 1 complete, Phase 0.1 skipped, Phase 1.1 pending, Phase 1.2 in progress)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 4
-- Average duration: 5.5 min
-- Total execution time: 0.37 hours
+- Total plans completed: 5
+- Average duration: 4.8 min
+- Total execution time: 0.41 hours
 
 **By Phase:**
 
 | Phase | Plans | Total | Avg/Plan |
 |-------|-------|-------|----------|
 | 1. Foundation & Templates | 4 | 22 min | 5.5 min |
+| 1.2 Audit & Fix Template Coherence | 1 | 2 min | 2 min |
 
 **Recent Trend:**
-- Last 5 plans: 01-01 (6 min), 01-02 (8 min), 01-03 (4 min), 01-04 (4 min)
-- Trend: Consistent velocity (4-8 min per plan, averaging 5.5 min)
+- Last 5 plans: 01-02 (8 min), 01-03 (4 min), 01-04 (4 min), 01.2-02 (2 min)
+- Trend: Improving velocity (2-8 min per plan, averaging 4.8 min)
 
 *Updated after each plan completion*
 
@@ -70,6 +71,10 @@ Recent decisions affecting current work:
 - Loop sources (01-04): Loops originate from both agent discovery AND user questions during checkpoints/decisions
 - Window-relative token budgets (01-04): Thresholds relative to context window (Claude 40/50%, Gemini 50/60%)
 - Template distribution approach (Quick 002): Manual git clone + copy as primary method, avoid npx/pip (wrong tools for markdown)
+- STATE.md depth level (01.2-02): Moderate depth with Key Decisions table for weak agent resume
+- WORK.md ephemeral pattern (01.2-02): Explicitly marked as deleted after phase promotion
+- INBOX.md dual sources (01.2-02): Separate sections for user loops (non-linear) and agent loops (discovery)
+- HISTORY.md minimal format (01.2-02): One line per completed phase with external artifact links
 
 ### Pending Todos
 
@@ -89,7 +94,7 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-01-22
-Stopped at: Completed Quick 002 (template distribution research)
+Stopped at: Completed 01.2-02-PLAN.md (Supporting Templates)
 Resume file: None
 
 ---
