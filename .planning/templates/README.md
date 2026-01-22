@@ -39,9 +39,21 @@ sequenceDiagram
 
 **Time to competence:** 30 minutes (read README → test session → export SUMMARY)
 
+### Fastest Start (One-Liner Trigger)
+
+**For immediate activation** → Copy `INIT_PROMPT.md` and paste into any LLM
+
+This concise initialization prompt (120 lines) activates gsd-lite protocol immediately:
+- Agent adopts sticky note format
+- Agent initializes session artifacts (STATE/LOOPS/CONTEXT)
+- Agent follows protocol from first response
+- Full documentation linked for reference
+
+**Use when:** You want instant activation without reading 300+ lines of documentation.
+
 ### Quick Start
 
-**Step 1: Start Session** → Copy `BOOTLOADER_TEMPLATE.md`
+**Step 1: Start Session** → Copy `INIT_PROMPT.md` (fastest) or `BOOTLOADER_TEMPLATE.md` (detailed)
 - Paste template into agent at session start
 - Agent initializes artifacts (STATE.md, LOOPS.md, CONTEXT.md)
 - Protocol enforcement activates (sticky notes, checkpoints, action menus)
@@ -59,7 +71,12 @@ sequenceDiagram
 
 ### What to Read First
 
-**Reading order for new users:**
+**Fastest path (start immediately):**
+1. **INIT_PROMPT.md** - Paste into LLM, activate gsd-lite mode instantly
+2. **Run a test session** - Experience protocol in action
+3. **BOOTLOADER_TEMPLATE.md** (optional) - Read for full protocol details
+
+**Learning path (understand first):**
 1. **This README** (you are here) - Get overview and workflow understanding
 2. **BOOTLOADER_TEMPLATE.md** - Learn how to initialize sessions and protocol
 3. **Run a test session** - Experience sticky notes, loop capture, token budget tracking
@@ -68,14 +85,35 @@ sequenceDiagram
 
 **Reading order for resuming work:**
 1. **Last session's SUMMARY.md** - "Next Session Prep" section tells you what to load
-2. **Paste BOOTLOADER** - Start new session with context from SUMMARY
+2. **Paste INIT_PROMPT** (fast) or **BOOTLOADER** (detailed) - Start new session with context from SUMMARY
 3. **Import loops from GTD** - Bring back clarified loops
 4. **Resume where you left off** - No 15-30 min reconstruction needed
 
 ## Template Index
 
+### INIT_PROMPT.md
+**Purpose**: Concise one-liner trigger for immediate gsd-lite activation
+
+**When to use**: When you want instant activation without reading full documentation
+
+**What it does**:
+- Activates gsd-lite protocol in ~120 lines (vs 356 in BOOTLOADER)
+- Embeds core behaviors (sticky notes, loop capture, artifact updates)
+- Provides initialization steps (check existing → create/resume session)
+- Links to full templates for detailed reference
+
+**Key sections**:
+- Core protocol summary (sticky note format)
+- Session artifacts overview (STATE/LOOPS/CONTEXT)
+- Initialization steps (3-step quick start)
+- Key behaviors (loop capture, token budget, checkpoints, systematic IDs)
+
+**Read this when**: You want to feed a concise prompt to an LLM and have it immediately adopt gsd-lite behavior. Full details available in BOOTLOADER_TEMPLATE.md.
+
+---
+
 ### BOOTLOADER_TEMPLATE.md
-**Purpose**: Session initialization and protocol enforcement
+**Purpose**: Session initialization and protocol enforcement (comprehensive version)
 
 **When to use**: Start of every new session
 
@@ -249,11 +287,13 @@ graph TD
 **Purpose**: Reference templates you copy/adapt for sessions
 
 **Files**:
-- `BOOTLOADER_TEMPLATE.md` - Session initialization
-- `LOOPS_TEMPLATE.md` - Loop capture format (pending)
-- `CONTEXT_TEMPLATE.md` - Token budget tracking (pending)
-- `STATE_TEMPLATE.md` - Working memory structure (pending)
+- `INIT_PROMPT.md` - Quick activation (one-liner trigger)
+- `BOOTLOADER_TEMPLATE.md` - Session initialization (comprehensive)
+- `LOOPS_TEMPLATE.md` - Loop capture format
+- `CONTEXT_TEMPLATE.md` - Token budget tracking
+- `STATE_TEMPLATE.md` - Working memory structure
 - `SUMMARY_TEMPLATE.md` - Session export format
+- `PROTOCOL_REFERENCE.md` - Quick reference for all patterns
 - `README.md` - This file
 
 **Do NOT edit**: Templates are reference materials. Editing them changes the pattern for future sessions.
@@ -292,8 +332,8 @@ graph TD
 **What Phase 1 delivers**:
 - File-based protocol that works across all agent types (MCP + copy-paste)
 - Heavily-commented templates that teach GSD mechanics through use
-- Core templates: BOOTLOADER, LOOPS, CONTEXT, STATE, SUMMARY
-- Protocol documentation and session workflow
+- Core templates: INIT_PROMPT (quick activation), BOOTLOADER (comprehensive), LOOPS, CONTEXT, STATE, SUMMARY
+- Protocol documentation (PROTOCOL_REFERENCE) and session workflow (README)
 
 **What's NOT in Phase 1** (coming later):
 - **Phase 2**: Session handoff system (pause/resume across days, continuity between sessions)
@@ -325,7 +365,14 @@ graph TD
 
 ## What to Read First
 
-**If you're new to this system:**
+**If you want to start immediately (fastest path):**
+1. Copy INIT_PROMPT.md → paste into any LLM
+2. Agent activates gsd-lite mode and starts session
+3. Experience sticky notes, loop capture, token budget tracking
+4. Generate a SUMMARY at end of test session
+5. Read BOOTLOADER_TEMPLATE.md for full protocol details (optional)
+
+**If you want to understand first (learning path):**
 1. Read this README (you are here)
 2. Read BOOTLOADER_TEMPLATE.md (understand session initialization and protocol)
 3. Start a test session with BOOTLOADER
@@ -503,4 +550,4 @@ As you use these templates, you'll discover patterns worth capturing:
 
 **Last updated**: 2026-01-21
 **Phase**: 1 - Foundation & Templates
-**Status**: BOOTLOADER and SUMMARY complete, core templates pending
+**Status**: All templates complete (INIT_PROMPT, BOOTLOADER, LOOPS, CONTEXT, STATE, SUMMARY, PROTOCOL_REFERENCE, README)
