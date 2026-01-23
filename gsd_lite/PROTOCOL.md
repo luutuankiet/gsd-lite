@@ -303,32 +303,98 @@ Create new PHASE-002 after PHASE-001 completes
 
 ## Sticky Reminder
 
-At the end of EVERY turn, include this status block with systematic IDs:
+At the end of EVERY turn, include this status block with systematic IDs.
 
-```
-📌 CURRENT STATUS 📌
-Phase: PHASE-NNN ([Phase name]) - [X/Y tasks complete]
-Task: TASK-NNN ([Task name]) - [Status: In progress / Blocked / Complete]
-Loops captured this turn: [Number, or "None"] ([LOOP-NNN, LOOP-NNN])
-Decisions made this turn: [Number, or "None"] ([DECISION-NNN])
-Next action: [What happens next]
+### When to Include Sticky Reminder
+
+**Include sticky note when:**
+- ✅ Artifact updated (STATE.md, WORK.md, INBOX.md, HISTORY.md modified)
+- ✅ State changed (phase transition, loop captured, checkpoint reached)
+- ✅ Available actions changed (new contextual actions available)
+
+**Omit sticky note when:**
+- ❌ No changes (pure conversational turn)
+- ❌ Same state and actions as previous turn
+- ❌ Just reading files without updates
+
+### Required Format
+
+Use fenced block with `gsd-status` marker:
+
+```gsd-status
+📋 UPDATED: [artifact name] ([what changed])
+
+CURRENT STATE:
+- Phase: PHASE-NNN ([Phase name]) - [X/Y tasks complete]
+- Task: TASK-NNN ([Task name]) - [Status]
+- Active loops: [count] ([LOOP-001, LOOP-002, ...])
+
+AVAILABLE ACTIONS:
+📋 /continue | /pause | /status | /add-loop | /discuss
+[Contextual actions if applicable]
+
+NEXT: [What agent expects from user]
 ```
 
-**Example with systematic IDs:**
+### Available Actions Menu
 
-```
-📌 CURRENT STATUS 📌
-Phase: PHASE-001 (Add User Authentication) - 1/3 tasks complete
-Task: TASK-002 (Create login endpoint) - In progress
-Loops captured this turn: 1 (LOOP-003: password reset flow)
-Decisions made this turn: 1 (DECISION-002: Use JWT tokens)
-Next action: Finish login endpoint implementation
+**Core actions (always present):**
+- `/continue` - Resume work after checkpoint
+- `/pause` - Save session state for later
+- `/status` - Show current state
+- `/add-loop` - Capture new loop
+- `/discuss` - Fork to exploratory discussion
+
+**Contextual actions (when relevant):**
+- Plan-related: `/approve-plan`, `/reject-plan`, `/edit-plan`
+- Loop-related: `/close-loop [ID]`, `/explore-loop [ID]`, `/defer-loop [ID]`
+- Phase-related: `/complete-phase`, `/skip-to-phase [N]`, `/review-phase`
+- Decision-related: `/make-decision`, `/defer-decision`
+
+### Example with Systematic IDs
+
+```gsd-status
+📋 UPDATED: STATE.md (added LOOP-003), INBOX.md (captured password reset loop)
+
+CURRENT STATE:
+- Phase: PHASE-001 (Add User Authentication) - 1/3 tasks complete
+- Task: TASK-002 (Create login endpoint) - In progress
+- Active loops: 3 (LOOP-001, LOOP-002, LOOP-003)
+
+AVAILABLE ACTIONS:
+📋 /continue | /pause | /status | /add-loop | /discuss
+Loop actions: /close-loop [ID] | /explore-loop [ID]
+
+NEXT: Finish login endpoint implementation
 ```
 
-**When to include sticky reminder:**
-- ALWAYS at end of every agent response
-- Shows current position with unambiguous IDs
-- User can reference IDs in next prompt ("discuss LOOP-003")
+### Checkpoint Emoji Banners
+
+When blocking checkpoints occur (user verification required):
+
+**Format:**
+```
+🛑🛑🛑🛑🛑🛑🛑 BLOCKING: [Type of verification/decision] 🛑🛑🛑🛑🛑🛑🛑
+
+**What**: [What was built/discovered/needs decision]
+
+**Context**: [Why this matters]
+
+**How to verify** OR **Options**:
+[Numbered steps for verification OR options with pros/cons]
+
+────────────────────────────────────────────────────────
+→ YOUR ACTION: [Explicit instruction - "Type 'approved'" or "Select 1, 2, or 3"]
+────────────────────────────────────────────────────────
+```
+
+**Why aggressive emoji wall:** 7+ 🛑 emojis arrest scrolling attention, make it impossible to miss the blocking point.
+
+**Use blocking checkpoints for:**
+- User needs to verify visual output (dashboard layout, UI behavior)
+- User needs to make architectural decision (library choice, data model)
+- User needs to provide credentials (authentication gates)
+- User needs to test functionality (manual testing required)
 
 This sticky reminder ensures both agent and user maintain shared understanding of current state with systematic IDs for quick lookup.
 
