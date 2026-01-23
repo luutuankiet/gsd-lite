@@ -5,6 +5,7 @@
 ## Session Start Checklist
 
 When starting ANY session:
+
 1. Read this PROTOCOL.md (you're doing it now)
 2. Read STATE.md (current phase, task, decisions)
 3. If resuming mid-task, also read WORK.md
@@ -16,12 +17,14 @@ When starting ANY session:
 **Scenario 1: Linear Session (same chat thread)**
 
 Monday Session 1 (new chat):
+
 - Do Task A, Task B
 - Artifacts updated after each turn
 - User says "let's continue tomorrow"
 - This is NOT "resume mid-task" - just pausing linear session
 
 Tuesday continuation (SAME chat):
+
 - User says "let's continue"
 - Agent has full chat history, just continues from last turn
 - This is NOT "resume mid-task" - linear continuation
@@ -29,6 +32,7 @@ Tuesday continuation (SAME chat):
 **Scenario 2: Resume Mid-Task (NEW chat thread)**
 
 Tuesday Session 2 (NEW chat):
+
 - User opens fresh chat, says "resume task B"
 - Agent reads PROTOCOL.md + STATE.md + WORK.md
 - STATE.md shows: "Current Task: TASK-002 (Task B) - In Progress"
@@ -38,6 +42,7 @@ Tuesday Session 2 (NEW chat):
 **Key insight:** "Resume mid-task" = starting NEW chat session with in-progress task state in artifacts.
 
 **Session hierarchy example:**
+
 ```
 Phase 1 ──┬── Session 1 (Chat A) ──┬── TASK-001 (Task A) ✓
           │                         └── TASK-002 (Task B) [partial]
@@ -47,6 +52,7 @@ Phase 1 ──┬── Session 1 (Chat A) ──┬── TASK-001 (Task A) ✓
 ```
 
 **Artifact update timing:**
+
 - STATE.md and WORK.md: Updated after EVERY turn (agent's response)
 - User never manually updates - agent writes after each response
 - At session wrap-up: Agent updates STATE.md with session end marker
@@ -55,15 +61,16 @@ Phase 1 ──┬── Session 1 (Chat A) ──┬── TASK-001 (Task A) ✓
 
 ## File Guide
 
-| File | Purpose | When to Read | When to Write |
-|------|---------|--------------|---------------|
-| PROTOCOL.md | Session entrypoint | Always first | Never (immutable) |
-| STATE.md | Phase/task tracker | Every session start | After EVERY turn |
-| WORK.md | Verbose execution log | When resuming | After EVERY turn during execution |
-| INBOX.md | Loop capture | When planning | When user OR agent discovers loop |
-| HISTORY.md | Completed phases | For context | After phase promotion |
+| File        | Purpose               | When to Read        | When to Write                     |
+| ----------- | --------------------- | ------------------- | --------------------------------- |
+| PROTOCOL.md | Session entrypoint    | Always first        | Never (immutable)                 |
+| STATE.md    | Phase/task tracker    | Every session start | After EVERY turn                  |
+| WORK.md     | Verbose execution log | When resuming       | After EVERY turn during execution |
+| INBOX.md    | Loop capture          | When planning       | When user OR agent discovers loop |
+| HISTORY.md  | Completed phases      | For context         | After phase promotion             |
 
 **Artifact lifecycle clarification:**
+
 - STATE.md and WORK.md are updated frequently (after every agent response)
 - This ensures artifacts are always current when new session starts
 - No risk of "forgetting" - protocol enforces update every turn via sticky reminder
@@ -76,12 +83,12 @@ Phase 1 ──┬── Session 1 (Chat A) ──┬── TASK-001 (Task A) ✓
 
 ### ID Types
 
-| Type | Examples | Scope | Used In |
-|------|----------|-------|---------|
-| PHASE-NNN | PHASE-001, PHASE-002 | Phases in project | STATE.md, HISTORY.md |
-| TASK-NNN | TASK-001, TASK-003 | Tasks within phases | STATE.md, WORK.md |
-| LOOP-NNN | LOOP-007, LOOP-012 | Open questions/loops | INBOX.md, STATE.md |
-| DECISION-NNN | DECISION-008, DECISION-015 | Key decisions made | STATE.md |
+| Type         | Examples                   | Scope                | Used In              |
+| ------------ | -------------------------- | -------------------- | -------------------- |
+| PHASE-NNN    | PHASE-001, PHASE-002       | Phases in project    | STATE.md, HISTORY.md |
+| TASK-NNN     | TASK-001, TASK-003         | Tasks within phases  | STATE.md, WORK.md    |
+| LOOP-NNN     | LOOP-007, LOOP-012         | Open questions/loops | INBOX.md, STATE.md   |
+| DECISION-NNN | DECISION-008, DECISION-015 | Key decisions made   | STATE.md             |
 
 ### Why Systematic IDs
 
@@ -100,6 +107,7 @@ Phase 1 ──┬── Session 1 (Chat A) ──┬── TASK-001 (Task A) ✓
 ### Example References
 
 **In STATE.md:**
+
 ```markdown
 ## Current Task
 **Task:** TASK-003 - Add user authentication
@@ -112,6 +120,7 @@ Phase 1 ──┬── Session 1 (Chat A) ──┬── TASK-001 (Task A) ✓
 ```
 
 **In INBOX.md:**
+
 ```markdown
 ## From User
 | ID | Date | Loop | Status |
@@ -120,12 +129,14 @@ Phase 1 ──┬── Session 1 (Chat A) ──┬── TASK-001 (Task A) ✓
 ```
 
 **In WORK.md:**
+
 ```markdown
 **[2026-01-22 15:30]** - TASK-003: Create auth.ts
 - Captured LOOP-002: Token expiry strategy unclear
 ```
 
 **In user prompts:**
+
 - "What's the status of LOOP-007?"
 - "Resume TASK-003"
 - "Why did we make DECISION-008?"
@@ -151,16 +162,17 @@ These are non-negotiable principles from the GSD-Lite manifesto:
 ### Planning Steps
 
 1. **Interview the User**
+
    - What's the goal?
    - What's the scope boundary?
    - How do we verify success?
+1. **Present the Moodboard**
 
-2. **Present the Moodboard**
    - Show visual boxes with emoji borders
    - Break down: Scope / Risk / Tasks
    - Get explicit confirmation before proceeding
+1. **Wait for User Confirmation**
 
-3. **Wait for User Confirmation**
    - Never proceed to execution without "yes" or equivalent
    - Adjust based on user feedback
 
@@ -308,11 +320,13 @@ At the end of EVERY turn, include this status block with systematic IDs.
 ### When to Include Sticky Reminder
 
 **Include sticky note when:**
+
 - ✅ Artifact updated (STATE.md, WORK.md, INBOX.md, HISTORY.md modified)
 - ✅ State changed (phase transition, loop captured, checkpoint reached)
 - ✅ Available actions changed (new contextual actions available)
 
 **Omit sticky note when:**
+
 - ❌ No changes (pure conversational turn)
 - ❌ Same state and actions as previous turn
 - ❌ Just reading files without updates
@@ -339,6 +353,7 @@ NEXT: [What agent expects from user]
 ### Available Actions Menu
 
 **Core actions (always present):**
+
 - `/continue` - Resume work after checkpoint
 - `/pause` - Save session state for later
 - `/status` - Show current state
@@ -346,6 +361,7 @@ NEXT: [What agent expects from user]
 - `/discuss` - Fork to exploratory discussion
 
 **Contextual actions (when relevant):**
+
 - Plan-related: `/approve-plan`, `/reject-plan`, `/edit-plan`
 - Loop-related: `/close-loop [ID]`, `/explore-loop [ID]`, `/defer-loop [ID]`
 - Phase-related: `/complete-phase`, `/skip-to-phase [N]`, `/review-phase`
@@ -377,6 +393,7 @@ Checkpoints use distinct emoji banners for different event types. All checkpoint
 When user verification or decision is required:
 
 **Format:**
+
 ```
 🛑🛑🛑🛑🛑🛑🛑 BLOCKING: [Type of verification/decision] 🛑🛑🛑🛑🛑🛑🛑
 
@@ -393,6 +410,7 @@ When user verification or decision is required:
 ```
 
 **Use blocking checkpoints for:**
+
 - User needs to verify visual output (dashboard layout, UI behavior)
 - User needs to make architectural decision (library choice, data model)
 - User needs to provide credentials (authentication gates)
@@ -403,8 +421,9 @@ When user verification or decision is required:
 For progress updates and state changes that don't require immediate action:
 
 **🔄 LOOP Captured**
+
 ```
-🔄🔄🔄🔄🔄🔄🔄 LOOP-NNN CAPTURED 🔄🔄🔄🔄🔄🔄🔄
+🔄LOOP-NNN CAPTURED
 
 **Loop**: [Brief description]
 **Source**: [User | Agent]
@@ -415,8 +434,9 @@ For progress updates and state changes that don't require immediate action:
 ```
 
 **✅ DECISION Made**
+
 ```
-✅✅✅✅✅✅✅ DECISION-NNN MADE ✅✅✅✅✅✅✅
+✅ DECISION-NNN MADE
 
 **Decision**: [What was decided]
 **Rationale**: [Why this choice]
@@ -427,8 +447,9 @@ For progress updates and state changes that don't require immediate action:
 ```
 
 **🏁 PHASE Complete**
+
 ```
-🏁🏁🏁🏁🏁🏁🏁 PHASE-NNN COMPLETE 🏁🏁🏁🏁🏁🏁🏁
+🏁 PHASE-NNN COMPLETE
 
 **Phase**: [Phase name]
 **Outcome**: [One sentence summary]
@@ -439,8 +460,9 @@ For progress updates and state changes that don't require immediate action:
 ```
 
 **🧪 HYPOTHESIS Validated/Invalidated**
+
 ```
-🧪🧪🧪🧪🧪🧪🧪 HYPOTHESIS VALIDATED/INVALIDATED 🧪🧪🧪🧪🧪🧪🧪
+🧪 HYPOTHESIS VALIDATED/INVALIDATED
 
 **Hypothesis**: [What was tested]
 **Result**: [Validated | Invalidated]
@@ -451,8 +473,9 @@ For progress updates and state changes that don't require immediate action:
 ```
 
 **📋 PLAN Ready**
+
 ```
-📋📋📋📋📋📋📋 PLAN READY 📋📋📋📋📋📋📋
+📋 PLAN READY
 
 **Phase**: PHASE-NNN
 **Tasks**: [N tasks defined]
@@ -464,8 +487,9 @@ For progress updates and state changes that don't require immediate action:
 ```
 
 **✔️ TASK Complete**
+
 ```
-✔️✔️✔️✔️✔️✔️✔️ TASK-NNN COMPLETE ✔️✔️✔️✔️✔️✔️✔️
+✔️ TASK-NNN COMPLETE
 
 **Task**: [Task name]
 **Files changed**: [Key files]
@@ -498,6 +522,7 @@ Progress indicators appear OUTSIDE the sticky note block, at the very end of the
 ```
 
 **Why at the end:**
+
 - Last thing user sees before replying
 - Doesn't clutter sticky reminder
 - Clear visual separation from status details
@@ -533,12 +558,14 @@ This checkpoint system ensures both agent and user maintain shared understanding
 A **phase** is a logical unit of work agreed upon between user and agent during planning mode.
 
 **Characteristics:**
+
 - Has clear goal (visible in moodboard)
 - Has defined scope (tasks in moodboard)
 - Has verification criteria (in moodboard)
 - Gets unique ID: PHASE-NNN
 
 **Example phases:**
+
 - PHASE-001: Add user authentication (3 tasks)
 - PHASE-002: Implement password reset flow (2 tasks)
 - PHASE-003: Add user profile page (4 tasks)
@@ -554,17 +581,20 @@ Planning → Moodboard → User confirms → Execution → User requests complet
 **CRITICAL: Phase completion is USER-CONTROLLED, not agent-decided.**
 
 **Agent role:**
+
 - Execute tasks in scope
 - Update WORK.md after every turn
 - Show progress in sticky reminder
 - When all tasks done: Signal completion readiness
 
 **User role:**
+
 - Decide WHEN to complete phase (may want to review, test, adjust)
 - Explicitly request phase promotion: "complete this phase" or "promote phase"
 - User controls timing of WORK.md trimming (prevents permanent data loss)
 
 **Why user controls completion:**
+
 - Promotion workflow trims WORK.md (deletes verbose log)
 - If agent auto-promotes, material for distributed artifacts is FOREVER LOST
 - User may need time to extract outcomes, write PR description, review logs
@@ -573,7 +603,7 @@ Planning → Moodboard → User confirms → Execution → User requests complet
 **Phase completion signal from agent:**
 
 ```
-✅✅✅ PHASE READY FOR COMPLETION ✅✅✅
+🔮🔮🔮 PHASE READY FOR COMPLETION 🔮🔮🔮
 
 All tasks in scope complete:
 ✓ TASK-001: Add user authentication
@@ -606,12 +636,15 @@ Next action: Finish TASK-003, then signal phase ready
 When USER requests phase completion:
 
 ### Step 1: Promote
+
 Extract key outcomes to external artifact:
+
 - Write PR description from WORK.md
 - Update documentation
 - Create deployment notes
 
 ### Step 2: Record to HISTORY.md
+
 Add one-line entry with systematic ID, completion date, and outcome.
 
 **HISTORY.md Format (with systematic IDs):**
@@ -633,11 +666,13 @@ Add one-line entry with systematic ID, completion date, and outcome.
 ```
 
 ### Step 3: Trim WORK.md
+
 **Aggressive deletion.** The verbose log served its purpose during execution. Now it's promoted and can be removed.
 
 Delete entire content of WORK.md.
 
 ### Step 4: Clear STATE.md
+
 Update STATE.md to show no active phase. Ready for next phase.
 
 **STATE.md After Promotion (with systematic IDs):**
@@ -696,18 +731,23 @@ Outcome: JWT-based auth (PR #42)
 ## Quick Reference Card
 
 **Starting Session?**
+
 → Read PROTOCOL.md → Read STATE.md → (Read WORK.md if resuming)
 
 **New Phase?**
+
 → Interview → Moodboard → Confirmation → Execute
 
 **During Execution?**
+
 → Log to WORK.md → Capture loops to INBOX.md → Sticky reminder every turn
 
 **Phase Complete?**
+
 → Promote to PR/doc → Record to HISTORY.md → Trim WORK.md → Clear STATE.md
 
 ---
 
 *Protocol Version: 1.0 (2026-01-22)*
+
 *GSD-Lite: Comprehensive TODO list, not documentation repository*
