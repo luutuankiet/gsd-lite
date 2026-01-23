@@ -2,6 +2,19 @@
 
 <!-- version list -->
 
+## v1.3.0 (2026-01-23)
+
+### Bug Fixes
+
+- Use native markdown instead
+  ([`64bde07`](https://github.com/luutuankiet/gsd-lite/commit/64bde0749e79e9065a3ed6c986fd7bd995ce1aa0))
+
+### Features
+
+- More detailed logging for WORK.md protocol
+  ([`2598249`](https://github.com/luutuankiet/gsd-lite/commit/259824963d744b5a7e259a1aa2cd5a6058d8436e))
+
+
 ## v1.2.0 (2026-01-23)
 
 ### Features
