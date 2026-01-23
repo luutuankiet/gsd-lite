@@ -8,48 +8,82 @@ from rich.panel import Panel
 app = typer.Typer()
 console = Console()
 
+from importlib.metadata import version as get_package_version, PackageNotFoundError
+
+def get_version():
+    try:
+        return get_package_version("gsd-lite")
+    except PackageNotFoundError:
+        return "dev"
+
 @app.command()
-def main(force: bool = typer.Option(False, "--force", "-f", help="Overwrite existing files")):
+def main(
+    force: bool = typer.Option(False, "--force", "-f", help="Force overwrite existing files"),
+    update: bool = typer.Option(False, "--update", "-u", help="Update templates in an existing project"),
+    version: bool = typer.Option(False, "--version", "-v", help="Show version")
+):
     """
-    Initialize GSD-Lite in the current directory.
+    GSD-Lite Manager
     """
-    # 1. Locate the bundled templates
-    # We look for the 'template' folder relative to this script
+    if version:
+        console.print(f"gsd-lite version: {get_version()}")
+        raise typer.Exit()
+
+    # 1. Setup paths
     package_dir = Path(__file__).parent
     source_dir = package_dir / "template"
     
-    # 2. Define destination
     cwd = Path.cwd()
-    dest_dir = cwd / "gsd_lite"
+    root_dir = cwd / "gsd-lite"
+    template_dest = root_dir / "template"
 
-    console.print(Panel.fit("[bold cyan]GSD-Lite Scaffolder[/bold cyan]", border_style="cyan"))
+    console.print(Panel.fit("[bold cyan]GSD-Lite Manager[/bold cyan]", border_style="cyan"))
 
-    # 3. Validation
+    # 2. Validation of source
     if not source_dir.exists():
         console.print(f"[bold red]Error:[/bold red] Template directory not found at {source_dir}")
-        console.print("This usually means the package was built incorrectly.")
         raise typer.Exit(code=1)
 
-    if dest_dir.exists() and not force:
-        console.print(f"[yellow]Warning:[/yellow] Directory [bold]{dest_dir}[/bold] already exists.")
-        console.print("Use [bold]--force[/bold] to overwrite.")
+    # 3. Update Mode
+    if update:
+        if not root_dir.exists():
+            console.print(f"[bold red]Error:[/bold red] No gsd-lite project found at {root_dir}")
+            console.print("Run without --update to initialize a new project.")
+            raise typer.Exit(code=1)
+        
+        console.print(f"[yellow]Updating templates to version {get_version()}...[/yellow]")
+        # Force enable overwrite for update
+        force = True
+
+    # 4. Install/Check
+    if template_dest.exists() and not force:
+        console.print(f"[yellow]Warning:[/yellow] Directory [bold]{template_dest}[/bold] already exists.")
+        console.print("Use [bold]--update[/bold] to refresh templates.")
+        console.print("Use [bold]--force[/bold] to overwrite everything.")
         raise typer.Exit(code=1)
 
-    # 4. Copying
+    # 5. Execution
     try:
-        if dest_dir.exists() and force:
-            shutil.rmtree(dest_dir)
+        root_dir.mkdir(exist_ok=True)
+
+        if template_dest.exists():
+            shutil.rmtree(template_dest)
         
-        shutil.copytree(source_dir, dest_dir)
+        shutil.copytree(source_dir, template_dest)
         
-        # 5. Success
-        console.print(f"[green]✔ Successfully initialized GSD-Lite in:[/green] {dest_dir}")
-        console.print("\n[bold]Next Steps:[/bold]")
-        console.print("1. Read [bold]gsd_lite/PROTOCOL.md[/bold]")
-        console.print("2. Start your first session!")
-        
+        # Write version receipt
+        (template_dest / "VERSION").write_text(get_version())
+
+        if update:
+             console.print(f"[green]✔ Successfully updated templates (v{get_version()}) in:[/green] {template_dest}")
+        else:
+             console.print(f"[green]✔ Successfully initialized GSD-Lite templates in:[/green] {template_dest}")
+             console.print("\n[bold]Next Steps:[/bold]")
+             console.print("1. Tell your agent to load file [bold]gsd-lite/template/PROTOCOL.md[/bold]")
+             console.print("2. Describe your task - your session is now powered by gsd!")
+             
     except Exception as e:
-        console.print(f"[bold red]Error copying files:[/bold red] {e}")
+        console.print(f"[bold red]Error:[/bold red] {e}")
         raise typer.Exit(code=1)
 
 if __name__ == "__main__":
