@@ -2,6 +2,14 @@
 
 <!-- version list -->
 
+## v1.2.0 (2026-01-23)
+
+### Features
+
+- Prompt agent to extract vision and collaboratively think with user
+  ([`95a942b`](https://github.com/luutuankiet/gsd-lite/commit/95a942b1d72f85ea35aa55e2efebf76814e365d9))
+
+
 ## v1.1.1 (2026-01-23)
 
 ### Bug Fixes
