@@ -97,9 +97,9 @@ Plans:
 **Plans:** 3 plans
 
 Plans:
-- [ ] 01.2-01-PLAN.md — Create PROTOCOL.md (single entrypoint with all behavioral rules)
-- [ ] 01.2-02-PLAN.md — Create supporting templates (STATE.md, WORK.md, INBOX.md, HISTORY.md)
-- [ ] 01.2-03-PLAN.md — Cleanup redundant files and human verification
+- [x] 01.2-01-PLAN.md — Create PROTOCOL.md (single entrypoint with all behavioral rules)
+- [x] 01.2-02-PLAN.md — Create supporting templates (STATE.md, WORK.md, INBOX.md, HISTORY.md)
+- [x] 01.2-03-PLAN.md — Cleanup redundant files and human verification
 
 ### Phase 2: Session Handoff System
 **Goal**: Create ephemeral working memory system that exports to GTD and eliminates 15-30 min context reconstruction
@@ -153,11 +153,11 @@ Phases execute in numeric order: 0 → 0.1 → 1 → 1.1 → 1.2 → 2 → 3 →
 | 0.1. Integrate GSD Patterns (INSERTED) | 0/1 | Not started | - |
 | 1. Foundation & Templates | 4/4 | Completed | 2026-01-22 |
 | 1.1. Allow Flexible Token Budget (INSERTED) | 0/TBD | Not started | - |
-| 1.2. Audit and Fix Template Coherence (INSERTED) | 0/3 | Planned | - |
+| 1.2. Audit and Fix Template Coherence (INSERTED) | 3/3 | Completed | 2026-01-23 |
 | 2. Session Handoff System | 0/TBD | Not started | - |
 | 3. Context Engineering Patterns | 0/TBD | Not started | - |
 | 4. Educational Integration & Validation | 0/TBD | Not started | - |
 
 ---
 *Roadmap created: 2026-01-19*
-*Last updated: 2026-01-22 (Phase 1.2 planned - 3 plans in 2 waves)*
+*Last updated: 2026-01-23 (Phase 1.2 completed - 5-file GSD-lite structure verified)*
