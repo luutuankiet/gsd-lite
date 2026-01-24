@@ -72,11 +72,11 @@ graph TD
 
 | File        | Purpose               | When to Read        | When to Write                     | Write target        | Reference target (DO NOT WRITE TO THIS) |
 | ----------- | --------------------- | ------------------- | --------------------------------- | ------------------- | ------------------ |
-| PROTOCOL.md | Session entrypoint    | Always first        | Never (immutable)                 | n/a                 | gsd_lite/template/PROTOCOL.md                    |
-| STATE.md    | Phase/task tracker    | Every session start | After EVERY turn                  | gsd_lite/STATE.md   | gsd_lite/template/STATE.md                    |
-| WORK.md     | Verbose execution log | When resuming       | After EVERY turn during execution | gsd_lite/WORK.md    | gsd_lite/template/WORK.md                    |
-| INBOX.md    | Loop capture          | When planning       | When user OR agent discovers loop | gsd_lite/INBOX.md   | gsd_lite/template/INBOX.md                    |
-| HISTORY.md  | Completed phases      | For context         | After phase promotion             | gsd_lite/HISTORY.md | gsd_lite/template/HISTORY.md                    |
+| PROTOCOL.md | Session entrypoint    | Always first        | Never (immutable)                 | n/a                 | gsd-lite/template/PROTOCOL.md                    |
+| STATE.md    | Phase/task tracker    | Every session start | After EVERY turn                  | gsd-lite/STATE.md   | gsd-lite/template/STATE.md                    |
+| WORK.md     | Verbose execution log | When resuming       | After EVERY turn during execution | gsd-lite/WORK.md    | gsd-lite/template/WORK.md                    |
+| INBOX.md    | Loop capture          | When planning       | When user OR agent discovers loop | gsd-lite/INBOX.md   | gsd-lite/template/INBOX.md                    |
+| HISTORY.md  | Completed phases      | For context         | After phase promotion             | gsd-lite/HISTORY.md | gsd-lite/template/HISTORY.md                    |
 
 **Artifact lifecycle clarification:**
 
