@@ -6,11 +6,11 @@
 
 When starting ANY session, read the following files : 
 
-1. Template PROTOCOL.md (you're doing it now). 
+1. Template `./gsd-lite/template/PROTOCOL.md` (you're doing it now). 
 2. Immediately after reading this file, read all the following in **one function call** before continue to process user task :
-    1. Other files in Template directory : INBOX.md, HISTORY.md, PROTOCOL.md, STATE.md, WORK.md (to load the protocol template to your memory)
-    2. Read project (not in template dir) STATE.md (current phase, task, decisions)
-    3. If resuming mid-task, also read WORK.md (also not in tempalte dir)
+    1. Other files in `./gsd-lite/template` directory (fact is these already exist) : INBOX.md, HISTORY.md, PROTOCOL.md, STATE.md, WORK.md (to load the protocol template to your memory)
+    2. Read project `./gsd-lite/STATE.md` (current phase, task, decisions)
+    3. If resuming mid-task, also read `./gsd-lite/WORK.md` (also not in tempalte dir)
 
 The instructions above ensure you have everything you need to operate correctly throughout the session.
 
