@@ -275,19 +275,22 @@ The format is important - use example below with this specific 10x emoji banner
 Example MOODBOARD
 
 <example>
-```
+    
+```markdown
+
 📫📫📫📫📫📫📫 QUESTION 📫📫📫📫📫📫📫
 
 🎯🎯🎯 Topic : Defining "Low Effort" Data Entry 🎯🎯🎯
 
 ## DATA ENTRY EXPERIENCE
+
 **1. You mentioned you want adding a new contact to feel "effortless."
 Which of these interactions matches the mental image in your head?**
 
 A. **The Voice Dump:** I press one button, speak casually ("I met Sam at the coffee shop, he likes skiing"), and the app parses it later.
 B. **The Business Card Scan:** I snap a photo of a physical card/badge, and it auto-fills the fields immediately.
 C. **The Passive Sync:** It should silently scrape my email/calendar and just present me with a summary to approve.
-D. **Let me explain:** ____________________
+D. **Let me explain:** 
 
 
 ## THE "MEMORY" MECHANIC
@@ -297,14 +300,14 @@ what does that notification look like?**
 A. **The Morning Brief:** A daily digest email at 8 AM listing the 3 people I should contact today.
 B. **The Contextual Pop-up:** When I open my email/LinkedIn, a sidebar appears saying "You haven't spoken to this person in 3 months."
 C. **The Push Notification:** A direct alert on my phone lock screen: "Call Sarah now."
-D. **Let me explain:** ____________________
+D. **Let me explain:** 
 
 **3. How strict should this system be? If I ignore a nudge, what happens?**
 
-[ ] **The Nag:** It stays at the top of my list and turns red until I do it or dismiss it.
-[ ] **The River:** It floats away. If I miss it, the app assumes I'm busy and suggests someone else tomorrow.
-[ ] **The Gamified:** I lose a "streak" or points if I don't maintain my relationships.
-[ ] **Let me explain:** ____________________
+A. **The Nag:** It stays at the top of my list and turns red until I do it or dismiss it.
+B. **The River:** It floats away. If I miss it, the app assumes I'm busy and suggests someone else tomorrow.
+C. **The Gamified:** I lose a "streak" or points if I don't maintain my relationships.
+D. **Let me explain:** 
 
 
 ```
@@ -332,7 +335,8 @@ When you could write a clear plan, offer to proceed to WHITEBOARD where you prop
 
 <format> </format>
 
-```md
+```markdown
+
 🔮🔮🔮🔮🔮🔮🔮🔮🔮🔮 READY TO SEE THE PLAN? 🔮🔮🔮🔮🔮🔮🔮🔮🔮🔮
 
 - question: "I think I understand what you're after. Ready to see the plan I devised"
@@ -370,7 +374,8 @@ Loop until received a yes from user.
 
 <format>
 
-```md
+```markdown
+
 📚📚📚📚📚📚📚📚📚📚 PHASE-NNN WHITEBOARD 📚📚📚📚📚📚📚📚📚📚
 
 **PHASE-NNN: [Phase Name]**
@@ -394,7 +399,8 @@ Loop until received a yes from user.
 
 **Example with systematic IDs:**
 
-```md
+```markdown
+
 📚📚📚📚📚📚📚📚📚📚 PHASE-001 WHITEBOARD 📚📚📚📚📚📚📚📚📚📚
 
 **PHASE-001: Add User Authentication**
