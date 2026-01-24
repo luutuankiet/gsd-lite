@@ -2,6 +2,14 @@
 
 <!-- version list -->
 
+## v1.3.2 (2026-01-24)
+
+### Bug Fixes
+
+- Also scaffold templates dir into state if not exist
+  ([`1b267d3`](https://github.com/luutuankiet/gsd-lite/commit/1b267d3bbbbf7d1f226d5ea4f45f0b8458bf0fba))
+
+
 ## v1.3.1 (2026-01-24)
 
 ### Bug Fixes
