@@ -2,6 +2,14 @@
 
 <!-- version list -->
 
+## v1.3.3 (2026-01-24)
+
+### Bug Fixes
+
+- Add relpath to not confuse agent
+  ([`d538479`](https://github.com/luutuankiet/gsd-lite/commit/d53847954c7e4fd78f9ef6cbf9c3ca8edbf1cebc))
+
+
 ## v1.3.2 (2026-01-24)
 
 ### Bug Fixes
