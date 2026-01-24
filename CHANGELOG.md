@@ -2,6 +2,14 @@
 
 <!-- version list -->
 
+## v1.3.4 (2026-01-24)
+
+### Bug Fixes
+
+- Folder naming bump to gsd-lite
+  ([`948ef68`](https://github.com/luutuankiet/gsd-lite/commit/948ef68093f4c3bcc6f8a16e7c6d2841a2f467f7))
+
+
 ## v1.3.3 (2026-01-24)
 
 ### Bug Fixes
