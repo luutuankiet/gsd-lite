@@ -68,20 +68,45 @@ def main(
 
         if template_dest.exists():
             shutil.rmtree(template_dest)
-        
+
         shutil.copytree(source_dir, template_dest)
-        
+
         # Write version receipt
         (template_dest / "VERSION").write_text(get_version())
+
+        # 6. Scaffold core files to gsd-lite root (only if they don't exist)
+        core_files = ["WORK.md", "STATE.md", "INBOX.md", "HISTORY.md"]
+        scaffolded = []
+        skipped = []
+
+        for filename in core_files:
+            dest_file = root_dir / filename
+            source_file = template_dest / filename
+
+            if dest_file.exists():
+                skipped.append(filename)
+            else:
+                if source_file.exists():
+                    shutil.copy2(source_file, dest_file)
+                    scaffolded.append(filename)
 
         if update:
              console.print(f"[green]✔ Successfully updated templates (v{get_version()}) in:[/green] {template_dest}")
         else:
              console.print(f"[green]✔ Successfully initialized GSD-Lite templates in:[/green] {template_dest}")
+
+        # Report on scaffolded files
+        if scaffolded:
+            console.print(f"[green]✔ Scaffolded core files:[/green] {', '.join(scaffolded)}")
+
+        if skipped:
+            console.print(f"[blue]ℹ Skipped existing files:[/blue] {', '.join(skipped)}")
+
+        if not update:
              console.print("\n[bold]Next Steps:[/bold]")
              console.print("1. Tell your agent to load file [bold]gsd-lite/template/PROTOCOL.md[/bold]")
              console.print("2. Describe your task - your session is now powered by gsd!")
-             
+
     except Exception as e:
         console.print(f"[bold red]Error:[/bold red] {e}")
         raise typer.Exit(code=1)
