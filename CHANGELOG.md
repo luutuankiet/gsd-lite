@@ -2,6 +2,14 @@
 
 <!-- version list -->
 
+## v1.3.1 (2026-01-24)
+
+### Bug Fixes
+
+- Broken markdown in protocol
+  ([`898c460`](https://github.com/luutuankiet/gsd-lite/commit/898c460be8fc0c91ddc04d43e1ac13de2b5c4d04))
+
+
 ## v1.3.0 (2026-01-23)
 
 ### Bug Fixes
