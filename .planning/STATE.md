@@ -14,7 +14,7 @@ Plan: 3 of 3 (Phase 1.2 complete)
 Status: Phase complete
 Last activity: 2026-01-23 — Completed 01.2-03-PLAN.md (cleanup and verification)
 
-Progress: [███░░░░░░░] 33% (Phase 0 + Phase 1 + Phase 1.2 complete, Phase 0.1 skipped, Phase 1.1 pending)
+Progress: [███░░░░░░░] 33% (Phase 0 + Phase 1 + Phase 1.2 complete, Phase 1.1 pending)
 
 ## Performance Metrics
 
@@ -41,7 +41,6 @@ Progress: [███░░░░░░░] 33% (Phase 0 + Phase 1 + Phase 1.2 co
 ### Roadmap Evolution
 
 - Phase 0 added retroactively: GSD Pattern Analysis (completed via Quick 001)
-- Phase 0.1 inserted after Phase 0: Integrate GSD Patterns (URGENT) - reflect Quick 001 findings into planning docs before Phase 1
 - Phase 1.1 inserted after Phase 1: Allow Flexible Token Budget (URGENT) - handle token budget flexibility discovered after Phase 1 completion
 - Phase 1.2 inserted after Phase 1: Audit and fix template coherence for single-agent sessions (URGENT) - user found confusion when reading templates, must fix before Phase 2 uses them
 

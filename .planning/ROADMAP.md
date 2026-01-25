@@ -13,7 +13,6 @@ Build a knowledge base of vendor-agnostic patterns for using AI copilots in data
 Decimal phases appear between their surrounding integers in numeric order.
 
 - [x] **Phase 0: GSD Pattern Analysis** - Reference setup (completed via Quick 001)
-- [ ] **Phase 0.1: Integrate GSD Patterns** - Reflect Quick 001 findings into planning docs (INSERTED)
 - [x] **Phase 1: Foundation & Templates** - File-based protocol and template structure
 - [ ] **Phase 1.1: Allow Flexible Token Budget** - Handle token budget flexibility (INSERTED)
 - [ ] **Phase 1.2: Audit and Fix Template Coherence** - Fix template coherence for single-agent sessions (INSERTED)
@@ -37,21 +36,6 @@ Decimal phases appear between their surrounding integers in numeric order.
 - Made key decisions: XML structure, conservative token budgets (20/40/50%), checkpoint thinking
 
 **Reference:** [Quick Task 001](.planning/quick/001-duplicate-claude-to-gsd-reference-and-su/)
-
-### Phase 0.1: Integrate GSD Patterns (INSERTED)
-**Goal**: Reflect Quick 001 findings into planning docs - ensure decisions and patterns are properly integrated before Phase 1 execution
-**Depends on**: Phase 0
-**Requirements**: None (integration work)
-**Success Criteria** (what must be TRUE):
-  1. Key decisions from GSD_PATTERNS.md reflected in PROJECT.md Key Decisions table
-  2. Phase 1-4 details updated with GSD pattern applications from integration roadmap
-  3. REQUIREMENTS.md updated if GSD patterns suggest new requirements
-  4. Directory structure decisions (`.project/sessions/`) documented
-
-**Plans:** 1 plan
-
-Plans:
-- [ ] 00.1-01-PLAN.md — Integrate GSD pattern findings into PROJECT.md, ROADMAP.md, and REQUIREMENTS.md
 
 ### Phase 1: Foundation & Templates
 **Goal**: Establish file-based protocol and heavily-commented template approach that works across all agent types
@@ -145,12 +129,11 @@ Plans:
 ## Progress
 
 **Execution Order:**
-Phases execute in numeric order: 0 → 0.1 → 1 → 1.1 → 1.2 → 2 → 3 → 4
+Phases execute in numeric order: 0 → 1 → 1.1 → 1.2 → 2 → 3 → 4
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 0. GSD Pattern Analysis | N/A | Completed (Quick 001) | 2026-01-20 |
-| 0.1. Integrate GSD Patterns (INSERTED) | 0/1 | Not started | - |
 | 1. Foundation & Templates | 4/4 | Completed | 2026-01-22 |
 | 1.1. Allow Flexible Token Budget (INSERTED) | 0/TBD | Not started | - |
 | 1.2. Audit and Fix Template Coherence (INSERTED) | 3/3 | Completed | 2026-01-23 |
