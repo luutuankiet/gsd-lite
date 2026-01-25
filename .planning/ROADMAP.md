@@ -18,7 +18,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 1.2: Audit and Fix Template Coherence** - Fix template coherence for single-agent sessions (INSERTED)
 - [x] **Phase 1.3: Context Lifecycle, Coaching Model & Workflow Decomposition** - User-controlled context, coaching philosophy, per-workflow files (INSERTED)
 - [ ] **Phase 1.4: Enrich Checkpoint Workflow** - Enrich checkpoint workflow (INSERTED)
-- [ ] **Phase 1.5: Evaluation Framework for GSD-lite** - Simulated repo + prompts + reference responses + eval notes for iterative QC (INSERTED)
+- [x] **Phase 1.5: Evaluation Framework for GSD-lite** - Simulated repo + prompts + reference responses + eval notes for iterative QC (INSERTED)
 - [ ] **Phase 2: Session Handoff System** - Eliminate context reconstruction between sessions
 - [ ] **Phase 3: Context Engineering Patterns** - Token budget management and context optimization
 - [ ] **Phase 4: Educational Integration & Validation** - Teach through templates and validate on real work
