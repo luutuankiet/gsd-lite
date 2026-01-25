@@ -5,7 +5,7 @@
 See: .planning/PROJECT.md (updated 2026-01-19)
 
 **Core value:** Maintain ownership of the reasoning process - you stay the author who can explain the "why" behind every decision, not a passenger consuming agent output.
-**Current focus:** Phase 1 - Foundation & Templates
+**Current focus:** Phase 1.1 - Allow Flexible Token Budget (next) or Phase 2 - Session Handoff System
 
 ## Current Position
 
@@ -14,7 +14,7 @@ Plan: 5 of 5 (Phase 1.3 complete)
 Status: Phase complete
 Last activity: 2026-01-25 — Completed 01.3-05-PLAN.md (workflow verification & fixes)
 
-Progress: [███░░░░░░░] 33% (Phase 0 + Phase 1 + Phase 1.2 complete, Phase 1.1 pending, Phase 1.3 in progress)
+Progress: [████░░░░░░] 40% (Phase 0 + Phase 1 + Phase 1.2 + Phase 1.3 complete, Phase 1.1 pending)
 
 ## Performance Metrics
 
