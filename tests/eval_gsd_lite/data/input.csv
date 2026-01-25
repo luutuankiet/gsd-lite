@@ -1,0 +1,5 @@
+id,date,description,amount,category
+1,2026-01-01,Server Cost,$1200.50,Infrastructure
+2,2026-01-02,Consulting,-$500.00,Income
+3,2026-01-03,Software Lic,$99.99,Tools
+4,2026-01-04,Coffee,$4.50,Misc

@@ -18,7 +18,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 1.2: Audit and Fix Template Coherence** - Fix template coherence for single-agent sessions (INSERTED)
 - [x] **Phase 1.3: Context Lifecycle, Coaching Model & Workflow Decomposition** - User-controlled context, coaching philosophy, per-workflow files (INSERTED)
 - [ ] **Phase 1.4: Enrich Checkpoint Workflow** - Enrich checkpoint workflow (INSERTED)
-- [ ] **Phase 1.5: Evaluation Framework for GSD-lite** - Simulated repo + prompts + reference responses + eval notes for iterative QC (INSERTED)
+- [x] **Phase 1.5: Evaluation Framework for GSD-lite** - Simulated repo + prompts + reference responses + eval notes for iterative QC (INSERTED)
 - [ ] **Phase 2: Session Handoff System** - Eliminate context reconstruction between sessions
 - [ ] **Phase 3: Context Engineering Patterns** - Token budget management and context optimization
 - [ ] **Phase 4: Educational Integration & Validation** - Teach through templates and validate on real work
@@ -148,10 +148,11 @@ Plans:
   4. Eval notes framework enables tracking failure modes and iteration insights
   5. User can iterate on GSD-lite templates and measure improvement
 
-**Plans:** 0 plans
+**Plans:** 2 plans
 
 Plans:
-- [ ] TBD (run /gsd:plan-phase 1.5 to break down)
+- [x] 01.5-01-PLAN.md — Simulation Sandbox Setup
+- [x] 01.5-02-PLAN.md — Evaluation Protocol & Tools
 
 ### Phase 2: Session Handoff System
 **Goal**: Create ephemeral working memory system that exports to GTD and eliminates 15-30 min context reconstruction
@@ -207,11 +208,9 @@ Phases execute in numeric order: 0 → 1 → 1.1 → 1.2 → 1.3 → 1.4 → 1.5
 | 1.2. Audit and Fix Template Coherence (INSERTED) | 3/3 | Completed | 2026-01-23 |
 | 1.3. Context Lifecycle & Workflow Decomposition (INSERTED) | 5/5 | Completed | 2026-01-25 |
 | 1.4. Enrich Checkpoint Workflow (INSERTED) | 2/2 | Completed | 2026-01-25 |
-| 1.5. Evaluation Framework for GSD-lite (INSERTED) | 0/TBD | Not started | - |
+| 1.5. Evaluation Framework for GSD-lite (INSERTED) | 2/2 | Completed | 2026-01-26 |
 | 2. Session Handoff System | 0/TBD | Not started | - |
-| 3. Context Engineering Patterns | 0/TBD | Not started | - |
-| 4. Educational Integration & Validation | 0/TBD | Not started | - |
 
 ---
 *Roadmap created: 2026-01-19*
-*Last updated: 2026-01-25 (Phase 1.5 inserted - evaluation framework for GSD-lite)*
+*Last updated: 2026-01-26 (Completed 01.5-02 - Phase 1.5 complete)*
