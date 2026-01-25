@@ -2,6 +2,30 @@
 
 <!-- version list -->
 
+## v1.3.4 (2026-01-24)
+
+### Bug Fixes
+
+- Folder naming bump to gsd-lite
+  ([`948ef68`](https://github.com/luutuankiet/gsd-lite/commit/948ef68093f4c3bcc6f8a16e7c6d2841a2f467f7))
+
+
+## v1.3.3 (2026-01-24)
+
+### Bug Fixes
+
+- Add relpath to not confuse agent
+  ([`d538479`](https://github.com/luutuankiet/gsd-lite/commit/d53847954c7e4fd78f9ef6cbf9c3ca8edbf1cebc))
+
+
+## v1.3.2 (2026-01-24)
+
+### Bug Fixes
+
+- Also scaffold templates dir into state if not exist
+  ([`1b267d3`](https://github.com/luutuankiet/gsd-lite/commit/1b267d3bbbbf7d1f226d5ea4f45f0b8458bf0fba))
+
+
 ## v1.3.1 (2026-01-24)
 
 ### Bug Fixes
