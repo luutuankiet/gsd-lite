@@ -154,6 +154,23 @@ Plans:
 - [x] 01.5-01-PLAN.md — Simulation Sandbox Setup
 - [x] 01.5-02-PLAN.md — Evaluation Protocol & Tools
 
+### Phase 1.6: Fix Agent Overriding Examples in Scaffolded File (INSERTED)
+**Goal**: Fix agent overriding examples in scaffolded file - urgent work discovered after Phase 1.5 completion
+**Depends on**: Phase 1.5
+**Requirements**: None (prompt engineering enhancement)
+**Success Criteria** (what must be TRUE):
+  1. Agents check file existence before initializing artifacts
+  2. Agents read and adopt existing files instead of overwriting
+  3. Protocol explicitly forbids overwriting existing artifacts
+
+**Plans:** 1 plan
+
+Plans:
+- [ ] 01.6-01-PLAN.md — Update Templates with Safety Protocol
+
+**Details:**
+- Note: commands are under ~/.config/opencode
+
 ### Phase 2: Session Handoff System
 **Goal**: Create ephemeral working memory system that exports to GTD and eliminates 15-30 min context reconstruction
 **Depends on**: Phase 1
@@ -198,7 +215,7 @@ Plans:
 ## Progress
 
 **Execution Order:**
-Phases execute in numeric order: 0 → 1 → 1.1 → 1.2 → 1.3 → 1.4 → 1.5 → 2 → 3 → 4
+Phases execute in numeric order: 0 → 1 → 1.1 → 1.2 → 1.3 → 1.4 → 1.5 → 1.6 → 2 → 3 → 4
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
@@ -209,6 +226,7 @@ Phases execute in numeric order: 0 → 1 → 1.1 → 1.2 → 1.3 → 1.4 → 1.5
 | 1.3. Context Lifecycle & Workflow Decomposition (INSERTED) | 5/5 | Completed | 2026-01-25 |
 | 1.4. Enrich Checkpoint Workflow (INSERTED) | 2/2 | Completed | 2026-01-25 |
 | 1.5. Evaluation Framework for GSD-lite (INSERTED) | 2/2 | Completed | 2026-01-26 |
+| 1.6. Fix Agent Overriding Examples in Scaffolded File (INSERTED) | 0/TBD | Not started | - |
 | 2. Session Handoff System | 0/TBD | Not started | - |
 
 ---
