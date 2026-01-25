@@ -9,19 +9,19 @@ See: .planning/PROJECT.md (updated 2026-01-19)
 
 ## Current Position
 
-Phase: 1.2 of 6 (Audit and Fix Template Coherence for Single-Agent Sessions)
-Plan: 3 of 3 (Phase 1.2 complete)
-Status: Phase complete
-Last activity: 2026-01-23 — Completed 01.2-03-PLAN.md (cleanup and verification)
+Phase: 1.3 of 6 (Context Lifecycle, Coaching Model & Workflow Decomposition)
+Plan: 1 of 5 (Plan 01.3-01 complete)
+Status: In progress
+Last activity: 2026-01-25 — Completed 01.3-01-PLAN.md (planning mode workflow extraction)
 
-Progress: [███░░░░░░░] 33% (Phase 0 + Phase 1 + Phase 1.2 complete, Phase 1.1 pending)
+Progress: [███░░░░░░░] 33% (Phase 0 + Phase 1 + Phase 1.2 complete, Phase 1.1 pending, Phase 1.3 in progress)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 7
+- Total plans completed: 8
 - Average duration: 4.0 min
-- Total execution time: 0.47 hours
+- Total execution time: 0.52 hours
 
 **By Phase:**
 
@@ -29,9 +29,10 @@ Progress: [███░░░░░░░] 33% (Phase 0 + Phase 1 + Phase 1.2 co
 |-------|-------|-------|----------|
 | 1. Foundation & Templates | 4 | 22 min | 5.5 min |
 | 1.2 Audit & Fix Template Coherence | 3 | 7 min | 2.3 min |
+| 1.3 Context Lifecycle & Workflow Decomposition | 1 | 4 min | 4.0 min |
 
 **Recent Trend:**
-- Last 5 plans: 01-04 (4 min), 01.2-02 (2 min), 01.2-01 (2 min), 01.2-03 (3 min)
+- Last 5 plans: 01.2-02 (2 min), 01.2-01 (2 min), 01.2-03 (3 min), 01.3-01 (4 min)
 - Trend: Excellent velocity (2-4 min per plan, averaging 4.0 min)
 
 *Updated after each plan completion*
@@ -43,6 +44,7 @@ Progress: [███░░░░░░░] 33% (Phase 0 + Phase 1 + Phase 1.2 co
 - Phase 0 added retroactively: GSD Pattern Analysis (completed via Quick 001)
 - Phase 1.1 inserted after Phase 1: Allow Flexible Token Budget (URGENT) - handle token budget flexibility discovered after Phase 1 completion
 - Phase 1.2 inserted after Phase 1: Audit and fix template coherence for single-agent sessions (URGENT) - user found confusion when reading templates, must fix before Phase 2 uses them
+- Phase 1.3 inserted after Phase 1.2: Context Lifecycle, Coaching Model & Workflow Decomposition (URGENT) - eval findings revealed context rot as core problem, need to document coaching philosophy and decompose protocol into per-workflow files
 
 ### Decisions
 
@@ -83,6 +85,10 @@ Recent decisions affecting current work:
 - User-controlled phase completion (01.2-03): Agent signals readiness, user decides when to promote (prevents premature WORK.md trimming)
 - Artifact update timing (01.2-03): STATE.md and WORK.md updated after EVERY turn (not occasionally)
 - Sticky note checkpoint banners (01.2-03): 6 informational checkpoint types with distinct emojis, plus action menu
+- Workflow file size target (01.3-01): 200-300 lines per workflow to prevent cognitive overload
+- Sticky note protocol identity (01.3-01): Identical sticky note section across all workflows for universal orientation
+- Coaching philosophy repetition (01.3-01): Repeat in each workflow, not just master PROTOCOL.md
+- Removed gsd-lite from .gitignore (01.3-01): Enable version control of workflow files
 
 ### Pending Todos
 
@@ -101,10 +107,10 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-01-23
-Stopped at: Completed 01.2-03-PLAN.md (cleanup and verification - Phase 1.2 complete)
+Last session: 2026-01-25
+Stopped at: Completed 01.3-01-PLAN.md (planning mode workflow extraction)
 Resume file: None
 
 ---
 *State initialized: 2026-01-19*
-*Last updated: 2026-01-23 (Completed 01.2-03)*
+*Last updated: 2026-01-25 (Inserted Phase 1.3)*
