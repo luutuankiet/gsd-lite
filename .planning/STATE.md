@@ -5,23 +5,23 @@
 See: .planning/PROJECT.md (updated 2026-01-19)
 
 **Core value:** Maintain ownership of the reasoning process - you stay the author who can explain the "why" behind every decision, not a passenger consuming agent output.
-**Current focus:** Phase 1 - Foundation & Templates
+**Current focus:** Phase 1.1 - Allow Flexible Token Budget (next) or Phase 2 - Session Handoff System
 
 ## Current Position
 
-Phase: 1.2 of 6 (Audit and Fix Template Coherence for Single-Agent Sessions)
-Plan: 3 of 3 (Phase 1.2 complete)
+Phase: 1.3 of 6 (Context Lifecycle, Coaching Model & Workflow Decomposition)
+Plan: 5 of 5 (Phase 1.3 complete)
 Status: Phase complete
-Last activity: 2026-01-23 — Completed 01.2-03-PLAN.md (cleanup and verification)
+Last activity: 2026-01-25 — Completed 01.3-05-PLAN.md (workflow verification & fixes)
 
-Progress: [███░░░░░░░] 33% (Phase 0 + Phase 1 + Phase 1.2 complete, Phase 0.1 skipped, Phase 1.1 pending)
+Progress: [████░░░░░░] 40% (Phase 0 + Phase 1 + Phase 1.2 + Phase 1.3 complete, Phase 1.1 pending)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 7
-- Average duration: 4.0 min
-- Total execution time: 0.47 hours
+- Total plans completed: 12
+- Average duration: 3.6 min
+- Total execution time: 0.72 hours
 
 **By Phase:**
 
@@ -29,10 +29,11 @@ Progress: [███░░░░░░░] 33% (Phase 0 + Phase 1 + Phase 1.2 co
 |-------|-------|-------|----------|
 | 1. Foundation & Templates | 4 | 22 min | 5.5 min |
 | 1.2 Audit & Fix Template Coherence | 3 | 7 min | 2.3 min |
+| 1.3 Context Lifecycle & Workflow Decomposition | 5 | 17.5 min | 3.5 min |
 
 **Recent Trend:**
-- Last 5 plans: 01-04 (4 min), 01.2-02 (2 min), 01.2-01 (2 min), 01.2-03 (3 min)
-- Trend: Excellent velocity (2-4 min per plan, averaging 4.0 min)
+- Last 5 plans: 01.3-02 (4 min), 01.3-03 (2.5 min), 01.3-04 (3 min), 01.3-05 (4 min)
+- Trend: Excellent velocity (2.5-4 min per plan, averaging 3.4 min)
 
 *Updated after each plan completion*
 
@@ -41,9 +42,9 @@ Progress: [███░░░░░░░] 33% (Phase 0 + Phase 1 + Phase 1.2 co
 ### Roadmap Evolution
 
 - Phase 0 added retroactively: GSD Pattern Analysis (completed via Quick 001)
-- Phase 0.1 inserted after Phase 0: Integrate GSD Patterns (URGENT) - reflect Quick 001 findings into planning docs before Phase 1
 - Phase 1.1 inserted after Phase 1: Allow Flexible Token Budget (URGENT) - handle token budget flexibility discovered after Phase 1 completion
 - Phase 1.2 inserted after Phase 1: Audit and fix template coherence for single-agent sessions (URGENT) - user found confusion when reading templates, must fix before Phase 2 uses them
+- Phase 1.3 inserted after Phase 1.2: Context Lifecycle, Coaching Model & Workflow Decomposition (URGENT) - eval findings revealed context rot as core problem, need to document coaching philosophy and decompose protocol into per-workflow files
 
 ### Decisions
 
@@ -84,10 +85,27 @@ Recent decisions affecting current work:
 - User-controlled phase completion (01.2-03): Agent signals readiness, user decides when to promote (prevents premature WORK.md trimming)
 - Artifact update timing (01.2-03): STATE.md and WORK.md updated after EVERY turn (not occasionally)
 - Sticky note checkpoint banners (01.2-03): 6 informational checkpoint types with distinct emojis, plus action menu
+- Workflow file size target (01.3-01): 200-300 lines per workflow to prevent cognitive overload
+- Sticky note protocol identity (01.3-01): Identical sticky note section across all workflows for universal orientation
+- Coaching philosophy repetition (01.3-01): Repeat in each workflow, not just master PROTOCOL.md
+- Removed gsd-lite from .gitignore (01.3-01): Enable version control of workflow files
+- Context lifecycle pattern (01.3-02): Checkpoint -> clear -> resume for multi-session work spanning days/weeks
+- User-controlled completion rationale (01.3-02): Agent signals readiness, user decides when to promote (prevents premature WORK.md trimming which loses PR material)
+- Documentation-only routing (01.3-03): Agent reads STATE.md mode field, manually loads appropriate workflow (no programmatic automation)
+- Mode field in STATE.md (01.3-03): Explicit tracking enables unambiguous workflow selection
+- Coaching governance framework (01.3-04): Decision type table (Vision/Outcome = User, Technical detail = Agent, Architectural change = User decision)
+- Dual-lens analysis pattern (01.3-04): Eval failures viewed as both coaching violations (agent behavior) and architectural gaps (protocol structure)
+- Evidence-based gap identification (01.3-04): Protocol improvements grounded in specific eval turn references, not theoretical concerns
+- GSD-lite architectural identity (01.3-04): NOT simplified GSD, fundamentally different architecture for different constraints (single-agent, manual context lifecycle, chat app target)
+- Checkpoint-promotion separation (01.3-05): Checkpoint preserves WORK.md for cross-session work, promotion trims after extraction to external artifacts
+- Vision reflection playback (01.3-05): Agent reflects understanding back to user with concrete examples before proceeding (per questioning.md)
+- PyPI template distribution (01.3-05): Workflow files distributed via src/gsd_lite/template/ per __main__.py distribution route
 
 ### Pending Todos
 
-None yet.
+1. **Update README.md for human developer orientation** - Create central place to understand gsd-lite design, philosophy, why ultra-slim context, distinction from OG GSD (no central PROJECT/ROADMAP). README should orient new users to the system.
+
+2. **Create evaluation scenario for testing gsd-lite iterations** - Build test scenario to validate gsd-lite behavior across iterations, ensuring coaching model and context lifecycle work as designed.
 
 ### Blockers/Concerns
 
@@ -102,10 +120,10 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-01-23
-Stopped at: Completed 01.2-03-PLAN.md (cleanup and verification - Phase 1.2 complete)
+Last session: 2026-01-25
+Stopped at: Completed 01.3-05-PLAN.md (workflow verification & fixes) - Phase 1.3 complete
 Resume file: None
 
 ---
 *State initialized: 2026-01-19*
-*Last updated: 2026-01-23 (Completed 01.2-03)*
+*Last updated: 2026-01-25 (Inserted Phase 1.3)*

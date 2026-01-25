@@ -6,6 +6,18 @@ Read this at session start to understand current position.
 Update after EVERY turn (agent response).
 -->
 
+## Current Mode
+
+<!--
+Mode determines which workflow to load from PROTOCOL.md router.
+Transitions: none → planning → moodboard-complete → execution → checkpoint → promotion
+-->
+
+**Mode:** none
+**Workflow:** moodboard.md
+
+---
+
 ## Active Phase
 
 **Phase:** PHASE-NNN - [Name]
