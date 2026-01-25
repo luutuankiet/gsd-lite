@@ -191,22 +191,9 @@ This creates an audit trail of scope evolution.
 
 ---
 
-## Sticky Reminder
+## Sticky Note Protocol
 
-**At the end of EVERY turn**, include this status block with systematic IDs **without exception**.
-
-### Progress Indicators
-
-Progress indicators appear at the bottom of sticky note block:
-
-```
-
----
-📊 PROGRESS: PHASE-001 [██████░░░░] 60% (3/5 tasks complete)
----
-```
-
-This checkpoint system ensures both agent and user maintain shared understanding of current state with systematic IDs for quick lookup.
+**At the end of EVERY turn**, include this status block **without exception**.
 
 ### Required Format
 
@@ -225,14 +212,14 @@ AVAILABLE ACTIONS:
 [Contextual actions if applicable]
 
 NEXT: [What agent expects from user]
-SELF-CHECK : agent has completed the following action
+SELF-CHECK: agent has completed the following action
 - [ ] STATE.md update
 - [ ] WORK.md update
 - [ ] INBOX.md update
 - [ ] HISTORY.md update
 
 ---
-📊 PROGRESS: n/a Phase not started
+📊 PROGRESS: PHASE-NNN [██████░░░░] 60% (3/5 tasks complete)
 ---
 ```
 
@@ -268,7 +255,7 @@ AVAILABLE ACTIONS:
 Scope actions: /add-task | /remove-task | /adjust-scope
 
 NEXT: Type "yes" to approve scope or describe adjustments
-SELF-CHECK : agent has completed the following action
+SELF-CHECK: agent has completed the following action
 - [x] STATE.md update (PHASE-001 captured)
 - [ ] WORK.md update (execution not started)
 - [ ] INBOX.md update (no loops captured)
@@ -277,8 +264,19 @@ SELF-CHECK : agent has completed the following action
 ---
 📊 PROGRESS: n/a Phase not started (awaiting scope approval)
 ---
+```
+
+### Progress Indicators
+
+Progress indicators appear at the bottom of sticky note block:
 
 ```
+---
+📊 PROGRESS: PHASE-001 [██████░░░░] 60% (3/5 tasks complete)
+---
+```
+
+This checkpoint system ensures both agent and user maintain shared understanding of current state.
 
 ---
 

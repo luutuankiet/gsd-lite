@@ -195,22 +195,9 @@ Loop until received a yes from user.
 
 ---
 
-## Sticky Reminder
+## Sticky Note Protocol
 
-**At the end of EVERY turn**, include this status block with systematic IDs **without exception**.
-
-### Progress Indicators
-
-Progress indicators appear at the bottom of sticky note block:
-
-```
-
----
-📊 PROGRESS: PHASE-001 [██████░░░░] 60% (3/5 tasks complete)
----
-```
-
-This checkpoint system ensures both agent and user maintain shared understanding of current state with systematic IDs for quick lookup.
+**At the end of EVERY turn**, include this status block **without exception**.
 
 ### Required Format
 
@@ -229,14 +216,14 @@ AVAILABLE ACTIONS:
 [Contextual actions if applicable]
 
 NEXT: [What agent expects from user]
-SELF-CHECK : agent has completed the following action
+SELF-CHECK: agent has completed the following action
 - [ ] STATE.md update
 - [ ] WORK.md update
 - [ ] INBOX.md update
 - [ ] HISTORY.md update
 
 ---
-📊 PROGRESS: n/a Phase not started
+📊 PROGRESS: PHASE-NNN [██████░░░░] 60% (3/5 tasks complete)
 ---
 ```
 
@@ -272,7 +259,7 @@ AVAILABLE ACTIONS:
 Loop actions: /close-loop [ID] | /explore-loop [ID]
 
 NEXT: Finish login endpoint implementation
-SELF-CHECK : agent has completed the following action
+SELF-CHECK: agent has completed the following action
 - [x] STATE.md update
 - [x] WORK.md update
 - [ ] INBOX.md update (no loops found)
@@ -281,8 +268,19 @@ SELF-CHECK : agent has completed the following action
 ---
 📊 PROGRESS: PHASE-001 [██████░░░░] 60% (3/5 tasks complete)
 ---
+```
+
+### Progress Indicators
+
+Progress indicators appear at the bottom of sticky note block:
 
 ```
+---
+📊 PROGRESS: PHASE-001 [██████░░░░] 60% (3/5 tasks complete)
+---
+```
+
+This checkpoint system ensures both agent and user maintain shared understanding of current state.
 
 ---
 
