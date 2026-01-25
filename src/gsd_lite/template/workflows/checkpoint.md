@@ -155,7 +155,85 @@ Last session: 2026-01-22 (Chat A)
 | DECISION-001 | Use jose library for JWT | Industry standard, better than jsonwebtoken | 2026-01-22 |
 ```
 
-### Step 2: Preserve WORK.md
+### Step 2: Update Current Understanding in WORK.md
+
+**Update the Current Understanding section to reflect end-of-session state.**
+
+This section enables fresh agents to resume work in 30 seconds without re-reading the entire session log.
+
+**What to update:**
+
+The Current Understanding section has five XML parts. Update each to reflect current end-of-session state:
+
+1. **`<current_state>`** - Where exactly are we right now?
+   - Current phase and plan
+   - Current task with completion percentage
+   - What's happening NOW (not what happened earlier)
+   - Session progress summary
+
+2. **`<vision>`** - What does the user want?
+   - User intent, feel, success criteria
+   - Reference points mentioned (e.g., "Linear-like feel")
+   - Use concrete examples, not jargon
+
+3. **`<decisions>`** - Key decisions with rationale
+   - List major decisions made (not just WHAT but WHY)
+   - Include alternatives considered
+   - Technical choices, scope decisions, approach decisions
+
+4. **`<blockers>`** - What's preventing progress?
+   - Open questions needing user input
+   - Ambiguities or unclear requirements
+   - Dependencies or waiting states
+   - If none, say "None currently"
+
+5. **`<next_action>`** - What's the specific first action when resuming?
+   - Concrete next step (not vague "continue task")
+   - Example: "Complete login endpoint validation tests" not "Work on TASK-002"
+
+**Example Before/After:**
+
+**Before (stale Current Understanding from session start):**
+```xml
+<current_state>
+Phase 1.2: Audit & Fix Template Coherence - Plan 02 starting
+Task: TASK-001 - Update PROTOCOL.md (0% complete)
+What's happening: Beginning template audit
+</current_state>
+
+<next_action>
+Start reading PROTOCOL.md to identify coherence issues
+</next_action>
+```
+
+**After (updated at checkpoint time):**
+```xml
+<current_state>
+Phase 1.2: Audit & Fix Template Coherence - Plan 02 in progress
+Task: TASK-003 - Update STATE.md template (70% complete)
+Session 1 progress: Completed TASK-001 (PROTOCOL.md), TASK-002 (WORK.md), now on STATE.md
+What's happening: Adding systematic ID tracking table to STATE.md template
+</current_state>
+
+<next_action>
+Complete STATE.md template update by adding ID Registry table, then verify template coherence
+</next_action>
+```
+
+**Key principles:**
+
+- **Use concrete facts, not jargon** - "User wants LinkedIn-style feed" not "Per discussion on UX patterns"
+- **Avoid references to prior context** - Fresh agent has zero context; don't say "as discussed"
+- **Target 30-second readability** - Fresh agent should grasp state quickly
+- **Update at checkpoint time, not every turn** - Current Understanding can drift during session; sync at checkpoint
+
+**When NOT to update:**
+
+- Don't update mid-session for every turn
+- Don't update if session continuing immediately (no handoff needed)
+- Only update when checkpointing for fresh agent resume
+
+### Step 3: Preserve WORK.md
 
 **DO NOT trim or delete WORK.md.**
 
@@ -165,6 +243,8 @@ The verbose log is essential for:
 - Final PR description when phase completes
 
 **WORK.md stays intact** until promotion workflow.
+
+**Note:** Current Understanding section now reflects end-of-session state, ready for fresh agent resume.
 
 ### Step 3: Capture Loops
 
@@ -207,6 +287,7 @@ Next session: Read PROTOCOL.md → Execution workflow will resume TASK-002
 |--------|---------------------------|-------------------------------|
 | **Trigger** | End of session, mid-phase | Phase complete |
 | **WORK.md** | PRESERVED (not trimmed) | TRIMMED (after extraction) |
+| **Current Understanding** | Updated to end-of-session state | N/A (WORK.md deleted) |
 | **Purpose** | Continue work later | Finalize and close phase |
 | **STATE.md** | Active phase remains | Cleared for next phase |
 | **Frequency** | Multiple times per phase | Once per phase |
@@ -356,6 +437,8 @@ Agent completes TASK-002:
 3. **Forgetting sticky reminder** - End every turn with status block
 4. **Not capturing loops** - Add discoveries/questions to INBOX.md
 5. **Confusing checkpoint with promotion** - Different workflows, different purposes
+6. **Current Understanding drift** - Update at checkpoint time, not mid-session. Fresh agent expects current state, not historical state
+7. **Jargon in Current Understanding** - Use concrete facts ("User wants LinkedIn-style feed") not references ("as discussed"). Fresh agent has zero prior context
 
 ---
 
