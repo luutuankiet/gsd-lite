@@ -41,35 +41,37 @@ Structure:
 - next_action: Specific first action when resuming this session
 
 Use concrete facts, not jargon. Avoid "as discussed" or "per original vision" - fresh agent has zero context.
+
+IMPORTANT: Below are EXAMPLE entries showing format - replace with your actual session content.
 -->
 
 <current_state>
-Phase 1.2: Audit & Fix Template Coherence - Plan 02 in progress
-Task: TASK-003 - Update STATE.md template (70% complete)
-Session 1 progress: Completed TASK-001 (PROTOCOL.md), TASK-002 (WORK.md), now on STATE.md
-What's happening: Adding systematic ID tracking table to STATE.md template
+Example: Phase 1.2: Audit & Fix Template Coherence - Plan 02 in progress
+Example: Task: TASK-003 - Update STATE.md template (70% complete)
+Example: Session 1 progress: Completed TASK-001 (PROTOCOL.md), TASK-002 (WORK.md), now on STATE.md
+Example: What's happening: Adding systematic ID tracking table to STATE.md template
 </current_state>
 
 <vision>
-Templates must be readable by single agent without cross-file navigation.
-Each template should be self-contained with inline guidance for proper usage.
-Fresh agents resuming work should understand context in 30 seconds without re-reading entire log.
+Example: Templates must be readable by single agent without cross-file navigation.
+Example: Each template should be self-contained with inline guidance for proper usage.
+Example: Fresh agents resuming work should understand context in 30 seconds without re-reading entire log.
 </vision>
 
 <decisions>
-- Use systematic ID format (TYPE-NNN) for global unique references across all artifacts
-- STATE.md depth level: moderate with Key Decisions table (enables weak agent resume)
-- WORK.md is ephemeral: deleted after promotion, not archived
-- Current Understanding section positioned at top of WORK.md before chronological log
-- Type-tagged entries enable non-linear access via grep
+Example: Use systematic ID format (TYPE-NNN) for global unique references across all artifacts
+Example: STATE.md depth level: moderate with Key Decisions table (enables weak agent resume)
+Example: WORK.md is ephemeral: deleted after promotion, not archived
+Example: Current Understanding section positioned at top of WORK.md before chronological log
+Example: Type-tagged entries enable non-linear access via grep
 </decisions>
 
 <blockers>
-None currently. Proceeding with STATE.md template update.
+Example: None currently. Proceeding with STATE.md template update.
 </blockers>
 
 <next_action>
-Complete STATE.md template update by adding ID Registry table, then verify template coherence.
+Example: Complete STATE.md template update by adding ID Registry table, then verify template coherence.
 </next_action>
 
 ---
@@ -94,48 +96,50 @@ Entry format (3-8 lines maximum):
 
 Use action timestamp (when decision made or action taken), not entry-write time.
 If >10 lines, break into multiple entries.
+
+IMPORTANT: Below are EXAMPLE entries showing format - replace with your actual session log content.
 -->
 
-**[2026-01-22 14:00]** - [VISION] User wants Linear-like feel + Bloomberg density for power users
-- Context: Discussed UI patterns during moodboard session
-- Reference: Clean layout (Linear) but with information density (Bloomberg terminal)
-- Implication: Interface should not patronize advanced users with excessive whitespace
+**[2026-01-22 14:00]** - [VISION] Example: User wants Linear-like feel + Bloomberg density for power users
+- Example: Context: Discussed UI patterns during moodboard session
+- Example: Reference: Clean layout (Linear) but with information density (Bloomberg terminal)
+- Example: Implication: Interface should not patronize advanced users with excessive whitespace
 
-**[2026-01-22 14:15]** - [DECISION] Use card-based layout, not timeline view
-- Rationale: Cards support varying content length (post + engagement + metadata); timeline more rigid
-- Alternative considered: Timeline view (simpler implementation, less flexible for content types)
-- Impact: Unblocks whiteboard presentation to user; affects TASK-003 (card styling component)
+**[2026-01-22 14:15]** - [DECISION] Example: Use card-based layout, not timeline view
+- Example: Rationale: Cards support varying content length (post + engagement + metadata); timeline more rigid
+- Example: Alternative considered: Timeline view (simpler implementation, less flexible for content types)
+- Example: Impact: Unblocks whiteboard presentation to user; affects TASK-003 (card styling component)
 
-**[2026-01-22 14:30]** - [PLAN] Broke phase into 3 tasks: library setup, login endpoint, token validation
-- TASK-001: Set up JWT library (jose v0.5.0)
-- TASK-002: Create login endpoint with password hashing
-- TASK-003: Add token validation middleware
-- Risk: Token expiry strategy TBD (may need user decision)
+**[2026-01-22 14:30]** - [PLAN] Example: Broke phase into 3 tasks: library setup, login endpoint, token validation
+- Example: TASK-001: Set up JWT library (jose v0.5.0)
+- Example: TASK-002: Create login endpoint with password hashing
+- Example: TASK-003: Add token validation middleware
+- Example: Risk: Token expiry strategy TBD (may need user decision)
 
-**[2026-01-22 15:00]** - [EXEC] TASK-001: Installed jose library and created token generation
-- Result: Created src/auth/token.ts with generateToken function
-- Files modified: src/auth/token.ts, src/auth/token.test.ts, package.json
-- Status: TASK-001 complete, proceeding to TASK-002
+**[2026-01-22 15:00]** - [EXEC] Example: TASK-001: Installed jose library and created token generation
+- Example: Result: Created src/auth/token.ts with generateToken function
+- Example: Files modified: src/auth/token.ts, src/auth/token.test.ts, package.json
+- Example: Status: TASK-001 complete, proceeding to TASK-002
 
-**[2026-01-22 15:30]** - [EXEC] TASK-002: Created login endpoint with bcrypt hashing
-- Result: POST /api/auth/login accepts email/password, returns JWT
-- Files modified: src/api/auth/login.ts, src/api/auth/login.test.ts
-- Status: TASK-002 in progress (endpoint created, validation pending)
+**[2026-01-22 15:30]** - [EXEC] Example: TASK-002: Created login endpoint with bcrypt hashing
+- Example: Result: POST /api/auth/login accepts email/password, returns JWT
+- Example: Files modified: src/api/auth/login.ts, src/api/auth/login.test.ts
+- Example: Status: TASK-002 in progress (endpoint created, validation pending)
 
-**[2026-01-22 16:00]** - [BLOCKER] Password reset flow unclear - same JWT or separate token?
-- Issue: Security model for password reset not specified
-- Waiting on: User decision on whether to use main JWT or separate reset token
-- Impact: Blocks TASK-002 completion until clarified
+**[2026-01-22 16:00]** - [BLOCKER] Example: Password reset flow unclear - same JWT or separate token?
+- Example: Issue: Security model for password reset not specified
+- Example: Waiting on: User decision on whether to use main JWT or separate reset token
+- Example: Impact: Blocks TASK-002 completion until clarified
 
-**[2026-01-22 16:15]** - [DECISION] Use separate reset token, not main JWT (user decision)
-- Rationale: Separate token provides better security isolation
-- User preference: Don't reuse auth token for password reset
-- Impact: Unblocks TASK-002; need to add reset token generation to auth module
+**[2026-01-22 16:15]** - [DECISION] Example: Use separate reset token, not main JWT (user decision)
+- Example: Rationale: Separate token provides better security isolation
+- Example: User preference: Don't reuse auth token for password reset
+- Example: Impact: Unblocks TASK-002; need to add reset token generation to auth module
 
-**[2026-01-22 16:45]** - [EXEC] TASK-002: Added password reset token generation
-- Result: generateResetToken() function with 1-hour expiry
-- Files modified: src/auth/token.ts, src/api/auth/reset.ts
-- Status: TASK-002 complete
+**[2026-01-22 16:45]** - [EXEC] Example: TASK-002: Added password reset token generation
+- Example: Result: generateResetToken() function with 1-hour expiry
+- Example: Files modified: src/auth/token.ts, src/api/auth/reset.ts
+- Example: Status: TASK-002 complete
 
 ---
 
