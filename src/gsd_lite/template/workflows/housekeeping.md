@@ -3,7 +3,7 @@
 [SYSTEM: HOUSEKEEPING MODE - WORK.md Maintenance]
 
 ## Initialization Check
-Check if `WORK.md`, `STATE.md`, and `HISTORY.md` exist. If yes, READ THEM. Do NOT overwrite.
+Check if `WORK.md` and `HISTORY.md` exist. If yes, READ THEM. Do NOT overwrite.
 
 ## Entry Conditions
 
@@ -231,7 +231,6 @@ AVAILABLE ACTIONS:
 
 NEXT: [What agent expects from user]
 SELF-CHECK: agent has completed the following action
-- [ ] STATE.md update
 - [ ] WORK.md update
 - [ ] INBOX.md update
 - [ ] HISTORY.md update

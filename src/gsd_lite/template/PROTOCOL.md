@@ -4,7 +4,7 @@
 
 ## 🛡️ Safety Protocol (CRITICAL)
 **NEVER overwrite existing artifacts with templates.**
-Before writing to `STATE.md`, `WORK.md`, or `INBOX.md`:
+Before writing to `WORK.md` or `INBOX.md`:
 1. **Check existence:** run `ls gsd-lite/` (or check directory listing)
 2. **Read first:** If file exists, `read` it to understand current state.
 3. **Append/Update:** Only add new information or update specific fields.
@@ -34,20 +34,12 @@ If WORK.md doesn't exist or has no active phase, load moodboard.md.
 
 ### Secondary Routing (User-Initiated Workflows)
 
-These workflows are triggered by explicit user requests, not by STATE.md mode:
+These workflows are triggered by explicit user requests:
 
 | User Signal | Workflow | When to Use |
 |-------------|----------|-------------|
-| "revisit" or "let me rethink this" | revisit.md | User wants to reconsider plan after whiteboard approval |
 | "checkpoint" or "pause" | checkpoint.md | End session mid-phase, preserve for later resume |
 | "write PR" or "clean up WORK.md" | housekeeping.md | Extract PR description or archive completed tasks |
-
-**Revisit workflow:**
-- Triggered when user says "revisit" or "let me rethink this"
-- Only valid when MODE = whiteboard-complete (plan exists but execution hasn't started)
-- Enables user to reconsider implementation approach without restarting discovery
-- After revisit completes, returns to whiteboard-complete mode
-- See revisit.md for full protocol
 
 **Checkpoint workflow:**
 - Triggered when user requests "checkpoint" or "pause", or agent suggests checkpoint
@@ -140,12 +132,9 @@ Read first 50 lines of WORK.md — Current Understanding is always at top.
 | File | Purpose | Write Target |
 |------|---------|--------------|
 | PROTOCOL.md | Router (this file) | Never (immutable) |
-| STATE.md | **DEPRECATED** (merged into WORK.md) | ~~gsd-lite/STATE.md~~ |
 | WORK.md | Session state + execution log | gsd-lite/WORK.md |
 | INBOX.md | Loop capture | gsd-lite/INBOX.md |
 | HISTORY.md | Completed tasks/phases | gsd-lite/HISTORY.md |
-
-**Note:** STATE.md is deprecated. State tracking now in WORK.md Current Understanding section.
 
 ## Systematic ID Format
 

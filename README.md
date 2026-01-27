@@ -218,7 +218,7 @@ graph TD
     Housekeeping -->|Archive| History[HISTORY.md]
 ```
 
-**Workflow purposes:**
+**Current workflows:**
 - **moodboard.md** - Extract user vision through collaborative exploration (thinking partner mode)
 - **whiteboard.md** - Present plan for approval before execution
 - **execution.md** - Execute tasks with pair programming approach (propose hypotheses, challenge assumptions)
@@ -237,9 +237,9 @@ Before merging changes to templates or workflows:
    - `grep "[DECISION]"` filters by type
 
 2. **Coherence check:** After updating any file, grep for cross-references:
-   - `grep "STATE.md" src/gsd_lite/template/` - should return 0 (deprecated)
+   - `grep "STATE.md" src/gsd_lite/template/` - should return 0 (deleted)
    - `grep "ephemeral" src/gsd_lite/template/` - should return 0
-   - `grep "promotion.md" src/gsd_lite/template/` - should return 0
+   - `grep "promotion.md\|revisit.md" src/gsd_lite/template/` - should return 0 (workflows deleted)
 
 3. **Eval framework:** Run scenarios in tests/eval_gsd_lite/ with different models.
 

@@ -12,7 +12,7 @@ Loops come from TWO sources:
 ## How to Use
 
 - Capture immediately when loop discovered
-- Assign next LOOP-NNN ID from STATE.md registry
+- Assign next LOOP-NNN ID (increment from last ID in this file)
 - Don't interrupt current task to address loop
 - Review at phase end for next phase planning
 - User can reference by ID: "discuss LOOP-007"

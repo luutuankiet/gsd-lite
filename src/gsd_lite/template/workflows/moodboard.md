@@ -362,7 +362,7 @@ SELF-CHECK: agent has completed the following action
 ### Example with Systematic IDs
 
 ```gsd-status
-📋 UPDATED: STATE.md (added LOOP-003), INBOX.md (captured password reset loop)
+📋 UPDATED: WORK.md (decision logged), INBOX.md (captured password reset loop)
 
 CURRENT STATE:
 - Phase: PHASE-001 (Add User Authentication) - 1/3 tasks complete
@@ -375,7 +375,6 @@ Loop actions: /close-loop [ID] | /explore-loop [ID]
 
 NEXT: Finish login endpoint implementation
 SELF-CHECK: agent has completed the following action
-- [x] STATE.md update
 - [x] WORK.md update
 - [ ] INBOX.md update (no loops found)
 - [ ] HISTORY.md update (no promote workflow triggered)

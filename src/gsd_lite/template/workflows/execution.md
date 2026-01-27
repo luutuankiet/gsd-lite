@@ -262,7 +262,7 @@ For progress updates and state changes that don't require immediate action:
 **Decision**: [What was decided]
 **Rationale**: [Why this choice]
 **Impact**: [Affected components/tasks]
-**Recorded in**: STATE.md
+**Recorded in**: WORK.md
 
 ---
 ```
@@ -399,7 +399,7 @@ This checkpoint system ensures both agent and user maintain shared understanding
 
 1. **Skipping sticky reminder** - End every turn with status block
 2. **Expanding scope mid-phase** - Defer to INBOX, stay disciplined
-3. **Keeping decisions in chat** - All decisions go to STATE.md
+3. **Keeping decisions in chat** - All decisions go to WORK.md
 4. **Ignoring loops** - Capture immediately, don't let them pile up in chat
 5. **Thin WORK.md logs** - Use Journalist Rule for key wins
 6. **Forgetting self-check** - Prevent phantom updates

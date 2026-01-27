@@ -108,12 +108,12 @@ IMPORTANT: Below are EXAMPLE entries showing format - replace with your actual i
 
 | Log ID | Type | Task | Summary |
 |--------|------|------|---------|
-| LOG-001 | VISION | MODEL-A | Linear-like + Bloomberg density for power users |
-| LOG-005 | DECISION | MODEL-A | Card-based layout over timeline view |
-| LOG-012 | DISCOVERY | MODEL-A | Found engagement pattern in reference app |
-| LOG-018 | BLOCKER | AUTH-IMPL | Password reset token expiry unclear |
-| LOG-022 | DECISION | AUTH-IMPL | Separate reset token with 1-hour expiry |
-| LOG-030 | DISCOVERY | AUTH-IMPL | bcrypt cost factor 12 optimal for performance |
+| EXAMPLE-001 | VISION | MODEL-A | Linear-like + Bloomberg density for power users |
+| EXAMPLE-005 | DECISION | MODEL-A | Card-based layout over timeline view |
+| EXAMPLE-012 | DISCOVERY | MODEL-A | Found engagement pattern in reference app |
+| EXAMPLE-018 | BLOCKER | AUTH-IMPL | Password reset token expiry unclear |
+| EXAMPLE-022 | DECISION | AUTH-IMPL | Separate reset token with 1-hour expiry |
+| EXAMPLE-030 | DISCOVERY | AUTH-IMPL | bcrypt cost factor 12 optimal for performance |
 
 ---
 
@@ -139,17 +139,17 @@ Entry format:
 Use action timestamp (when decision made or action taken), not entry-write time.
 Code snippets REQUIRED for EXEC and DISCOVERY entries (enables PR extraction).
 
-IMPORTANT: Below are EXAMPLE entries showing format - replace with your actual log content.
+IMPORTANT: Below are EXAMPLE entries showing format. Real entries should use [LOG-NNN] not [EXAMPLE-NNN].
 -->
 
-[LOG-001] - [2026-01-22 14:00] - [VISION] - Task: MODEL-A
+[EXAMPLE-001] - [2026-01-22 14:00] - [VISION] - Task: MODEL-A
 **Summary:** User wants Linear-like feel + Bloomberg density for power users
 **Details:**
 - Context: Discussed UI patterns during moodboard session
 - Reference: Clean layout (Linear) but with information density (Bloomberg terminal)
 - Implication: Interface should not patronize advanced users with excessive whitespace
 
-[LOG-002] - [2026-01-22 14:10] - [PLAN] - Task: MODEL-A
+[EXAMPLE-002] - [2026-01-22 14:10] - [PLAN] - Task: MODEL-A
 **Summary:** Broke card layout into 3 sub-tasks
 **Details:**
 - SUBTASK-001: Base card component with props interface
@@ -157,14 +157,14 @@ IMPORTANT: Below are EXAMPLE entries showing format - replace with your actual l
 - SUBTASK-003: Layout grid with responsive breakpoints
 - Risk: Responsive behavior may need user verification on mobile
 
-[LOG-003] - [2026-01-22 14:15] - [DECISION] - Task: MODEL-A
+[EXAMPLE-003] - [2026-01-22 14:15] - [DECISION] - Task: MODEL-A
 **Summary:** Use card-based layout, not timeline view
 **Details:**
 - Rationale: Cards support varying content length (post + engagement + metadata); timeline more rigid
 - Alternative considered: Timeline view (simpler implementation, less flexible for content types)
 - Impact: Unblocks component design; affects SUBTASK-001 (card props interface)
 
-[LOG-004] - [2026-01-22 14:30] - [EXEC] - Task: MODEL-A
+[EXAMPLE-004] - [2026-01-22 14:30] - [EXEC] - Task: MODEL-A
 **Summary:** Created base card component with TypeScript interface
 **Details:**
 - Files modified: src/components/Card.tsx (created), src/types/post.ts (created)
@@ -186,7 +186,7 @@ interface PostCardProps {
 ```
 - Status: SUBTASK-001 complete, proceeding to SUBTASK-002
 
-[LOG-005] - [2026-01-22 15:00] - [DISCOVERY] - Task: MODEL-A
+[EXAMPLE-005] - [2026-01-22 15:00] - [DISCOVERY] - Task: MODEL-A
 **Summary:** Found engagement pattern in Linear reference app
 **Details:**
 - Observation: Linear shows engagement inline, not in dropdown/modal
@@ -200,7 +200,7 @@ interface PostCardProps {
 ```
 - Impact: Informs SUBTASK-002 design (inline engagement, emoji + count)
 
-[LOG-006] - [2026-01-22 15:30] - [EXEC] - Task: MODEL-A
+[EXAMPLE-006] - [2026-01-22 15:30] - [EXEC] - Task: MODEL-A
 **Summary:** Implemented engagement metrics component
 **Details:**
 - Files modified: src/components/EngagementBar.tsx (created)
@@ -218,7 +218,7 @@ export function EngagementBar({ likes, comments, shares }: EngagementProps) {
 ```
 - Status: SUBTASK-002 complete, proceeding to SUBTASK-003
 
-[LOG-007] - [2026-01-22 16:00] - [BLOCKER] - Task: MODEL-A
+[EXAMPLE-007] - [2026-01-22 16:00] - [BLOCKER] - Task: MODEL-A
 **Summary:** Mobile breakpoint unclear - 768px or 640px?
 **Details:**
 - Issue: User hasn't specified mobile breakpoint preference
@@ -226,14 +226,14 @@ export function EngagementBar({ likes, comments, shares }: EngagementProps) {
 - Waiting on: User decision on responsive strategy
 - Impact: Blocks SUBTASK-003 (layout grid) until clarified
 
-[LOG-008] - [2026-01-22 16:15] - [DECISION] - Task: MODEL-A
+[EXAMPLE-008] - [2026-01-22 16:15] - [DECISION] - Task: MODEL-A
 **Summary:** Use 768px breakpoint, standard tablet/mobile split
 **Details:**
 - Rationale: 768px is industry standard, matches Linear reference
 - User preference: "Keep it simple, use standard breakpoints"
 - Impact: Unblocks SUBTASK-003
 
-[LOG-009] - [2026-01-22 16:45] - [EXEC] - Task: MODEL-A
+[EXAMPLE-009] - [2026-01-22 16:45] - [EXEC] - Task: MODEL-A
 **Summary:** Implemented responsive grid with 768px breakpoint
 **Details:**
 - Files modified: src/components/CardGrid.tsx (created), src/styles/grid.css (created)
@@ -253,14 +253,14 @@ export function EngagementBar({ likes, comments, shares }: EngagementProps) {
 ```
 - Status: SUBTASK-003 complete, Task: MODEL-A ready for verification
 
-[LOG-010] - [2026-01-23 10:00] - [VISION] - Task: AUTH-IMPL
+[EXAMPLE-010] - [2026-01-23 10:00] - [VISION] - Task: AUTH-IMPL
 **Summary:** Authentication must support refresh token rotation
 **Details:**
 - Security requirement from user: "Don't want long-lived tokens floating around"
 - Reference: OAuth 2.0 refresh token rotation best practice
 - Success criteria: Access token 15min, refresh token rotates on use
 
-[LOG-011] - [2026-01-23 10:20] - [PLAN] - Task: AUTH-IMPL
+[EXAMPLE-011] - [2026-01-23 10:20] - [PLAN] - Task: AUTH-IMPL
 **Summary:** JWT auth broken into 3 tasks
 **Details:**
 - TASK-001: Library setup (jose v0.5.0) + token generation
@@ -268,7 +268,7 @@ export function EngagementBar({ likes, comments, shares }: EngagementProps) {
 - TASK-003: Token validation middleware + refresh rotation
 - Risk: Token expiry strategy may need user decision
 
-[LOG-012] - [2026-01-23 10:30] - [EXEC] - Task: AUTH-IMPL
+[EXAMPLE-012] - [2026-01-23 10:30] - [EXEC] - Task: AUTH-IMPL
 **Summary:** Installed jose library and created token generation
 **Details:**
 - Files modified: src/auth/token.ts (created), package.json (jose added)
@@ -284,7 +284,7 @@ export async function generateAccessToken(userId: string): Promise<string> {
 ```
 - Status: TASK-001 complete
 
-[LOG-013] - [2026-01-23 11:00] - [DISCOVERY] - Task: AUTH-IMPL
+[EXAMPLE-013] - [2026-01-23 11:00] - [DISCOVERY] - Task: AUTH-IMPL
 **Summary:** bcrypt cost factor 12 optimal for performance
 **Details:**
 - Benchmark: Cost 10 = 50ms, Cost 12 = 150ms, Cost 14 = 600ms
@@ -299,7 +299,7 @@ for (const cost of [10, 12, 14]) {
 ```
 - Decision: Use cost 12 (150ms acceptable for login latency)
 
-[LOG-014] - [2026-01-23 11:30] - [EXEC] - Task: AUTH-IMPL
+[EXAMPLE-014] - [2026-01-23 11:30] - [EXEC] - Task: AUTH-IMPL
 **Summary:** Created login endpoint with bcrypt hashing
 **Details:**
 - Files modified: src/api/auth/login.ts (created)
@@ -316,7 +316,7 @@ export async function loginHandler(req: Request, res: Response) {
 ```
 - Status: TASK-002 complete, proceeding to TASK-003
 
-[LOG-015] - [2026-01-23 12:00] - [BLOCKER] - Task: AUTH-IMPL
+[EXAMPLE-015] - [2026-01-23 12:00] - [BLOCKER] - Task: AUTH-IMPL
 **Summary:** Password reset flow unclear - same JWT or separate token?
 **Details:**
 - Issue: Security model for password reset not specified
@@ -324,7 +324,7 @@ export async function loginHandler(req: Request, res: Response) {
 - Waiting on: User decision on security approach
 - Impact: Blocks finalization of auth module architecture
 
-[LOG-016] - [2026-01-23 12:15] - [DECISION] - Task: AUTH-IMPL
+[EXAMPLE-016] - [2026-01-23 12:15] - [DECISION] - Task: AUTH-IMPL
 **Summary:** Use separate reset token, not main JWT
 **Details:**
 - Rationale: Separate token provides better security isolation
@@ -332,7 +332,7 @@ export async function loginHandler(req: Request, res: Response) {
 - Expiry: 1 hour for reset token (short-lived for security)
 - Impact: Need to add generateResetToken() to auth module
 
-[LOG-017] - [2026-01-23 12:45] - [EXEC] - Task: AUTH-IMPL
+[EXAMPLE-017] - [2026-01-23 12:45] - [EXEC] - Task: AUTH-IMPL
 **Summary:** Added password reset token generation
 **Details:**
 - Files modified: src/auth/token.ts (updated), src/api/auth/reset.ts (created)
