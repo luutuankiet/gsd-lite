@@ -2,5 +2,5 @@
   "mode": "yolo",
   "depth": "quick",
   "parallelization": "enabled",
-  "model_profile": "budget"
+  "model_profile": "balanced"
 }

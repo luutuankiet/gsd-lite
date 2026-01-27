@@ -19,11 +19,10 @@ IDs are globally unique and never reused.
 
 ## How to Use
 
-After phase promotion:
-1. Add one-line entry above with PHASE-NNN ID
+When archiving a completed task (via housekeeping workflow):
+1. Add one-line entry above with PHASE-NNN or Task ID
 2. Link to external artifact (PR, doc, etc.)
-3. Delete WORK.md content
-4. Clear STATE.md active phase
+3. Archived log entries moved from WORK.md to this file
 
 ### Example Entry
 

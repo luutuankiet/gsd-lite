@@ -1,40 +1,46 @@
 # GSD-Lite Work Log
 
 <!--
-SESSION WORK LOG - captures all work types during phase execution.
-Tracks vision extraction (moodboard), planning (whiteboard), execution work, decisions, and blockers.
+PERPETUAL SESSION WORK LOG - captures all work during project execution.
+Tracks vision, planning, execution, decisions, and blockers across multiple tasks.
 
 LIFECYCLE:
-- Created: When phase starts
-- Updated: After EVERY agent turn
-- Current Understanding section: Updated at checkpoint time (not every turn)
-- Deleted: After phase promotion (extract important outcomes to PR first)
+- Created: When project starts
+- Updated: Throughout project execution
+- Housekeeping: User-controlled archiving of completed tasks to HISTORY.md
+- Perpetual: Logs persist until user requests archiving
 
 PURPOSE:
-- Session continuity: Fresh agents resume by reading Current Understanding (30-second resume)
-- Detailed history: Full session log provides HOW we got here
-- Non-linear access: Type tags enable querying specific work type via grep
+- Session continuity: Fresh agents resume by reading Current Understanding (30-second context)
+- Detailed history: Atomic log provides HOW we got here with full evidence
+- Non-linear access: Grep patterns enable quick discovery (headers, log IDs, types, tasks)
+- PR extraction: Filter by task to generate PR descriptions from execution logs
 
-DISTINCTION FROM STATE.md:
-- WORK.md = HOW did we get here (detailed work log, reasoning, decisions)
-- STATE.md = WHERE are we (phase, task, completion %, systematic IDs)
+GREP PATTERNS FOR DISCOVERY:
+- Headers: grep "^## " WORK.md — discover 3-part structure
+- Log by ID: grep "\[LOG-015\]" WORK.md — find specific entry
+- Log by type: grep "\[DECISION\]" WORK.md — find all decisions
+- Log by task: grep "Task: MODEL-A" WORK.md — filter by task
+
+FILE READING STRATEGY:
+1. Discover structure: grep "^## " to find section boundaries
+2. Surgical read: Read from start_line using read_to_next_pattern or calculate end_line
+3. See PROTOCOL.md "File Reading Strategy" section for detailed patterns
 -->
-
-## ⚠️ This file is EPHEMERAL
-
-Content deleted after phase promotion. Extract important outcomes before promoting phase.
 
 ---
 
-## Current Understanding
+## 1. Current Understanding (Read First)
 
 <!--
 HANDOFF SECTION - Read this first when resuming work.
-Updated at checkpoint time (not every turn).
+Updated at checkpoint time or when significant state changes.
 Target: Fresh agent can understand current state in 30 seconds.
 
 Structure:
-- current_state: Where exactly are we? Phase, task, completion %, what's happening NOW
+- current_mode: What workflow are we in? (moodboard, execution, checkpoint, etc.)
+- active_task: What task is being worked on NOW
+- parked_tasks: What tasks are on hold (waiting for decisions, dependencies, etc.)
 - vision: What user wants - the intent, feel, references, success criteria
 - decisions: Key decisions with rationale - not just WHAT but WHY
 - blockers: Open questions, stuck items, waiting on user, ambiguities
@@ -45,102 +51,303 @@ Use concrete facts, not jargon. Avoid "as discussed" or "per original vision" - 
 IMPORTANT: Below are EXAMPLE entries showing format - replace with your actual session content.
 -->
 
-<current_state>
-Example: Phase 1.2: Audit & Fix Template Coherence - Plan 02 in progress
-Example: Task: TASK-003 - Update STATE.md template (70% complete)
-Example: Session 1 progress: Completed TASK-001 (PROTOCOL.md), TASK-002 (WORK.md), now on STATE.md
-Example: What's happening: Adding systematic ID tracking table to STATE.md template
-</current_state>
+<current_mode>
+Example: execution (following execution.md workflow)
+Example: moodboard (extracting user vision)
+Example: checkpoint (pausing for session handoff)
+</current_mode>
+
+<active_task>
+Example: Task: MODEL-A - Design card-based post layout with engagement metrics
+Example: Task: AUTH-IMPL - Implement JWT authentication with refresh tokens
+</active_task>
+
+<parked_tasks>
+Example: Task: MODEL-B - Timeline view implementation (deferred until card layout complete)
+Example: Task: PERF-OPT - Database query optimization (waiting on schema finalization)
+</parked_tasks>
 
 <vision>
-Example: Templates must be readable by single agent without cross-file navigation.
-Example: Each template should be self-contained with inline guidance for proper usage.
-Example: Fresh agents resuming work should understand context in 30 seconds without re-reading entire log.
+Example: User wants Linear-like feel + Bloomberg density for power users
+Example: Authentication must support refresh token rotation for security
+Example: Interface should not patronize advanced users with excessive whitespace
 </vision>
 
 <decisions>
-Example: Use systematic ID format (TYPE-NNN) for global unique references across all artifacts
-Example: STATE.md depth level: moderate with Key Decisions table (enables weak agent resume)
-Example: WORK.md is ephemeral: deleted after promotion, not archived
-Example: Current Understanding section positioned at top of WORK.md before chronological log
-Example: Type-tagged entries enable non-linear access via grep
+Example: Use card-based layout, not timeline view (cards support varying content length)
+Example: Separate reset tokens from main JWT (better security isolation)
+Example: Log all EXEC/DISCOVERY entries with code snippets (enables PR extraction)
 </decisions>
 
 <blockers>
-Example: None currently. Proceeding with STATE.md template update.
+Example: None currently. Proceeding with card layout implementation.
+Example: Password reset token expiry unclear - waiting on user decision (1 hour vs 24 hours)
 </blockers>
 
 <next_action>
-Example: Complete STATE.md template update by adding ID Registry table, then verify template coherence.
+Example: Complete card component styling, then verify against Linear reference
+Example: Implement token validation middleware (TASK-003)
 </next_action>
 
 ---
 
-## Session Log (Chronological)
+## 2. Key Events Index (Query Accelerator)
 
 <!--
-TYPE-TAGGED WORK ENTRIES - All session work captured here.
+GREP ACCELERATOR - One-line summaries of major log entries.
+Updated for "major" entries: VISION, DECISION, BLOCKER, DISCOVERY with code.
+Skip EXEC/PLAN entries unless they're phase-changing.
 
-Entry types:
-- [VISION] - User vision/preferences extracted, vision evolution, reference points
-- [DECISION] - Decision made (tech, scope, approach) with rationale
-- [PLAN] - Planning work: task breakdown, risk identification, approach sketched
-- [EXEC] - Execution work: files modified, commands run, changes made
-- [BLOCKER] - Open questions, stuck items, waiting states
+Purpose: Quick scan without reading full atomic log.
+Agent greps for type/task, reads index for context, then reads full log entry if needed.
 
-Entry format (3-8 lines maximum):
-**[YYYY-MM-DD HH:MM]** - [TAG] Brief description
-- Details: [what happened, why it matters]
-- Files: [if applicable]
-- Impact: [what this unblocks or blocks]
+Format: 10 words max per summary.
 
-Use action timestamp (when decision made or action taken), not entry-write time.
-If >10 lines, break into multiple entries.
-
-IMPORTANT: Below are EXAMPLE entries showing format - replace with your actual session log content.
+IMPORTANT: Below are EXAMPLE entries showing format - replace with your actual index content.
 -->
 
-**[2026-01-22 14:00]** - [VISION] Example: User wants Linear-like feel + Bloomberg density for power users
-- Example: Context: Discussed UI patterns during moodboard session
-- Example: Reference: Clean layout (Linear) but with information density (Bloomberg terminal)
-- Example: Implication: Interface should not patronize advanced users with excessive whitespace
-
-**[2026-01-22 14:15]** - [DECISION] Example: Use card-based layout, not timeline view
-- Example: Rationale: Cards support varying content length (post + engagement + metadata); timeline more rigid
-- Example: Alternative considered: Timeline view (simpler implementation, less flexible for content types)
-- Example: Impact: Unblocks whiteboard presentation to user; affects TASK-003 (card styling component)
-
-**[2026-01-22 14:30]** - [PLAN] Example: Broke phase into 3 tasks: library setup, login endpoint, token validation
-- Example: TASK-001: Set up JWT library (jose v0.5.0)
-- Example: TASK-002: Create login endpoint with password hashing
-- Example: TASK-003: Add token validation middleware
-- Example: Risk: Token expiry strategy TBD (may need user decision)
-
-**[2026-01-22 15:00]** - [EXEC] Example: TASK-001: Installed jose library and created token generation
-- Example: Result: Created src/auth/token.ts with generateToken function
-- Example: Files modified: src/auth/token.ts, src/auth/token.test.ts, package.json
-- Example: Status: TASK-001 complete, proceeding to TASK-002
-
-**[2026-01-22 15:30]** - [EXEC] Example: TASK-002: Created login endpoint with bcrypt hashing
-- Example: Result: POST /api/auth/login accepts email/password, returns JWT
-- Example: Files modified: src/api/auth/login.ts, src/api/auth/login.test.ts
-- Example: Status: TASK-002 in progress (endpoint created, validation pending)
-
-**[2026-01-22 16:00]** - [BLOCKER] Example: Password reset flow unclear - same JWT or separate token?
-- Example: Issue: Security model for password reset not specified
-- Example: Waiting on: User decision on whether to use main JWT or separate reset token
-- Example: Impact: Blocks TASK-002 completion until clarified
-
-**[2026-01-22 16:15]** - [DECISION] Example: Use separate reset token, not main JWT (user decision)
-- Example: Rationale: Separate token provides better security isolation
-- Example: User preference: Don't reuse auth token for password reset
-- Example: Impact: Unblocks TASK-002; need to add reset token generation to auth module
-
-**[2026-01-22 16:45]** - [EXEC] Example: TASK-002: Added password reset token generation
-- Example: Result: generateResetToken() function with 1-hour expiry
-- Example: Files modified: src/auth/token.ts, src/api/auth/reset.ts
-- Example: Status: TASK-002 complete
+| Log ID | Type | Task | Summary |
+|--------|------|------|---------|
+| EXAMPLE-001 | VISION | MODEL-A | Linear-like + Bloomberg density for power users |
+| EXAMPLE-005 | DECISION | MODEL-A | Card-based layout over timeline view |
+| EXAMPLE-012 | DISCOVERY | MODEL-A | Found engagement pattern in reference app |
+| EXAMPLE-018 | BLOCKER | AUTH-IMPL | Password reset token expiry unclear |
+| EXAMPLE-022 | DECISION | AUTH-IMPL | Separate reset token with 1-hour expiry |
+| EXAMPLE-030 | DISCOVERY | AUTH-IMPL | bcrypt cost factor 12 optimal for performance |
 
 ---
 
-*Delete this content after promoting phase outcomes to external artifact (PR description, documentation, etc.)*
+## 3. Atomic Session Log (Chronological)
+
+<!--
+TYPE-TAGGED ATOMIC ENTRIES - All session work captured here.
+Each entry is self-contained with code snippets where applicable.
+
+Entry types (6 types):
+- [VISION] - User vision/preferences, vision evolution, reference points
+- [DECISION] - Decision made (tech, scope, approach) with rationale
+- [DISCOVERY] - Evidence, findings, data (ALWAYS with code snippets)
+- [PLAN] - Planning work: task breakdown, risk identification, approach
+- [BLOCKER] - Open questions, stuck items, waiting states
+- [EXEC] - Execution work: files modified, commands run (ALWAYS with code snippets)
+
+Entry format:
+[LOG-NNN] - [YYYY-MM-DD HH:MM] - [TYPE] - Task: TASK-ID
+**Summary:** [One-line description]
+**Details:** [Full context with code snippets for EXEC/DISCOVERY]
+
+Use action timestamp (when decision made or action taken), not entry-write time.
+Code snippets REQUIRED for EXEC and DISCOVERY entries (enables PR extraction).
+
+IMPORTANT: Below are EXAMPLE entries showing format. Real entries should use [LOG-NNN] not [EXAMPLE-NNN].
+-->
+
+[EXAMPLE-001] - [2026-01-22 14:00] - [VISION] - Task: MODEL-A
+**Summary:** User wants Linear-like feel + Bloomberg density for power users
+**Details:**
+- Context: Discussed UI patterns during moodboard session
+- Reference: Clean layout (Linear) but with information density (Bloomberg terminal)
+- Implication: Interface should not patronize advanced users with excessive whitespace
+
+[EXAMPLE-002] - [2026-01-22 14:10] - [PLAN] - Task: MODEL-A
+**Summary:** Broke card layout into 3 sub-tasks
+**Details:**
+- SUBTASK-001: Base card component with props interface
+- SUBTASK-002: Engagement metrics display (likes, comments, shares)
+- SUBTASK-003: Layout grid with responsive breakpoints
+- Risk: Responsive behavior may need user verification on mobile
+
+[EXAMPLE-003] - [2026-01-22 14:15] - [DECISION] - Task: MODEL-A
+**Summary:** Use card-based layout, not timeline view
+**Details:**
+- Rationale: Cards support varying content length (post + engagement + metadata); timeline more rigid
+- Alternative considered: Timeline view (simpler implementation, less flexible for content types)
+- Impact: Unblocks component design; affects SUBTASK-001 (card props interface)
+
+[EXAMPLE-004] - [2026-01-22 14:30] - [EXEC] - Task: MODEL-A
+**Summary:** Created base card component with TypeScript interface
+**Details:**
+- Files modified: src/components/Card.tsx (created), src/types/post.ts (created)
+- Code snippet:
+```typescript
+interface PostCardProps {
+  post: {
+    id: string;
+    content: string;
+    author: string;
+    timestamp: Date;
+    engagement: {
+      likes: number;
+      comments: number;
+      shares: number;
+    };
+  };
+}
+```
+- Status: SUBTASK-001 complete, proceeding to SUBTASK-002
+
+[EXAMPLE-005] - [2026-01-22 15:00] - [DISCOVERY] - Task: MODEL-A
+**Summary:** Found engagement pattern in Linear reference app
+**Details:**
+- Observation: Linear shows engagement inline, not in dropdown/modal
+- Evidence from inspection:
+```html
+<div class="engagement-bar">
+  <span class="metric">👍 12</span>
+  <span class="metric">💬 5</span>
+  <span class="metric">🔄 3</span>
+</div>
+```
+- Impact: Informs SUBTASK-002 design (inline engagement, emoji + count)
+
+[EXAMPLE-006] - [2026-01-22 15:30] - [EXEC] - Task: MODEL-A
+**Summary:** Implemented engagement metrics component
+**Details:**
+- Files modified: src/components/EngagementBar.tsx (created)
+- Code snippet:
+```typescript
+export function EngagementBar({ likes, comments, shares }: EngagementProps) {
+  return (
+    <div className="engagement-bar">
+      <Metric icon="👍" count={likes} />
+      <Metric icon="💬" count={comments} />
+      <Metric icon="🔄" count={shares} />
+    </div>
+  );
+}
+```
+- Status: SUBTASK-002 complete, proceeding to SUBTASK-003
+
+[EXAMPLE-007] - [2026-01-22 16:00] - [BLOCKER] - Task: MODEL-A
+**Summary:** Mobile breakpoint unclear - 768px or 640px?
+**Details:**
+- Issue: User hasn't specified mobile breakpoint preference
+- Context: Linear uses 768px, Bloomberg uses custom breakpoints
+- Waiting on: User decision on responsive strategy
+- Impact: Blocks SUBTASK-003 (layout grid) until clarified
+
+[EXAMPLE-008] - [2026-01-22 16:15] - [DECISION] - Task: MODEL-A
+**Summary:** Use 768px breakpoint, standard tablet/mobile split
+**Details:**
+- Rationale: 768px is industry standard, matches Linear reference
+- User preference: "Keep it simple, use standard breakpoints"
+- Impact: Unblocks SUBTASK-003
+
+[EXAMPLE-009] - [2026-01-22 16:45] - [EXEC] - Task: MODEL-A
+**Summary:** Implemented responsive grid with 768px breakpoint
+**Details:**
+- Files modified: src/components/CardGrid.tsx (created), src/styles/grid.css (created)
+- Code snippet:
+```css
+.card-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 1rem;
+}
+
+@media (max-width: 768px) {
+  .card-grid {
+    grid-template-columns: 1fr;
+  }
+}
+```
+- Status: SUBTASK-003 complete, Task: MODEL-A ready for verification
+
+[EXAMPLE-010] - [2026-01-23 10:00] - [VISION] - Task: AUTH-IMPL
+**Summary:** Authentication must support refresh token rotation
+**Details:**
+- Security requirement from user: "Don't want long-lived tokens floating around"
+- Reference: OAuth 2.0 refresh token rotation best practice
+- Success criteria: Access token 15min, refresh token rotates on use
+
+[EXAMPLE-011] - [2026-01-23 10:20] - [PLAN] - Task: AUTH-IMPL
+**Summary:** JWT auth broken into 3 tasks
+**Details:**
+- TASK-001: Library setup (jose v0.5.0) + token generation
+- TASK-002: Login endpoint with bcrypt password hashing
+- TASK-003: Token validation middleware + refresh rotation
+- Risk: Token expiry strategy may need user decision
+
+[EXAMPLE-012] - [2026-01-23 10:30] - [EXEC] - Task: AUTH-IMPL
+**Summary:** Installed jose library and created token generation
+**Details:**
+- Files modified: src/auth/token.ts (created), package.json (jose added)
+- Code snippet:
+```typescript
+export async function generateAccessToken(userId: string): Promise<string> {
+  const secret = new TextEncoder().encode(process.env.JWT_SECRET);
+  return await new SignJWT({ userId })
+    .setProtectedHeader({ alg: 'HS256' })
+    .setExpirationTime('15m')
+    .sign(secret);
+}
+```
+- Status: TASK-001 complete
+
+[EXAMPLE-013] - [2026-01-23 11:00] - [DISCOVERY] - Task: AUTH-IMPL
+**Summary:** bcrypt cost factor 12 optimal for performance
+**Details:**
+- Benchmark: Cost 10 = 50ms, Cost 12 = 150ms, Cost 14 = 600ms
+- Code used for testing:
+```typescript
+import bcrypt from 'bcrypt';
+for (const cost of [10, 12, 14]) {
+  const start = Date.now();
+  await bcrypt.hash('password', cost);
+  console.log(`Cost ${cost}: ${Date.now() - start}ms`);
+}
+```
+- Decision: Use cost 12 (150ms acceptable for login latency)
+
+[EXAMPLE-014] - [2026-01-23 11:30] - [EXEC] - Task: AUTH-IMPL
+**Summary:** Created login endpoint with bcrypt hashing
+**Details:**
+- Files modified: src/api/auth/login.ts (created)
+- Code snippet:
+```typescript
+export async function loginHandler(req: Request, res: Response) {
+  const { email, password } = req.body;
+  const user = await db.findUserByEmail(email);
+  const valid = await bcrypt.compare(password, user.passwordHash);
+  if (!valid) throw new AuthError('Invalid credentials');
+  const accessToken = await generateAccessToken(user.id);
+  res.json({ accessToken });
+}
+```
+- Status: TASK-002 complete, proceeding to TASK-003
+
+[EXAMPLE-015] - [2026-01-23 12:00] - [BLOCKER] - Task: AUTH-IMPL
+**Summary:** Password reset flow unclear - same JWT or separate token?
+**Details:**
+- Issue: Security model for password reset not specified
+- Question: Reuse main JWT or generate separate reset token?
+- Waiting on: User decision on security approach
+- Impact: Blocks finalization of auth module architecture
+
+[EXAMPLE-016] - [2026-01-23 12:15] - [DECISION] - Task: AUTH-IMPL
+**Summary:** Use separate reset token, not main JWT
+**Details:**
+- Rationale: Separate token provides better security isolation
+- User preference: "Don't reuse auth token for password reset - keep them separate"
+- Expiry: 1 hour for reset token (short-lived for security)
+- Impact: Need to add generateResetToken() to auth module
+
+[EXAMPLE-017] - [2026-01-23 12:45] - [EXEC] - Task: AUTH-IMPL
+**Summary:** Added password reset token generation
+**Details:**
+- Files modified: src/auth/token.ts (updated), src/api/auth/reset.ts (created)
+- Code snippet:
+```typescript
+export async function generateResetToken(userId: string): Promise<string> {
+  const secret = new TextEncoder().encode(process.env.JWT_SECRET);
+  return await new SignJWT({ userId, type: 'reset' })
+    .setProtectedHeader({ alg: 'HS256' })
+    .setExpirationTime('1h')
+    .sign(secret);
+}
+```
+- Status: Password reset complete, Task: AUTH-IMPL ready for verification
+
+---
+
+*Housekeeping: Run "write PR for [TASK]" to extract task logs, or "archive [TASK]" to move completed entries to HISTORY.md*

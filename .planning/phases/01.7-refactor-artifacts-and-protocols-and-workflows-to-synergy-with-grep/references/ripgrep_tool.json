@@ -1,0 +1,45 @@
+// this is the reference grep tool defenition from `uvx fs-mcp`
+{
+      "name": "grep_content",
+      "description": "Search for a pattern in file contents using ripgrep.\n\n**Workflow:**\nThis tool is the first step in a two-step \"grep -> read\" workflow.\n\n1.  **`grep_content`**: Use this tool with a specific pattern to find *which files* are relevant and *where* in those files the relevant code is (line numbers). Its primary purpose is to **locate file paths and line numbers**, not to read full file contents.\n2.  **`read_files`**: Use the file path and line numbers from the output of this tool to perform a targeted read of only the relevant file sections.\n\n**Example:**\n```\n# Step 1: Find where 'FastMCP' is defined.\ngrep_content(pattern=\"class FastMCP\")\n\n# Output might be: File: src/fs_mcp/server.py, Line: 20\n\n# Step 2: Read the relevant section of that file.\nread_files([{\"path\": \"src/fs_mcp/server.py\", \"start_line\": 15, \"end_line\": 25}])\n```",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "pattern": {
+            "type": "string"
+          },
+          "search_path": {
+            "default": ".",
+            "type": "string"
+          },
+          "case_insensitive": {
+            "default": false,
+            "type": "boolean"
+          },
+          "context_lines": {
+            "default": 2,
+            "type": "integer"
+          }
+        },
+        "required": [
+          "pattern"
+        ]
+      },
+      "outputSchema": {
+        "type": "object",
+        "properties": {
+          "result": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "result"
+        ],
+        "x-fastmcp-wrap-result": true
+      },
+      "_meta": {
+        "_fastmcp": {
+          "tags": []
+        }
+      }
+    }

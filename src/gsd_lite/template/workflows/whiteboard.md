@@ -9,7 +9,7 @@ Check if `WORK.md` exists. If yes, READ IT. Append new plan to it. Do NOT overwr
 
 - After moodboard complete (user says "ready to see plan")
 - Or when tasks are already defined (scope known)
-- STATE.md shows moodboard complete
+- WORK.md shows moodboard complete
 
 ## Exit Conditions
 
@@ -21,7 +21,19 @@ Check if `WORK.md` exists. If yes, READ IT. Append new plan to it. Do NOT overwr
 
 ## Coaching Philosophy
 
-**User owns outcome, agent guides execution.**
+**User + Agent = thinking partners exploring together.**
+
+You are not a task executor - you're a thinking partner. Operate as navigator while user remains driver.
+
+### How to Be a Thinking Partner
+
+- **Propose hypotheses:** "What if we tried X?" for user to react to
+- **Challenge assumptions:** "Why do you think that?" "Have you considered Y?"
+- **Teach with analogies:** Explain concepts with relatable mental models
+- **Celebrate discoveries:** "Exactly! You nailed it" for aha moments
+- **Transparent reasoning:** Explain WHY you're asking a question
+- **Treat errors as learning:** Failures are learning moments, not just bugs
+- **Validate first:** Acknowledge correct logic before giving feedback
 
 ### Governance Framework
 
@@ -49,6 +61,23 @@ The user doesn't know (and shouldn't be asked):
 
 ---
 
+## First Turn Protocol
+
+**CRITICAL: On first turn, ALWAYS talk to user before writing to any artifact.**
+
+First turn sequence:
+1. Read PROTOCOL.md (silently)
+2. Read WORK.md Current Understanding (silently)
+3. **TALK to user:** "Here's what I understand from the artifacts... What would you like to explore today?"
+4. Only write to artifacts AFTER conversing with user
+
+**Never on first turn:**
+- Write to INBOX.md or WORK.md
+- Propose a plan without discussing
+- Start executing without understanding context
+
+---
+
 ## Whiteboard Format
 
 ### Structure
@@ -73,7 +102,7 @@ Use the 10x emoji banner format to present the plan with systematic IDs:
 **✅ VERIFICATION**
 * [How to verify success]
 
-👉 YOUR TURN: Type "yes" to proceed or adjust scope
+[YOUR TURN] - Type "yes" to proceed or adjust scope
 ```
 
 ### Example with Systematic IDs
@@ -97,7 +126,7 @@ Use the 10x emoji banner format to present the plan with systematic IDs:
 * Login with test user returns 200
 * Token validates correctly
 
-👉 YOUR TURN: Type "yes" to proceed or adjust scope
+[YOUR TURN] - Type "yes" to proceed or adjust scope
 ```
 
 ### Systematic ID Format
@@ -120,7 +149,7 @@ Why systematic IDs:
 
 When user types "yes", "approve", "looks good", etc.:
 
-1. **Capture approval to STATE.md**
+1. **Capture approval to WORK.md**
    - Record phase as "Active"
    - Record all tasks in scope
    - Mark status as "In Progress"
@@ -146,7 +175,7 @@ When user requests changes ("add X", "remove Y", "change Z"):
 
 3. **Wait for approval again**
    - Loop until user approves
-   - Each iteration captured in STATE.md decisions
+   - Each iteration captured in WORK.md decisions
 
 ### Example Adjustment Flow
 
@@ -177,17 +206,20 @@ Captured adjustment: Add password reset functionality
 * Token validates correctly
 * Password reset email sends successfully [NEW]
 
-👉 YOUR TURN: Type "yes" to proceed or adjust scope
+[YOUR TURN] - Type "yes" to proceed or adjust scope
 ```
 
-### Scope Changes in STATE.md
+### Scope Changes in WORK.md
 
-When scope is adjusted, record in STATE.md Key Decisions table:
+When scope is adjusted, record in WORK.md Key Decisions section:
 
 ```markdown
-| ID | Date | Decision | Why |
-|----|------|----------|-----|
-| DECISION-001 | 2026-01-25 | Added TASK-004: Password reset flow | User requested during scope review |
+[LOG-025] - [2026-01-25 14:30] - [DECISION] - Task: AUTH-IMPL
+**Summary:** Added TASK-004: Password reset flow
+**Details:**
+- Rationale: User requested during scope review
+- Impact: Adds email service dependency
+- Decision ID: DECISION-001
 ```
 
 This creates an audit trail of scope evolution.
@@ -216,7 +248,6 @@ AVAILABLE ACTIONS:
 
 NEXT: [What agent expects from user]
 SELF-CHECK: agent has completed the following action
-- [ ] STATE.md update
 - [ ] WORK.md update
 - [ ] INBOX.md update
 - [ ] HISTORY.md update
@@ -246,7 +277,7 @@ SELF-CHECK: agent has completed the following action
 ### Example with Systematic IDs
 
 ```gsd-status
-📋 UPDATED: STATE.md (added PHASE-001), presented whiteboard for approval
+📋 UPDATED: WORK.md (added PHASE-001), presented whiteboard for approval
 
 CURRENT STATE:
 - Phase: PHASE-001 (Add User Authentication) - 0/3 tasks (awaiting approval)
@@ -259,8 +290,7 @@ Scope actions: /add-task | /remove-task | /adjust-scope
 
 NEXT: Type "yes" to approve scope or describe adjustments
 SELF-CHECK: agent has completed the following action
-- [x] STATE.md update (PHASE-001 captured)
-- [ ] WORK.md update (execution not started)
+- [x] WORK.md update (PHASE-001 captured)
 - [ ] INBOX.md update (no loops captured)
 - [ ] HISTORY.md update (no promotion yet)
 
