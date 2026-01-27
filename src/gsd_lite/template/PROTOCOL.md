@@ -28,7 +28,7 @@ Before writing to `STATE.md`, `WORK.md`, or `INBOX.md`:
 | `moodboard-complete` | whiteboard.md | Present plan for approval |
 | `execution` | execution.md | Execute tasks, log progress |
 | `checkpoint` | checkpoint.md | Session handoff, preserve context |
-| `promotion` | promotion.md | Complete phase, trim WORK.md |
+| `housekeeping` | housekeeping.md | PR extraction, archive completed tasks |
 
 If STATE.md doesn't exist or has no active phase, load moodboard.md.
 
@@ -40,6 +40,7 @@ These workflows are triggered by explicit user requests, not by STATE.md mode:
 |-------------|----------|-------------|
 | "revisit" or "let me rethink this" | revisit.md | User wants to reconsider plan after whiteboard approval |
 | "checkpoint" or "pause" | checkpoint.md | End session mid-phase, preserve for later resume |
+| "write PR" or "clean up WORK.md" | housekeeping.md | Extract PR description or archive completed tasks |
 
 **Revisit workflow:**
 - Triggered when user says "revisit" or "let me rethink this"
@@ -62,17 +63,20 @@ These workflows are triggered by explicit user requests, not by STATE.md mode:
 **When resuming work after checkpoint (fresh context window):**
 
 1. **Read PROTOCOL.md** - You're doing this now
-2. **Read STATE.md** - Determine current mode and phase/task status
+2. **Grep WORK.md structure** - Use `grep "^## "` to discover 3-part structure
 3. **Read WORK.md Current Understanding section** - Get 30-second context summary
-   - Where exactly are we? (current_state)
+   - Read from line 1 to first log entry (or use `read_to_next_pattern` with `^\[LOG-`)
+   - Where exactly are we? (current_mode, active_task, parked_tasks)
    - What does user want? (vision)
    - What decisions were made? (decisions)
    - What's blocking progress? (blockers)
    - What's the next action? (next_action)
-4. **Load appropriate workflow** - Based on STATE.md mode
+4. **Load appropriate workflow** - Based on current_mode in WORK.md
 5. **Continue work** - Pick up from where previous session left off
 
-**Key principle:** Reconstruct context from artifacts (STATE.md, WORK.md), NOT from chat history. Fresh agents have zero prior context.
+**Key principle:** Reconstruct context from artifacts (WORK.md), NOT from chat history. Fresh agents have zero prior context.
+
+**Grep-first behavior:** Always grep to discover structure before reading. Use `grep "^## " WORK.md` to find section boundaries, then surgical read of relevant sections. See "File Reading Strategy" section below for detailed patterns.
 
 **Current Understanding in WORK.md:**
 - Updated at checkpoint time (not every turn)
@@ -80,15 +84,68 @@ These workflows are triggered by explicit user requests, not by STATE.md mode:
 - Avoids jargon like "as discussed" - uses concrete facts
 - See checkpoint.md for Current Understanding update instructions
 
+## File Reading Strategy (Grep-First)
+
+Always grep before reading large artifacts. Two-step pattern:
+
+1. **Discover:** `grep "^## " WORK.md` → returns section headers with line numbers
+2. **Surgical read:** Read from start_line with boundary pattern
+
+**Recommended: Section-Aware Reading (with `read_to_next_pattern`)**
+
+If your MCP server supports `read_to_next_pattern`, use it to avoid manual line calculation:
+
+```python
+# Step 1: Find what you want
+grep_content(pattern=r"\[DECISION\]", search_path="WORK.md")
+# Returns: Line 120
+
+# Step 2: Read with automatic boundary detection
+read_files([{
+    "path": "WORK.md",
+    "start_line": 120,
+    "read_to_next_pattern": r"^\[LOG-"
+}])
+# Server finds next [LOG- and stops there — no calculation needed
+```
+
+**Common boundary patterns:**
+- Log entries: `^\[LOG-` — read one log entry
+- Level 2 headers: `^## ` — read one section
+- Any header: `^#+ ` — read until next header at any level
+
+**Grep patterns for discovery:**
+- Headers: `grep "^## "` — discover all sections
+- Log by ID: `grep "[LOG-015]"` — find specific entry
+- Log by type: `grep "[DECISION]"` — find all of type
+- Log by task: `grep "Task: MODEL-A"` — filter by task
+
+**Fallback: Manual Line Calculation (legacy servers)**
+
+If `read_to_next_pattern` is not available:
+1. Grep ALL boundaries: `grep "^\[LOG-" WORK.md`
+2. Calculate: Section ends at (next match line - 1) or EOF
+3. Read with explicit end_line
+
+Example: grep returns lines 100, 120, 145. To read entry at 120: `end_line = 144`
+
+**Fallback: No grep tool at all**
+
+Read first 50 lines of WORK.md — Current Understanding is always at top.
+
+**Reference:** See `references/FS-MCP-ENHANCEMENT-SPEC.md` for full server-side implementation details.
+
 ## File Guide (Quick Reference)
 
 | File | Purpose | Write Target |
 |------|---------|--------------|
 | PROTOCOL.md | Router (this file) | Never (immutable) |
-| STATE.md | Phase/task tracker | gsd-lite/STATE.md |
-| WORK.md | Execution log | gsd-lite/WORK.md |
+| STATE.md | **DEPRECATED** (merged into WORK.md) | ~~gsd-lite/STATE.md~~ |
+| WORK.md | Session state + execution log | gsd-lite/WORK.md |
 | INBOX.md | Loop capture | gsd-lite/INBOX.md |
-| HISTORY.md | Completed phases | gsd-lite/HISTORY.md |
+| HISTORY.md | Completed tasks/phases | gsd-lite/HISTORY.md |
+
+**Note:** STATE.md is deprecated. State tracking now in WORK.md Current Understanding section.
 
 ## Systematic ID Format
 
@@ -128,9 +185,11 @@ Agent never decides:
 
 Sessions use checkpoint -> clear -> resume:
 
-1. **Checkpoint:** Save state to artifacts at session end
+1. **Checkpoint:** Save state to artifacts at session end (WORK.md Current Understanding updated)
 2. **Clear:** Start fresh chat (new context window)
 3. **Resume:** Reconstruct from artifacts, not chat history
+
+**WORK.md is perpetual:** Logs persist indefinitely until user requests housekeeping/archiving. Growth managed through user-controlled cleanup, not automatic deletion.
 
 ---
 *GSD-Lite Protocol v2.0*
