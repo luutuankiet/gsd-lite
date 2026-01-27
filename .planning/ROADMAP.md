@@ -19,6 +19,8 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 1.3: Context Lifecycle, Coaching Model & Workflow Decomposition** - User-controlled context, coaching philosophy, per-workflow files (INSERTED)
 - [ ] **Phase 1.4: Enrich Checkpoint Workflow** - Enrich checkpoint workflow (INSERTED)
 - [x] **Phase 1.5: Evaluation Framework for GSD-lite** - Simulated repo + prompts + reference responses + eval notes for iterative QC (INSERTED)
+- [ ] **Phase 1.6: Fix Agent Overriding Examples** - Fix agent overriding scaffolded files (INSERTED)
+- [ ] **Phase 1.7: Refactor Artifacts for Grep Synergy** - Refactor artifacts and protocols for grep workflows (INSERTED)
 - [ ] **Phase 2: Session Handoff System** - Eliminate context reconstruction between sessions
 - [ ] **Phase 3: Context Engineering Patterns** - Token budget management and context optimization
 - [ ] **Phase 4: Educational Integration & Validation** - Teach through templates and validate on real work
@@ -171,6 +173,34 @@ Plans:
 **Details:**
 - Note: commands are under ~/.config/opencode
 
+### Phase 1.7: Refactor Artifacts and Protocols and Workflows to Synergy with Grep (INSERTED)
+
+**Goal:** Restructure GSD-lite artifacts for grep-optimized retrieval and revamp coaching philosophy to pair programming model
+**Depends on:** Phase 1.6
+**Requirements:** None (refactor + philosophy work)
+**Success Criteria** (what must be TRUE):
+  1. WORK.md has 3-part grep-friendly structure (Current Understanding, Key Events Index, Atomic Log)
+  2. STATE.md merged into WORK.md (deprecated as separate file)
+  3. All workflows encode pair programming philosophy (thinking partners, not visionary/builder)
+  4. First-turn protocol prevents artifact writes before conversation
+  5. housekeeping.md replaces promotion.md for perpetual WORK.md management
+  6. README explains philosophy, artifacts, and provides session walkthrough
+  7. All templates pass coherence verification (no orphan references, consistent log format)
+
+**Deliverables:**
+- WORK.md template with grep-friendly 3-part structure
+- housekeeping.md workflow (replaces promotion.md)
+- All workflows updated with pair programming philosophy
+- README.md with philosophy, artifact overview, walkthrough, maintainer's guide
+
+**Plans:** 4 plans
+
+Plans:
+- [ ] 01.7-01-PLAN.md — Restructure WORK.md and create housekeeping workflow
+- [ ] 01.7-02-PLAN.md — Update all workflows with pair programming philosophy
+- [ ] 01.7-03-PLAN.md — Create README with philosophy and maintainer's guide
+- [ ] 01.7-04-PLAN.md — Final coherence verification
+
 ### Phase 2: Session Handoff System
 **Goal**: Create ephemeral working memory system that exports to GTD and eliminates 15-30 min context reconstruction
 **Depends on**: Phase 1
@@ -215,7 +245,7 @@ Plans:
 ## Progress
 
 **Execution Order:**
-Phases execute in numeric order: 0 → 1 → 1.1 → 1.2 → 1.3 → 1.4 → 1.5 → 1.6 → 2 → 3 → 4
+Phases execute in numeric order: 0 → 1 → 1.1 → 1.2 → 1.3 → 1.4 → 1.5 → 1.6 → 1.7 → 2 → 3 → 4
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
@@ -227,6 +257,7 @@ Phases execute in numeric order: 0 → 1 → 1.1 → 1.2 → 1.3 → 1.4 → 1.5
 | 1.4. Enrich Checkpoint Workflow (INSERTED) | 2/2 | Completed | 2026-01-25 |
 | 1.5. Evaluation Framework for GSD-lite (INSERTED) | 2/2 | Completed | 2026-01-26 |
 | 1.6. Fix Agent Overriding Examples in Scaffolded File (INSERTED) | 0/TBD | Not started | - |
+| 1.7. Refactor Artifacts for Grep Synergy (INSERTED) | 0/4 | Planned | - |
 | 2. Session Handoff System | 0/TBD | Not started | - |
 
 ---
