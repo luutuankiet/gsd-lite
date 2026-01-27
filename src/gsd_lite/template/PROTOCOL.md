@@ -13,14 +13,14 @@ Before writing to `STATE.md`, `WORK.md`, or `INBOX.md`:
 ## Session Start
 
 1. Read this file (PROTOCOL.md)
-2. Read STATE.md to determine current mode
+2. Read WORK.md Current Understanding to determine current mode
 3. Load appropriate workflow from gsd-lite/template/workflows/
 
 ## Workflow Router
 
-**How routing works:** This is documentation-only routing. The agent manually reads STATE.md, checks the `Current Mode:` field, then reads and follows the appropriate workflow file. There is no programmatic automation - the agent interprets and follows instructions.
+**How routing works:** This is documentation-only routing. The agent manually reads WORK.md Current Understanding, checks the `current_mode:` field, then reads and follows the appropriate workflow file. There is no programmatic automation - the agent interprets and follows instructions.
 
-### Primary Routing (Read STATE.md `Current Mode:`)
+### Primary Routing (Read WORK.md `current_mode:`)
 
 | State | Workflow | Purpose |
 |-------|----------|---------|
@@ -30,7 +30,7 @@ Before writing to `STATE.md`, `WORK.md`, or `INBOX.md`:
 | `checkpoint` | checkpoint.md | Session handoff, preserve context |
 | `housekeeping` | housekeeping.md | PR extraction, archive completed tasks |
 
-If STATE.md doesn't exist or has no active phase, load moodboard.md.
+If WORK.md doesn't exist or has no active phase, load moodboard.md.
 
 ### Secondary Routing (User-Initiated Workflows)
 
@@ -52,7 +52,7 @@ These workflows are triggered by explicit user requests, not by STATE.md mode:
 **Checkpoint workflow:**
 - Triggered when user requests "checkpoint" or "pause", or agent suggests checkpoint
 - Valid during any active phase (execution mode)
-- Updates STATE.md with current progress, preserves WORK.md (NOT trimmed)
+- Updates WORK.md Current Understanding with current progress, preserves WORK.md session log (NOT trimmed)
 - Enables fresh agent to resume work in next session
 - See checkpoint.md for Current Understanding update instructions
 
@@ -157,7 +157,7 @@ All items use TYPE-NNN format (zero-padded, globally unique):
 
 ## Golden Rules
 
-1. **No Ghost Decisions:** If not in STATE.md, it didn't happen
+1. **No Ghost Decisions:** If not in WORK.md, it didn't happen
 2. **Interview First:** Never execute without understanding scope
 3. **Visual Interrupts:** 10x emoji banners for critical questions
 4. **Sticky Notes:** Status block at end of EVERY turn
@@ -165,21 +165,20 @@ All items use TYPE-NNN format (zero-padded, globally unique):
 
 ## Coaching Philosophy
 
-**User = visionary. Agent = builder.**
+**User + Agent = thinking partners exploring together.**
 
-User decides:
-- Vision and outcome
-- Scope boundaries
-- Implementation choices (if affects UX)
-- When to complete phase
+Agent operates as **navigator**, user remains **driver**.
 
-Agent decides:
-- Technical details (with deviation log)
-- Critical security fixes (immediately)
-
-Agent never decides:
-- Architectural changes (pause, present decision)
-- Scope expansion (capture to INBOX)
+**Core behaviors:**
+- Propose hypotheses for user to react to
+- Challenge assumptions with "Why?" and "Have you considered?"
+- Teach with analogies and relatable mental models
+- Celebrate discoveries: "Exactly! You nailed it"
+- Transparent reasoning: explain WHY asking or suggesting
+- Treat errors as learning moments
+- Validate correct logic before corrections
+- Mandatory confirmation loops: "[YOUR TURN]" or explicit handoff
+- Handle frustration: switch from Socratic to direct when stuck
 
 ## Context Lifecycle
 

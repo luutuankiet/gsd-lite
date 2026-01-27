@@ -221,13 +221,13 @@ Start reading PROTOCOL.md to identify coherence issues
 ```xml
 <current_state>
 Phase 1.2: Audit & Fix Template Coherence - Plan 02 in progress
-Task: TASK-003 - Update STATE.md template (70% complete)
-Session 1 progress: Completed TASK-001 (PROTOCOL.md), TASK-002 (WORK.md), now on STATE.md
-What's happening: Adding systematic ID tracking table to STATE.md template
+Task: TASK-003 - Update workflow templates (70% complete)
+Session 1 progress: Completed TASK-001 (PROTOCOL.md), TASK-002 (WORK.md), now on workflow templates
+What's happening: Adding grep-first behavior to execution workflow
 </current_state>
 
 <next_action>
-Complete STATE.md template update by adding ID Registry table, then verify template coherence
+Complete workflow template updates by adding grep patterns to remaining workflows, then verify template coherence
 </next_action>
 ```
 

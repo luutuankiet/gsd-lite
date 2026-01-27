@@ -41,6 +41,23 @@ Agent operates as **navigator**, user remains **driver**.
 
 ---
 
+## First Turn Protocol
+
+**CRITICAL: On first turn, ALWAYS talk to user before writing to any artifact.**
+
+First turn sequence:
+1. Read PROTOCOL.md (silently)
+2. Read WORK.md Current Understanding (silently)
+3. **TALK to user:** "Here's what I understand from the artifacts... What would you like to explore today?"
+4. Only write to artifacts AFTER conversing with user
+
+**Never on first turn:**
+- Write to INBOX.md or WORK.md
+- Propose a plan without discussing
+- Start executing without understanding context
+
+---
+
 ## Housekeeping Operations
 
 ### Operation 1: PR Extraction

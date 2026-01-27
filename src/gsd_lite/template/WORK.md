@@ -8,7 +8,7 @@ LIFECYCLE:
 - Created: When project starts
 - Updated: Throughout project execution
 - Housekeeping: User-controlled archiving of completed tasks to HISTORY.md
-- NOT ephemeral - logs persist until user requests archiving
+- Perpetual: Logs persist until user requests archiving
 
 PURPOSE:
 - Session continuity: Fresh agents resume by reading Current Understanding (30-second context)

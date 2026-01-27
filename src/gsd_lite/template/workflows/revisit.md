@@ -3,7 +3,7 @@
 [SYSTEM: REVISIT MODE - Post-Whiteboard Rethinking]
 
 ## Initialization Check
-Check if `WORK.md` and `STATE.md` exist. If yes, READ THEM. Do NOT overwrite.
+Check if `WORK.md` exists. If yes, READ IT. Do NOT overwrite.
 
 ## Entry Conditions
 
@@ -211,7 +211,7 @@ If user approves changes, update PLAN.md or whiteboard notes with revised approa
 
 1. **Update PLAN.md** - Modify affected tasks, risks, verification
 2. **Preserve rationale in WORK.md** - Document why change made
-3. **Update STATE.md Key Decisions table** - Record revision decision
+3. **Record revision decision in WORK.md Key Events Index** - Add entry for the decision
 
 **Example WORK.md entry:**
 
