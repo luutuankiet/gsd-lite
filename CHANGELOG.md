@@ -2,6 +2,15 @@
 
 <!-- version list -->
 
+## v1.7.0 (2026-01-27)
+
+### Features
+
+- Revamp artifacts and protocol for grep optimized
+  ([#7](https://github.com/luutuankiet/gsd-lite/pull/7),
+  [`84a7453`](https://github.com/luutuankiet/gsd-lite/commit/84a7453ca3b9b4d33c8f4004b74061047861b8b9))
+
+
 ## v1.6.0 (2026-01-25)
 
 ### Bug Fixes
