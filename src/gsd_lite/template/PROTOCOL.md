@@ -102,15 +102,18 @@ read_files([{
 ```
 
 **Common boundary patterns:**
-- Log entries: `^\[LOG-` — read one log entry
+- Log entries: `^### \[LOG-` — read one log entry (now level-3 headers)
 - Level 2 headers: `^## ` — read one section
 - Any header: `^#+ ` — read until next header at any level
 
 **Grep patterns for discovery:**
 - Headers: `grep "^## "` — discover all sections
-- Log by ID: `grep "[LOG-015]"` — find specific entry
-- Log by type: `grep "[DECISION]"` — find all of type
+- All logs with summaries: `grep "^### \[LOG-"` — scan project evolution from headers
+- Log by ID: `grep "\[LOG-015\]"` — find specific entry
+- Log by type: `grep "\[DECISION\]"` — find all of type
 - Log by task: `grep "Task: MODEL-A"` — filter by task
+
+**WHY log headers include summaries:** When agents grep `^### \[LOG-`, they see the full header with summary inline (e.g., `### [LOG-005] - [DECISION] - Use card layout - Task: MODEL-A`). This enables quick context onboarding without reading full entry content.
 
 **Fallback: Manual Line Calculation (legacy servers)**
 

@@ -18,6 +18,7 @@ PURPOSE:
 
 GREP PATTERNS FOR DISCOVERY:
 - Headers: grep "^## " WORK.md — discover 3-part structure
+- All logs with summaries: grep "^### \[LOG-" WORK.md — scan project evolution from headers
 - Log by ID: grep "\[LOG-015\]" WORK.md — find specific entry
 - Log by type: grep "\[DECISION\]" WORK.md — find all decisions
 - Log by task: grep "Task: MODEL-A" WORK.md — filter by task
@@ -132,9 +133,15 @@ Entry types (6 types):
 - [EXEC] - Execution work: files modified, commands run (ALWAYS with code snippets)
 
 Entry format:
-[LOG-NNN] - [YYYY-MM-DD HH:MM] - [TYPE] - Task: TASK-ID
-**Summary:** [One-line description]
+### [LOG-NNN] - [TYPE] - {{one line summary}} - Task: TASK-ID
+**Timestamp:** [YYYY-MM-DD HH:MM]
 **Details:** [Full context with code snippets for EXEC/DISCOVERY]
+
+WHY THIS FORMAT:
+- Agents grep headers (`^### \[LOG-`) to scan project evolution without reading full content
+- Summary in header line enables quick onboarding from grep output alone
+- "###" level headers render nicely in IDE outlines for human navigation
+- Timestamp moved under header keeps the grep-scanned line focused on WHAT happened
 
 Use action timestamp (when decision made or action taken), not entry-write time.
 Code snippets REQUIRED for EXEC and DISCOVERY entries (enables PR extraction).
@@ -142,30 +149,30 @@ Code snippets REQUIRED for EXEC and DISCOVERY entries (enables PR extraction).
 IMPORTANT: Below are EXAMPLE entries showing format. Real entries should use [LOG-NNN] not [EXAMPLE-NNN].
 -->
 
-[EXAMPLE-001] - [2026-01-22 14:00] - [VISION] - Task: MODEL-A
-**Summary:** User wants Linear-like feel + Bloomberg density for power users
+### [EXAMPLE-001] - [VISION] - User wants Linear-like feel + Bloomberg density for power users - Task: MODEL-A
+**Timestamp:** 2026-01-22 14:00
 **Details:**
 - Context: Discussed UI patterns during moodboard session
 - Reference: Clean layout (Linear) but with information density (Bloomberg terminal)
 - Implication: Interface should not patronize advanced users with excessive whitespace
 
-[EXAMPLE-002] - [2026-01-22 14:10] - [PLAN] - Task: MODEL-A
-**Summary:** Broke card layout into 3 sub-tasks
+### [EXAMPLE-002] - [PLAN] - Broke card layout into 3 sub-tasks - Task: MODEL-A
+**Timestamp:** 2026-01-22 14:10
 **Details:**
 - SUBTASK-001: Base card component with props interface
 - SUBTASK-002: Engagement metrics display (likes, comments, shares)
 - SUBTASK-003: Layout grid with responsive breakpoints
 - Risk: Responsive behavior may need user verification on mobile
 
-[EXAMPLE-003] - [2026-01-22 14:15] - [DECISION] - Task: MODEL-A
-**Summary:** Use card-based layout, not timeline view
+### [EXAMPLE-003] - [DECISION] - Use card-based layout, not timeline view - Task: MODEL-A
+**Timestamp:** 2026-01-22 14:15
 **Details:**
 - Rationale: Cards support varying content length (post + engagement + metadata); timeline more rigid
 - Alternative considered: Timeline view (simpler implementation, less flexible for content types)
 - Impact: Unblocks component design; affects SUBTASK-001 (card props interface)
 
-[EXAMPLE-004] - [2026-01-22 14:30] - [EXEC] - Task: MODEL-A
-**Summary:** Created base card component with TypeScript interface
+### [EXAMPLE-004] - [EXEC] - Created base card component with TypeScript interface - Task: MODEL-A
+**Timestamp:** 2026-01-22 14:30
 **Details:**
 - Files modified: src/components/Card.tsx (created), src/types/post.ts (created)
 - Code snippet:
@@ -186,8 +193,8 @@ interface PostCardProps {
 ```
 - Status: SUBTASK-001 complete, proceeding to SUBTASK-002
 
-[EXAMPLE-005] - [2026-01-22 15:00] - [DISCOVERY] - Task: MODEL-A
-**Summary:** Found engagement pattern in Linear reference app
+### [EXAMPLE-005] - [DISCOVERY] - Found engagement pattern in Linear reference app - Task: MODEL-A
+**Timestamp:** 2026-01-22 15:00
 **Details:**
 - Observation: Linear shows engagement inline, not in dropdown/modal
 - Evidence from inspection:
@@ -200,8 +207,8 @@ interface PostCardProps {
 ```
 - Impact: Informs SUBTASK-002 design (inline engagement, emoji + count)
 
-[EXAMPLE-006] - [2026-01-22 15:30] - [EXEC] - Task: MODEL-A
-**Summary:** Implemented engagement metrics component
+### [EXAMPLE-006] - [EXEC] - Implemented engagement metrics component - Task: MODEL-A
+**Timestamp:** 2026-01-22 15:30
 **Details:**
 - Files modified: src/components/EngagementBar.tsx (created)
 - Code snippet:
@@ -218,23 +225,23 @@ export function EngagementBar({ likes, comments, shares }: EngagementProps) {
 ```
 - Status: SUBTASK-002 complete, proceeding to SUBTASK-003
 
-[EXAMPLE-007] - [2026-01-22 16:00] - [BLOCKER] - Task: MODEL-A
-**Summary:** Mobile breakpoint unclear - 768px or 640px?
+### [EXAMPLE-007] - [BLOCKER] - Mobile breakpoint unclear - 768px or 640px? - Task: MODEL-A
+**Timestamp:** 2026-01-22 16:00
 **Details:**
 - Issue: User hasn't specified mobile breakpoint preference
 - Context: Linear uses 768px, Bloomberg uses custom breakpoints
 - Waiting on: User decision on responsive strategy
 - Impact: Blocks SUBTASK-003 (layout grid) until clarified
 
-[EXAMPLE-008] - [2026-01-22 16:15] - [DECISION] - Task: MODEL-A
-**Summary:** Use 768px breakpoint, standard tablet/mobile split
+### [EXAMPLE-008] - [DECISION] - Use 768px breakpoint, standard tablet/mobile split - Task: MODEL-A
+**Timestamp:** 2026-01-22 16:15
 **Details:**
 - Rationale: 768px is industry standard, matches Linear reference
 - User preference: "Keep it simple, use standard breakpoints"
 - Impact: Unblocks SUBTASK-003
 
-[EXAMPLE-009] - [2026-01-22 16:45] - [EXEC] - Task: MODEL-A
-**Summary:** Implemented responsive grid with 768px breakpoint
+### [EXAMPLE-009] - [EXEC] - Implemented responsive grid with 768px breakpoint - Task: MODEL-A
+**Timestamp:** 2026-01-22 16:45
 **Details:**
 - Files modified: src/components/CardGrid.tsx (created), src/styles/grid.css (created)
 - Code snippet:
@@ -253,23 +260,23 @@ export function EngagementBar({ likes, comments, shares }: EngagementProps) {
 ```
 - Status: SUBTASK-003 complete, Task: MODEL-A ready for verification
 
-[EXAMPLE-010] - [2026-01-23 10:00] - [VISION] - Task: AUTH-IMPL
-**Summary:** Authentication must support refresh token rotation
+### [EXAMPLE-010] - [VISION] - Authentication must support refresh token rotation - Task: AUTH-IMPL
+**Timestamp:** 2026-01-23 10:00
 **Details:**
 - Security requirement from user: "Don't want long-lived tokens floating around"
 - Reference: OAuth 2.0 refresh token rotation best practice
 - Success criteria: Access token 15min, refresh token rotates on use
 
-[EXAMPLE-011] - [2026-01-23 10:20] - [PLAN] - Task: AUTH-IMPL
-**Summary:** JWT auth broken into 3 tasks
+### [EXAMPLE-011] - [PLAN] - JWT auth broken into 3 tasks - Task: AUTH-IMPL
+**Timestamp:** 2026-01-23 10:20
 **Details:**
 - TASK-001: Library setup (jose v0.5.0) + token generation
 - TASK-002: Login endpoint with bcrypt password hashing
 - TASK-003: Token validation middleware + refresh rotation
 - Risk: Token expiry strategy may need user decision
 
-[EXAMPLE-012] - [2026-01-23 10:30] - [EXEC] - Task: AUTH-IMPL
-**Summary:** Installed jose library and created token generation
+### [EXAMPLE-012] - [EXEC] - Installed jose library and created token generation - Task: AUTH-IMPL
+**Timestamp:** 2026-01-23 10:30
 **Details:**
 - Files modified: src/auth/token.ts (created), package.json (jose added)
 - Code snippet:
@@ -284,8 +291,8 @@ export async function generateAccessToken(userId: string): Promise<string> {
 ```
 - Status: TASK-001 complete
 
-[EXAMPLE-013] - [2026-01-23 11:00] - [DISCOVERY] - Task: AUTH-IMPL
-**Summary:** bcrypt cost factor 12 optimal for performance
+### [EXAMPLE-013] - [DISCOVERY] - bcrypt cost factor 12 optimal for performance - Task: AUTH-IMPL
+**Timestamp:** 2026-01-23 11:00
 **Details:**
 - Benchmark: Cost 10 = 50ms, Cost 12 = 150ms, Cost 14 = 600ms
 - Code used for testing:
@@ -299,8 +306,8 @@ for (const cost of [10, 12, 14]) {
 ```
 - Decision: Use cost 12 (150ms acceptable for login latency)
 
-[EXAMPLE-014] - [2026-01-23 11:30] - [EXEC] - Task: AUTH-IMPL
-**Summary:** Created login endpoint with bcrypt hashing
+### [EXAMPLE-014] - [EXEC] - Created login endpoint with bcrypt hashing - Task: AUTH-IMPL
+**Timestamp:** 2026-01-23 11:30
 **Details:**
 - Files modified: src/api/auth/login.ts (created)
 - Code snippet:
@@ -316,24 +323,24 @@ export async function loginHandler(req: Request, res: Response) {
 ```
 - Status: TASK-002 complete, proceeding to TASK-003
 
-[EXAMPLE-015] - [2026-01-23 12:00] - [BLOCKER] - Task: AUTH-IMPL
-**Summary:** Password reset flow unclear - same JWT or separate token?
+### [EXAMPLE-015] - [BLOCKER] - Password reset flow unclear - same JWT or separate token? - Task: AUTH-IMPL
+**Timestamp:** 2026-01-23 12:00
 **Details:**
 - Issue: Security model for password reset not specified
 - Question: Reuse main JWT or generate separate reset token?
 - Waiting on: User decision on security approach
 - Impact: Blocks finalization of auth module architecture
 
-[EXAMPLE-016] - [2026-01-23 12:15] - [DECISION] - Task: AUTH-IMPL
-**Summary:** Use separate reset token, not main JWT
+### [EXAMPLE-016] - [DECISION] - Use separate reset token, not main JWT - Task: AUTH-IMPL
+**Timestamp:** 2026-01-23 12:15
 **Details:**
 - Rationale: Separate token provides better security isolation
 - User preference: "Don't reuse auth token for password reset - keep them separate"
 - Expiry: 1 hour for reset token (short-lived for security)
 - Impact: Need to add generateResetToken() to auth module
 
-[EXAMPLE-017] - [2026-01-23 12:45] - [EXEC] - Task: AUTH-IMPL
-**Summary:** Added password reset token generation
+### [EXAMPLE-017] - [EXEC] - Added password reset token generation - Task: AUTH-IMPL
+**Timestamp:** 2026-01-23 12:45
 **Details:**
 - Files modified: src/auth/token.ts (updated), src/api/auth/reset.ts (created)
 - Code snippet:
