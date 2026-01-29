@@ -138,7 +138,7 @@ Entry format:
 **Details:** [Full context with code snippets for EXEC/DISCOVERY]
 
 WHY THIS FORMAT:
-- Agents grep headers ("### \[LOG") to scan project evolution without reading full content
+- Agents grep headers (`^### \[LOG-`) to scan project evolution without reading full content
 - Summary in header line enables quick onboarding from grep output alone
 - "###" level headers render nicely in IDE outlines for human navigation
 - Timestamp moved under header keeps the grep-scanned line focused on WHAT happened
