@@ -45,10 +45,10 @@ GREP PATTERNS:
 
 <!--
 Active loops awaiting attention. Each entry is self-contained with full context.
-IMPORTANT: Below are EXAMPLE entries showing format. Real entries should follow this structure.
+IMPORTANT: Below are EXAMPLE entries showing format. Real entries use [LOOP-NNN], not [EXAMPLE-LOOP-NNN].
 -->
 
-### [LOOP-001] - Client update workflow needs pull mechanism - Status: Open
+### [EXAMPLE-LOOP-001] - Client update workflow needs pull mechanism - Status: Open
 **Created:** 2026-01-23 | **Source:** During PHASE-001 planning | **Origin:** User
 
 **Context:**
@@ -67,7 +67,7 @@ This affects the `ClientConnection` interface at `src/types/client.ts:12` which 
 
 ---
 
-### [LOOP-002] - Token expiry strategy unclear for long-running sessions - Status: Clarifying
+### [EXAMPLE-LOOP-002] - Token expiry strategy unclear for long-running sessions - Status: Clarifying
 **Created:** 2026-01-23 | **Source:** During TASK-AUTH-001 implementation | **Origin:** Agent
 
 **Context:**
@@ -96,7 +96,7 @@ User preference needed. This blocks finalizing the auth implementation.
 
 ---
 
-### [LOOP-003] - Database migration strategy for production - Status: Open
+### [EXAMPLE-LOOP-003] - Database migration strategy for production - Status: Open
 **Created:** 2026-01-24 | **Source:** During TASK-DB-002 schema design | **Origin:** Agent
 
 **Context:**
@@ -136,7 +136,7 @@ This isn't blocking current work but will become critical before first productio
 Resolved loops with full resolution context. Kept for historical reference.
 -->
 
-### [LOOP-004] - Password reset flow scope unclear - Status: Resolved
+### [EXAMPLE-LOOP-004] - Password reset flow scope unclear - Status: Resolved
 **Created:** 2026-01-22 | **Source:** During TASK-002 user discussion | **Origin:** User
 
 **Context:**
@@ -158,7 +158,7 @@ Logged as `[LOG-025] - [DECISION]` in WORK.md.
 
 ---
 
-### [LOOP-005] - Profile page data model needs user input - Status: Resolved
+### [EXAMPLE-LOOP-005] - Profile page data model needs user input - Status: Resolved
 **Created:** 2026-01-22 | **Source:** During TASK-003 component design | **Origin:** Agent
 
 **Context:**
