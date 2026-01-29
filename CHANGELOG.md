@@ -2,6 +2,29 @@
 
 <!-- version list -->
 
+## v1.8.0 (2026-01-29)
+
+### Bug Fixes
+
+- Update atomic log format with summary in header line
+  ([#8](https://github.com/luutuankiet/gsd-lite/pull/8),
+  [`3a9c590`](https://github.com/luutuankiet/gsd-lite/commit/3a9c590dbabc7ef45bcb1c0218f83a3f4c38d53c))
+
+- Use EXAMPLE-LOOP-NNN IDs for example entries in INBOX.md
+  ([#8](https://github.com/luutuankiet/gsd-lite/pull/8),
+  [`3a9c590`](https://github.com/luutuankiet/gsd-lite/commit/3a9c590dbabc7ef45bcb1c0218f83a3f4c38d53c))
+
+### Features
+
+- Redesign INBOX.md with context-preserving loop entries
+  ([#8](https://github.com/luutuankiet/gsd-lite/pull/8),
+  [`3a9c590`](https://github.com/luutuankiet/gsd-lite/commit/3a9c590dbabc7ef45bcb1c0218f83a3f4c38d53c))
+
+- Update atomic log format with summary in header line
+  ([#8](https://github.com/luutuankiet/gsd-lite/pull/8),
+  [`3a9c590`](https://github.com/luutuankiet/gsd-lite/commit/3a9c590dbabc7ef45bcb1c0218f83a3f4c38d53c))
+
+
 ## v1.7.0 (2026-01-27)
 
 ### Features
