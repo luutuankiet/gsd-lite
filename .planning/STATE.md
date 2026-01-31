@@ -10,18 +10,18 @@ See: .planning/PROJECT.md (updated 2026-01-19)
 ## Current Position
 
 Phase: 1.8 of 6 (Add Workflows and Templated Artifacts)
-Plan: 1 of 3 in current phase (In progress)
+Plan: 2 of 3 in current phase (In progress)
 Status: In progress
-Last activity: 2026-02-01 — Completed 01.8-01-PLAN.md
+Last activity: 2026-01-31 — Completed 01.8-02-PLAN.md
 
-Progress: [████████░░] 77% (Phase 0-1.8 plan 1 complete)
+Progress: [████████░░] 78% (Phase 0-1.8 plan 2 complete)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 21
-- Average duration: 3.3 min
-- Total execution time: 1.26 hours
+- Total plans completed: 22
+- Average duration: 3.2 min
+- Total execution time: 1.31 hours
 
 **By Phase:**
 
@@ -33,11 +33,11 @@ Progress: [████████░░] 77% (Phase 0-1.8 plan 1 complete)
 | 1.4 Enrich Checkpoint Workflow | 2 | 5.9 min | 3.0 min |
 | 1.5 Evaluation Framework | 2 | 8 min | 4.0 min |
 | 1.7 Refactor Artifacts for Grep Synergy | 4 | 18 min | 4.5 min |
-| 1.8 Add Workflows & Templated Artifacts | 1 | 1.5 min | 1.5 min |
+| 1.8 Add Workflows & Templated Artifacts | 2 | 4.5 min | 2.25 min |
 
 **Recent Trend:**
-- Last 5 plans: 01.7-02 (8 min), 01.7-03 (2 min), 01.7-04 (3 min), 01.8-01 (1.5 min)
-- Trend: Consistent velocity (~1.5-8 min per plan)
+- Last 5 plans: 01.7-03 (2 min), 01.7-04 (3 min), 01.8-01 (1.5 min), 01.8-02 (3 min)
+- Trend: Consistent velocity (~1.5-3 min per plan)
 
 *Updated after each plan completion*
 
@@ -80,6 +80,11 @@ Recent decisions affecting current work:
 - PROJECT.md lightweight structure (01.8-01): Dropped Validated/Active/Out of Scope lifecycle for simple 5-section format
 - Templates generalized (01.8-01): Both templates work for any project type (web apps, CLI, dbt, Docker, monorepos)
 - Success Criteria as 5000ft view (01.8-01): PROJECT.md Success Criteria connects WORK.md logs to overall intent
+- Single-agent codebase mapping (01.8-02): map-codebase.md does sequentially what OG GSD does with 4 parallel agents
+- Conversational project init (01.8-02): new-project.md uses questioning instead of Context7/WebSearch
+- Workflow structure consistency (01.8-02): All workflows follow same pattern (Coaching, First Turn, Process, Sticky Notes)
+- Grep-first discovery (01.8-02): map-codebase.md uses ls/find/grep instead of reading every file
+- Vision Reflection pattern (01.8-02): new-project.md reflects understanding before writing PROJECT.md
 
 ### Pending Todos
 
@@ -98,10 +103,10 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-02-01
-Stopped at: Completed 01.8-01-PLAN.md (Created ARCHITECTURE.md and PROJECT.md templates)
+Last session: 2026-01-31
+Stopped at: Completed 01.8-02-PLAN.md (Created map-codebase.md and new-project.md workflows)
 Resume file: None
 
 ---
 *State initialized: 2026-01-19*
-*Last updated: 2026-02-01 (Completed 01.8-01 - Phase 1.8 in progress)*
+*Last updated: 2026-01-31 (Completed 01.8-02 - Phase 1.8 in progress)*
