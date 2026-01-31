@@ -14,13 +14,14 @@ Decimal phases appear between their surrounding integers in numeric order.
 
 - [x] **Phase 0: GSD Pattern Analysis** - Reference setup (completed via Quick 001)
 - [x] **Phase 1: Foundation & Templates** - File-based protocol and template structure
-- [ ] **Phase 1.1: Allow Flexible Token Budget** - Handle token budget flexibility (INSERTED)
+- [x] **Phase 1.1: Allow Flexible Token Budget** - Handle token budget flexibility (INSERTED)
 - [x] **Phase 1.2: Audit and Fix Template Coherence** - Fix template coherence for single-agent sessions (INSERTED)
 - [x] **Phase 1.3: Context Lifecycle, Coaching Model & Workflow Decomposition** - User-controlled context, coaching philosophy, per-workflow files (INSERTED)
-- [ ] **Phase 1.4: Enrich Checkpoint Workflow** - Enrich checkpoint workflow (INSERTED)
+- [x] **Phase 1.4: Enrich Checkpoint Workflow** - Enrich checkpoint workflow (INSERTED)
 - [x] **Phase 1.5: Evaluation Framework for GSD-lite** - Simulated repo + prompts + reference responses + eval notes for iterative QC (INSERTED)
-- [ ] **Phase 1.6: Fix Agent Overriding Examples** - Fix agent overriding scaffolded files (INSERTED)
-- [ ] **Phase 1.7: Refactor Artifacts for Grep Synergy** - Refactor artifacts and protocols for grep workflows (INSERTED)
+- [x] **Phase 1.6: Fix Agent Overriding Examples** - Fix agent overriding scaffolded files (INSERTED)
+- [x] **Phase 1.7: Refactor Artifacts for Grep Synergy** - Refactor artifacts and protocols for grep workflows (INSERTED)
+- [ ] **Phase 1.8: Add Workflows and Templated Artifacts** - Codebase mapper and new project workflows from GSD upstream (INSERTED)
 - [ ] **Phase 2: Session Handoff System** - Eliminate context reconstruction between sessions
 - [ ] **Phase 3: Context Engineering Patterns** - Token budget management and context optimization
 - [ ] **Phase 4: Educational Integration & Validation** - Teach through templates and validate on real work
@@ -196,10 +197,37 @@ Plans:
 **Plans:** 4 plans
 
 Plans:
-- [ ] 01.7-01-PLAN.md — Restructure WORK.md and create housekeeping workflow
-- [ ] 01.7-02-PLAN.md — Update all workflows with pair programming philosophy
-- [ ] 01.7-03-PLAN.md — Create README with philosophy and maintainer's guide
-- [ ] 01.7-04-PLAN.md — Final coherence verification
+- [x] 01.7-01-PLAN.md — Restructure WORK.md and create housekeeping workflow
+- [x] 01.7-02-PLAN.md — Update all workflows with pair programming philosophy
+- [x] 01.7-03-PLAN.md — Create README with philosophy and maintainer's guide
+- [x] 01.7-04-PLAN.md — Final coherence verification
+
+### Phase 1.8: Add Workflows and Templated Artifacts for Codebase Mapper and New Project (INSERTED)
+
+**Goal:** Create GSD-lite native workflows for codebase mapping and project initialization, with lightweight templates optimized for single-agent grep-friendly use
+**Depends on:** Phase 1.7
+**Requirements:** None (template enhancement)
+**Success Criteria** (what must be TRUE):
+  1. ARCHITECTURE.md template provides structure for any project type (web app, CLI, dbt, Docker, monorepo)
+  2. PROJECT.md template captures vision, core value, and success criteria without enterprise overhead
+  3. map-codebase.md workflow guides single-agent through codebase discovery
+  4. new-project.md workflow guides single-agent through project initialization
+  5. PROTOCOL.md routes agents to utility workflows when appropriate
+  6. All new workflows follow GSD-lite patterns (coaching philosophy, sticky notes, first-turn protocol)
+
+**Deliverables:**
+- `src/gsd_lite/template/ARCHITECTURE.md` — Codebase mapping output template
+- `src/gsd_lite/template/PROJECT.md` — Project initialization output template
+- `src/gsd_lite/template/workflows/map-codebase.md` — Single-agent codebase mapping workflow
+- `src/gsd_lite/template/workflows/new-project.md` — Single-agent project initialization workflow
+- Updated `src/gsd_lite/template/PROTOCOL.md` — Router hints for utility workflows
+
+**Plans:** 3 plans
+
+Plans:
+- [ ] 01.8-01-PLAN.md — Create ARCHITECTURE.md and PROJECT.md templates
+- [ ] 01.8-02-PLAN.md — Create map-codebase.md and new-project.md workflows
+- [ ] 01.8-03-PLAN.md — Update PROTOCOL.md with router hints and verify phase
 
 ### Phase 2: Session Handoff System
 **Goal**: Create ephemeral working memory system that exports to GTD and eliminates 15-30 min context reconstruction
@@ -245,7 +273,7 @@ Plans:
 ## Progress
 
 **Execution Order:**
-Phases execute in numeric order: 0 → 1 → 1.1 → 1.2 → 1.3 → 1.4 → 1.5 → 1.6 → 1.7 → 2 → 3 → 4
+Phases execute in numeric order: 0 → 1 → 1.1 → 1.2 → 1.3 → 1.4 → 1.5 → 1.6 → 1.7 → 1.8 → 2 → 3 → 4
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
@@ -258,8 +286,9 @@ Phases execute in numeric order: 0 → 1 → 1.1 → 1.2 → 1.3 → 1.4 → 1.5
 | 1.5. Evaluation Framework for GSD-lite (INSERTED) | 2/2 | Completed | 2026-01-26 |
 | 1.6. Fix Agent Overriding Examples in Scaffolded File (INSERTED) | 0/TBD | Not started | - |
 | 1.7. Refactor Artifacts for Grep Synergy (INSERTED) | 4/4 | Completed | 2026-01-27 |
+| 1.8. Add Workflows and Templated Artifacts (INSERTED) | 0/3 | Not started | - |
 | 2. Session Handoff System | 0/TBD | Not started | - |
 
 ---
 *Roadmap created: 2026-01-19*
-*Last updated: 2026-01-27 (Completed 01.7-04 - Phase 1.7 complete)*
+*Last updated: 2026-02-01 (Phase 1.8 planned - 3 plans in 3 waves)*
