@@ -21,7 +21,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 1.5: Evaluation Framework for GSD-lite** - Simulated repo + prompts + reference responses + eval notes for iterative QC (INSERTED)
 - [x] **Phase 1.6: Fix Agent Overriding Examples** - Fix agent overriding scaffolded files (INSERTED)
 - [x] **Phase 1.7: Refactor Artifacts for Grep Synergy** - Refactor artifacts and protocols for grep workflows (INSERTED)
-- [ ] **Phase 1.8: Add Workflows and Templated Artifacts** - Codebase mapper and new project workflows from GSD upstream (INSERTED)
+- [x] **Phase 1.8: Add Workflows and Templated Artifacts** - Codebase mapper and new project workflows from GSD upstream (INSERTED)
 - [ ] **Phase 2: Session Handoff System** - Eliminate context reconstruction between sessions
 - [ ] **Phase 3: Context Engineering Patterns** - Token budget management and context optimization
 - [ ] **Phase 4: Educational Integration & Validation** - Teach through templates and validate on real work
