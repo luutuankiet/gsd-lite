@@ -10,18 +10,18 @@ See: .planning/PROJECT.md (updated 2026-01-19)
 ## Current Position
 
 Phase: 1.8 of 6 (Add Workflows and Templated Artifacts)
-Plan: 2 of 3 in current phase (In progress)
-Status: In progress
-Last activity: 2026-01-31 — Completed 01.8-02-PLAN.md
+Plan: 3 of 3 in current phase (Phase complete)
+Status: Phase complete
+Last activity: 2026-01-31 — Completed 01.8-03-PLAN.md
 
-Progress: [████████░░] 78% (Phase 0-1.8 plan 2 complete)
+Progress: [█████████░] 82% (Phase 0-1.8 complete)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 22
-- Average duration: 3.2 min
-- Total execution time: 1.31 hours
+- Total plans completed: 23
+- Average duration: 3.1 min
+- Total execution time: 1.33 hours
 
 **By Phase:**
 
@@ -33,11 +33,11 @@ Progress: [████████░░] 78% (Phase 0-1.8 plan 2 complete)
 | 1.4 Enrich Checkpoint Workflow | 2 | 5.9 min | 3.0 min |
 | 1.5 Evaluation Framework | 2 | 8 min | 4.0 min |
 | 1.7 Refactor Artifacts for Grep Synergy | 4 | 18 min | 4.5 min |
-| 1.8 Add Workflows & Templated Artifacts | 2 | 4.5 min | 2.25 min |
+| 1.8 Add Workflows & Templated Artifacts | 3 | 5.5 min | 1.83 min |
 
 **Recent Trend:**
-- Last 5 plans: 01.7-03 (2 min), 01.7-04 (3 min), 01.8-01 (1.5 min), 01.8-02 (3 min)
-- Trend: Consistent velocity (~1.5-3 min per plan)
+- Last 5 plans: 01.7-04 (3 min), 01.8-01 (1.5 min), 01.8-02 (3 min), 01.8-03 (1 min)
+- Trend: Consistent velocity (~1-3 min per plan)
 
 *Updated after each plan completion*
 
@@ -85,6 +85,8 @@ Recent decisions affecting current work:
 - Workflow structure consistency (01.8-02): All workflows follow same pattern (Coaching, First Turn, Process, Sticky Notes)
 - Grep-first discovery (01.8-02): map-codebase.md uses ls/find/grep instead of reading every file
 - Vision Reflection pattern (01.8-02): new-project.md reflects understanding before writing PROJECT.md
+- Utility workflow routing (01.8-03): PROTOCOL.md has Utility Workflows section with soft gates
+- Soft gates pattern (01.8-03): Utility workflows suggest, don't block (helpful but not mandatory)
 
 ### Pending Todos
 
@@ -104,9 +106,9 @@ None.
 ## Session Continuity
 
 Last session: 2026-01-31
-Stopped at: Completed 01.8-02-PLAN.md (Created map-codebase.md and new-project.md workflows)
+Stopped at: Completed 01.8-03-PLAN.md (Phase 1.8 complete - Router integration for utility workflows)
 Resume file: None
 
 ---
 *State initialized: 2026-01-19*
-*Last updated: 2026-01-31 (Completed 01.8-02 - Phase 1.8 in progress)*
+*Last updated: 2026-01-31 (Completed 01.8-03 - Phase 1.8 complete)*
