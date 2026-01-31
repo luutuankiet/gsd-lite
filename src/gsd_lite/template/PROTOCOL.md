@@ -50,6 +50,24 @@ These workflows are triggered by explicit user requests:
 
 **Agent reads and follows:** Agent reads the workflow file content, then follows those instructions for the session. This is NOT programmatic routing - it's documentation the agent interprets.
 
+### Utility Workflows (Standalone)
+
+These workflows are standalone utilities, not part of the moodboard/whiteboard/execution core loop.
+
+| Workflow | When to Suggest | Output |
+|----------|-----------------|--------|
+| map-codebase.md | ARCHITECTURE.md missing AND codebase exists | gsd-lite/ARCHITECTURE.md |
+| new-project.md | PROJECT.md missing AND user states new vision | gsd-lite/PROJECT.md |
+
+**Soft gates (suggest, don't block):**
+- These workflows are helpful but not mandatory
+- Agent suggests when conditions met, user decides
+- Natural language triggers: "map the codebase", "start a new project", "what's in this repo"
+
+**Invocation:**
+- Explicit: "run map-codebase workflow"
+- Natural: "help me understand this codebase" / "I want to start a new project"
+
 ## Fresh Agent Resume Protocol
 
 **When resuming work after checkpoint (fresh context window):**
@@ -138,6 +156,8 @@ Read first 50 lines of WORK.md — Current Understanding is always at top.
 | WORK.md | Session state + execution log | gsd-lite/WORK.md |
 | INBOX.md | Loop capture | gsd-lite/INBOX.md |
 | HISTORY.md | Completed tasks/phases | gsd-lite/HISTORY.md |
+| ARCHITECTURE.md | Codebase structure | gsd-lite/ARCHITECTURE.md |
+| PROJECT.md | Project vision | gsd-lite/PROJECT.md |
 
 ## Systematic ID Format
 
