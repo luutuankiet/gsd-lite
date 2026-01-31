@@ -5,23 +5,23 @@
 See: .planning/PROJECT.md (updated 2026-01-19)
 
 **Core value:** Maintain ownership of the reasoning process - you stay the author who can explain the "why" behind every decision, not a passenger consuming agent output.
-**Current focus:** Phase 1.7 - Refactor Artifacts for Grep Synergy
+**Current focus:** Phase 1.8 - Add Workflows and Templated Artifacts
 
 ## Current Position
 
-Phase: 1.7 of 6 (Refactor Artifacts for Grep Synergy)
-Plan: 4 of 4 in current phase (Phase complete)
-Status: Phase complete
-Last activity: 2026-01-27 — Completed 01.7-04-PLAN.md
+Phase: 1.8 of 6 (Add Workflows and Templated Artifacts)
+Plan: 1 of 3 in current phase (In progress)
+Status: In progress
+Last activity: 2026-02-01 — Completed 01.8-01-PLAN.md
 
-Progress: [████████░░] 75% (Phase 0-1.7 complete)
+Progress: [████████░░] 77% (Phase 0-1.8 plan 1 complete)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 20
-- Average duration: 3.5 min
-- Total execution time: 1.23 hours
+- Total plans completed: 21
+- Average duration: 3.3 min
+- Total execution time: 1.26 hours
 
 **By Phase:**
 
@@ -33,10 +33,11 @@ Progress: [████████░░] 75% (Phase 0-1.7 complete)
 | 1.4 Enrich Checkpoint Workflow | 2 | 5.9 min | 3.0 min |
 | 1.5 Evaluation Framework | 2 | 8 min | 4.0 min |
 | 1.7 Refactor Artifacts for Grep Synergy | 4 | 18 min | 4.5 min |
+| 1.8 Add Workflows & Templated Artifacts | 1 | 1.5 min | 1.5 min |
 
 **Recent Trend:**
-- Last 5 plans: 01.7-01 (5 min), 01.7-02 (8 min), 01.7-03 (2 min), 01.7-04 (3 min)
-- Trend: Consistent velocity (~2-8 min per plan)
+- Last 5 plans: 01.7-02 (8 min), 01.7-03 (2 min), 01.7-04 (3 min), 01.8-01 (1.5 min)
+- Trend: Consistent velocity (~1.5-8 min per plan)
 
 *Updated after each plan completion*
 
@@ -52,6 +53,7 @@ Progress: [████████░░] 75% (Phase 0-1.7 complete)
 - Phase 1.5 inserted after Phase 1.4: Evaluation Framework for GSD-lite (URGENT) - build eval sequence with simulated repo, step-by-step prompts, reference responses, and eval notes for iterative QC
 - Phase 1.6 inserted after Phase 1.5: Fix agent overriding examples in scaffolded file (URGENT) - commands are under ~/.config/opencode
 - Phase 1.7 inserted after Phase 1.6: Refactor artifacts and protocols and workflows to synergy with grep (URGENT)
+- Phase 1.8 inserted after Phase 1.7: Add workflows and templated artifacts for codebase mapper and new project inspired from GSD upstream workflows (URGENT)
 
 ### Decisions
 
@@ -74,6 +76,10 @@ Recent decisions affecting current work:
 - STATE.md fully removed (01.7-04): Deleted STATE.md completely, all references updated to WORK.md
 - Final workflow set (01.7-04): 5 core workflows (moodboard, whiteboard, execution, checkpoint, housekeeping) - removed promotion.md and revisit.md
 - Example pattern safety (01.7-04): WORK.md examples use [EXAMPLE-NNN] to prevent grep confusion with real [LOG-NNN] entries
+- ARCHITECTURE.md single-file merge (01.8-01): Merged 7 OG GSD files into single ARCHITECTURE.md template
+- PROJECT.md lightweight structure (01.8-01): Dropped Validated/Active/Out of Scope lifecycle for simple 5-section format
+- Templates generalized (01.8-01): Both templates work for any project type (web apps, CLI, dbt, Docker, monorepos)
+- Success Criteria as 5000ft view (01.8-01): PROJECT.md Success Criteria connects WORK.md logs to overall intent
 
 ### Pending Todos
 
@@ -92,10 +98,10 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-01-27
-Stopped at: Completed 01.7-04-PLAN.md (Final coherence verification, STATE.md deleted, workflows finalized)
+Last session: 2026-02-01
+Stopped at: Completed 01.8-01-PLAN.md (Created ARCHITECTURE.md and PROJECT.md templates)
 Resume file: None
 
 ---
 *State initialized: 2026-01-19*
-*Last updated: 2026-01-27 (Completed 01.7-04 - Phase 1.7 complete)*
+*Last updated: 2026-02-01 (Completed 01.8-01 - Phase 1.8 in progress)*
