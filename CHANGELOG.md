@@ -2,6 +2,14 @@
 
 <!-- version list -->
 
+## v1.9.0 (2026-01-31)
+
+### Features
+
+- Add workflows codebase map and new project ([#9](https://github.com/luutuankiet/gsd-lite/pull/9),
+  [`9623be0`](https://github.com/luutuankiet/gsd-lite/commit/9623be06da1602a5527e0cf3de83ef740003a0ce))
+
+
 ## v1.8.0 (2026-01-29)
 
 ### Bug Fixes
