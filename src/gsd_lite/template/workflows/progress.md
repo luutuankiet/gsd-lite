@@ -99,7 +99,7 @@ Extract and present:
 
 **Why:** ARCHITECTURE.md grounds the agent in the codebase reality. Understanding the technical landscape prevents misguided suggestions.
 
-**If ARCHITECTURE.md missing:** Note it and suggest running map-codebase workflow if working with existing code.
+**If ARCHITECTURE.md missing:** Refer to the "Missing High-Level Context" special case handling below.
 
 ### Step 5: Read Current Understanding (Ground-Level State)
 
