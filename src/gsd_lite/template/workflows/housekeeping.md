@@ -1,3 +1,7 @@
+---
+description: WORK.md maintenance workflow - extract PR descriptions and archive completed tasks to HISTORY.md
+---
+
 # Housekeeping Workflow
 
 [SYSTEM: HOUSEKEEPING MODE - WORK.md Maintenance]

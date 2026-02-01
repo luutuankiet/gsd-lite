@@ -1,3 +1,7 @@
+---
+description: Project initialization workflow - create PROJECT.md capturing vision, core value, success criteria, and constraints
+---
+
 # New Project Workflow
 
 [SYSTEM: NEW-PROJECT MODE - Project Initialization]

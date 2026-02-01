@@ -1,3 +1,7 @@
+---
+description: Session handoff workflow - pause work mid-phase and preserve state for later resumption
+---
+
 # Checkpoint Workflow
 
 [SYSTEM: CHECKPOINT MODE - Session Handoff]

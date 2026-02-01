@@ -1,3 +1,7 @@
+---
+description: Dream extraction workflow - gather user vision through questioning before planning
+---
+
 # Moodboard Workflow
 
 [SYSTEM: MOODBOARD MODE - Dream Extraction]

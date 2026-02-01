@@ -1,3 +1,7 @@
+---
+description: Plan proposal workflow - present scope, tasks, and risks for user approval after moodboard
+---
+
 # Whiteboard Workflow
 
 [SYSTEM: WHITEBOARD MODE - Plan Proposal]

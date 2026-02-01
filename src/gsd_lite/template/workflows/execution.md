@@ -1,3 +1,7 @@
+---
+description: Task execution workflow - complete planned tasks with journalistic logging and scope discipline
+---
+
 # Execution Workflow
 
 [SYSTEM: EXECUTION MODE - Task Work]

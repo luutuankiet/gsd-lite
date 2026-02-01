@@ -1,3 +1,7 @@
+---
+description: Codebase discovery workflow - create ARCHITECTURE.md documenting structure, tech stack, data flow, and entry points
+---
+
 # Map Codebase Workflow
 
 [SYSTEM: MAP-CODEBASE MODE - Codebase Discovery]
