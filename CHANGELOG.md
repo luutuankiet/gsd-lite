@@ -2,6 +2,21 @@
 
 <!-- version list -->
 
+## v1.10.0 (2026-02-01)
+
+### Bug Fixes
+
+- Add echo-back onboarding protocol to progress workflow
+  ([#10](https://github.com/luutuankiet/gsd-lite/pull/10),
+  [`46969d2`](https://github.com/luutuankiet/gsd-lite/commit/46969d2237952ea6081528ff57707985433585f4))
+
+### Features
+
+- Add echo-back onboarding protocol to progress workflow
+  ([#10](https://github.com/luutuankiet/gsd-lite/pull/10),
+  [`46969d2`](https://github.com/luutuankiet/gsd-lite/commit/46969d2237952ea6081528ff57707985433585f4))
+
+
 ## v1.9.1 (2026-02-01)
 
 ### Bug Fixes
