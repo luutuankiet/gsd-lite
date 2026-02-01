@@ -2,6 +2,14 @@
 
 <!-- version list -->
 
+## v1.9.1 (2026-02-01)
+
+### Bug Fixes
+
+- Add descriptions to workflow and helper AGENTs.md
+  ([`6702209`](https://github.com/luutuankiet/gsd-lite/commit/6702209daf3a3c28c8296c14cf7d9b7daf0388b7))
+
+
 ## v1.9.0 (2026-01-31)
 
 ### Features
