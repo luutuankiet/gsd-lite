@@ -82,7 +82,7 @@ Extract and present:
 
 **Why:** PROJECT.md captures the "why" behind the project. Created during new-project workflow (see `../PROJECT.md` template and `./new-project.md` workflow). Fresh agents must demonstrate they understand project intent before diving into tasks.
 
-**If PROJECT.md missing:** Note it and suggest user describe the project vision or run new-project workflow.
+**If PROJECT.md missing:** Refer to the "Missing High-Level Context" special case handling below.
 
 ### Step 4: Echo Back Architecture Overview (Technical Context)
 
