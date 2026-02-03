@@ -321,93 +321,7 @@ Wednesday: Complete TASK-003 → Promotion (WORK.md trimmed, phase closed)
 3. **Decoupling prevents data loss** - Frequent checkpoints don't risk losing WORK.md content
 4. **User controls promotion timing** - Can checkpoint many times before deciding to promote
 
----
 
-## Sticky Note Protocol
-
-**At the end of EVERY turn**, include this status block **without exception**.
-
-### Required Format
-
-Use fenced block with `gsd-status` marker:
-
-```gsd-status
-📋 UPDATED: [artifact name] ([what changed])
-
-CURRENT STATE:
-- Phase: PHASE-NNN ([Phase name]) - [X/Y tasks complete]
-- Task: TASK-NNN ([Task name]) - [Status]
-- Active loops: [count] ([LOOP-001, LOOP-002, ...])
-
-AVAILABLE ACTIONS:
-📋 /continue | /pause | /status | /add-loop | /discuss
-[Contextual actions if applicable]
-
-NEXT: [What agent expects from user]
-SELF-CHECK: agent has completed the following action
-- [ ] WORK.md update
-- [ ] INBOX.md update
-- [ ] HISTORY.md update
-
----
-📊 PROGRESS: PHASE-NNN [██████░░░░] 60% (3/5 tasks complete)
----
-```
-
-### Available Actions Menu
-
-**Core actions (always present):**
-
-- `/continue` - Resume work after checkpoint
-- `/pause` - Save session state for later
-- `/status` - Show current state
-- `/add-loop` - Capture new loop
-- `/discuss` - Fork to exploratory discussion
-
-**Contextual actions (when relevant):**
-
-- Loop-related: `/close-loop [ID]`, `/explore-loop [ID]`, `/defer-loop [ID]`
-- Phase-related: `/complete-phase` (triggers promotion workflow)
-- Decision-related: `/make-decision`, `/defer-decision`
-
-### Example Checkpoint Status
-
-```gsd-status
-📋 UPDATED: WORK.md (checkpointed TASK-002 progress, updated Current Understanding), INBOX.md (added LOOP-003)
-
-CURRENT STATE:
-- Phase: PHASE-001 (Add User Authentication) - 1/3 tasks complete
-- Task: TASK-002 (Create login endpoint) - In progress (60%)
-- Active loops: 3 (LOOP-001, LOOP-002, LOOP-003)
-
-AVAILABLE ACTIONS:
-📋 /continue | /pause | /status | /add-loop | /discuss
-Phase actions: /complete-phase (when ready)
-
-NEXT: Resume in next session - TASK-002 will continue from checkpoint
-SELF-CHECK: agent has completed the following action
-- [x] WORK.md update (Current Understanding + session log preserved)
-- [x] INBOX.md update
-- [ ] HISTORY.md update (only during promotion)
-
----
-📊 PROGRESS: PHASE-001 [███░░░░░░░] 33% (1/3 tasks complete)
----
-```
-
-### Progress Indicators
-
-Progress indicators appear at the bottom of sticky note block:
-
-```
----
-📊 PROGRESS: PHASE-001 [██████░░░░] 60% (3/5 tasks complete)
----
-```
-
-This checkpoint system ensures both agent and user maintain shared understanding of current state.
-
----
 
 ## Common Checkpoint Scenarios
 
@@ -445,8 +359,7 @@ Agent completes TASK-002:
 ## Common Pitfalls to Avoid
 
 1. **Trimming WORK.md during checkpoint** - NEVER. WORK.md preserved until promotion
-2. **Forgetting sticky reminder** - End every turn with status block
-3. **Not capturing loops** - Add discoveries/questions to INBOX.md
+2. **Not capturing loops** - Add discoveries/questions to INBOX.md
 4. **Confusing checkpoint with promotion** - Different workflows, different purposes
 5. **Current Understanding drift** - Update at checkpoint time, not mid-session. Fresh agent expects current state, not historical state
 6. **Jargon in Current Understanding** - Use concrete facts ("User wants LinkedIn-style feed") not references ("as discussed"). Fresh agent has zero prior context

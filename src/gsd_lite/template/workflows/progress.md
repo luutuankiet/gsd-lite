@@ -280,39 +280,6 @@ Would you like to:
 3. Continue anyway (if blockers are soft)
 ```
 
----
-
-## Sticky Note Protocol
-
-**At the end of EVERY turn**, include this status block **without exception**.
-
-### Required Format
-
-Use fenced block with `gsd-status` marker:
-
-```gsd-status
-📋 ONBOARDED: Agent context loaded
-
-UNDERSTANDING:
-- Project: [Core value from PROJECT.md or "Not captured"]
-- Codebase: [Tech stack summary from ARCHITECTURE.md or "Not mapped"]
-
-CURRENT STATE:
-- Mode: [current_mode]
-- Active: [active_task or "None"]
-- Loops: [count] open
-- Blockers: [count or "None"]
-
-AVAILABLE ACTIONS:
-📋 /continue | /pause | /status | /add-loop | /discuss
-
-NEXT: [What user should do next]
-
----
-📊 STATUS: [Mode] — [Brief state description]
----
-```
-
 **Why "ONBOARDED":** The sticky note now confirms the agent has loaded both high-level context (project vision) and ground-level state (current tasks). This gives you confidence the agent is ready for pair programming.
 
 ---
@@ -330,5 +297,4 @@ NEXT: [What user should do next]
 
 ---
 
-*Progress Workflow - Part of GSD-Lite Protocol v2.1*
-*Added: Echo-back protocol for fresh session onboarding (Steps 3-4)*
+*Progress Workflow - Part of GSD-Lite Protocol v2.0*

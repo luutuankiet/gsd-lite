@@ -356,5 +356,3 @@ export async function generateResetToken(userId: string): Promise<string> {
 - Status: Password reset complete, Task: AUTH-IMPL ready for verification
 
 ---
-
-*Housekeeping: Run "write PR for [TASK]" to extract task logs, or "archive [TASK]" to move completed entries to HISTORY.md*

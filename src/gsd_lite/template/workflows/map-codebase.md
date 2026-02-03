@@ -254,44 +254,6 @@ grep -r "func main()" --include="*.go" 2>/dev/null | head -5
 
 ---
 
-## Sticky Note Protocol
-
-**At the end of EVERY turn**, include this status block **without exception**.
-
-### Required Format
-
-Use fenced block with `gsd-status` marker:
-
-```gsd-status
-📋 UPDATED: [what was discovered/written]
-
-CURRENT STATE:
-- Mode: MAP-CODEBASE
-- Step: [Step N - Description]
-- Progress: [X/5 steps complete]
-
-AVAILABLE ACTIONS:
-📋 /continue | /pause | /discuss
-
-NEXT: [What agent will do next or what user needs to confirm]
-SELF-CHECK: agent has completed the following action
-- [ ] Discovered project structure
-- [ ] Identified tech stack
-- [ ] Traced data flow
-- [ ] Documented entry points
-- [ ] Written ARCHITECTURE.md
-
----
-📊 PROGRESS: [████░░] 80% (4/5 steps complete)
----
-```
-
-**Progress indicators:**
-- Show current step out of 5 total
-- Visual bar showing completion percentage
-
----
-
 ## Anti-Patterns
 
 - **Reading every file** — Use grep/ls to discover structure, only read key files

@@ -213,39 +213,6 @@ After archiving MODEL-A:
 
 ---
 
-## Sticky Note Protocol
-
-**At the end of EVERY turn**, include this status block **without exception**.
-
-### Required Format
-
-Use fenced block with `gsd-status` marker:
-
-```gsd-status
-📋 UPDATED: [artifact name] ([what changed])
-
-CURRENT STATE:
-- Phase: PHASE-NNN ([Phase name]) - [X/Y tasks complete]
-- Task: [Active task or "None"]
-- Active loops: [count] ([LOOP-001, LOOP-002, ...])
-
-AVAILABLE ACTIONS:
-📋 /continue | /pause | /status | /add-loop | /discuss
-[Contextual actions if applicable]
-
-NEXT: [What agent expects from user]
-SELF-CHECK: agent has completed the following action
-- [ ] WORK.md update
-- [ ] INBOX.md update
-- [ ] HISTORY.md update
-
----
-📊 PROGRESS: [status]
----
-```
-
----
-
 ## Common Housekeeping Scenarios
 
 ### Scenario 1: PR for Single Task
@@ -312,8 +279,7 @@ Agent:
 2. **Auto-archiving without user request** - User controls when to clean up
 3. **Forgetting to update Key Events Index** - Must remove archived entries
 4. **Losing code snippets during PR extraction** - Preserve all code blocks
-5. **Forgetting sticky reminder** - End every turn with status block
-6. **Assuming task is complete** - Confirm with user if unclear
+5. **Assuming task is complete** - Confirm with user if unclear
 7. **Mixing PR extraction with archiving** - These are separate operations (can be combined if user requests)
 
 ---
