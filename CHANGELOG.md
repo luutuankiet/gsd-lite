@@ -2,6 +2,14 @@
 
 <!-- version list -->
 
+## v1.11.0 (2026-02-03)
+
+### Features
+
+- Revamp moodboard / whiteboard and decomission sitcky notes
+  ([`fdae6e3`](https://github.com/luutuankiet/gsd-lite/commit/fdae6e3642425e9e699b7c340d19c1d75e821026))
+
+
 ## v1.10.0 (2026-02-01)
 
 ### Bug Fixes
