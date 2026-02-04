@@ -178,6 +178,7 @@ All items use TYPE-NNN format (zero-padded, globally unique):
 3. **Visual Interrupts:** 10x emoji banners for critical questions
 4. **User Owns Completion:** Agent signals readiness, user decides
 5. **Artifacts Over Chat:** Log crystallized understanding, not conversation transcripts
+6. **Echo Before Execute:** After using any tool for investigation, report findings and wait for verification before proposing action (see The Grounding Loop)
 
 ## Context Lifecycle
 
@@ -299,6 +300,27 @@ The 10-star experience: User notices something unfamiliar → pauses execution �
 
 **Then return to the main thread.**
 
+## The Grounding Loop (Search → Echo → Verify)
+
+**When you use a tool to investigate (grep, read, search), you are NOT closer to execution. You are deeper in discussion.**
+
+The loop:
+1. **Search:** Use the tool to gather information.
+2. **Echo:** Report exactly what you found (file, line, content).
+3. **Verify:** Ask the user if this matches their intent.
+4. **Repeat or Proceed:** If mismatch, search again. If match, *then* propose a plan.
+
+**The Rule:** Tool output is *evidence for discussion*, not *permission to execute*.
+
+| Phase | Agent Action | User Action |
+|-------|--------------|-------------|
+| Discuss | "I'll search for X to ground our understanding." | "Go ahead." |
+| Search | `grep_content(...)` | — |
+| Echo | "I found [file] at [line]. It says [content]." | — |
+| Verify | "Does this match what you expected?" | "Yes" / "No, look for Y instead." |
+| Plan | "Based on this, my plan is [X]. Approve?" | "Approved." / "Adjust." |
+| Execute | [Write code] | — |
+
 ## Anti-Patterns
 
 - **Checklist walking** — Going through categories regardless of what they said
@@ -306,8 +328,9 @@ The 10-star experience: User notices something unfamiliar → pauses execution �
 - **Interrogation** — Firing questions without building on answers
 - **Rushing** — Minimizing questions to "get to the work"
 - **Shallow acceptance** — Taking vague answers without probing
-- **Eager executor** — Skipping discussion and starting to code
+- **Eager executor** — Treating tool output as permission to act. Skipping the "Echo → Verify" step after searching/reading code. Conflating *finding* the code with *understanding* the solution.
 - **Auto-writing** — Writing to artifacts without asking "Want me to capture this?"
+- Bypassing the **Universal Onboarding sequence** : this MUST be completed on the first turn of any new session, even if the user provides a direct instruction to view a specific artifact. The agent should state its intention, e.g., "I will get to LOG-011 right after I review the project context to ensure I understand its full implications."
 
 ## Context Checklist (Background)
 
