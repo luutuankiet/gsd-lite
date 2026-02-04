@@ -1,285 +1,276 @@
-# GSD-Lite: Lightweight Session Management for AI Pair Programming
+# GSD-Lite
 
-GSD-Lite helps you maintain productive sessions with AI agents across context window resets. Think of it as a shared notebook that keeps both you and the agent on the same page.
+**A framework for pair programming with AI agents.**
+
+GSD-Lite turns AI agents into *thinking partners* — collaborators who challenge your assumptions, teach you concepts, and help you own every decision. It's not about getting the agent to write code faster. It's about ensuring *you* understand the "why" behind every line.
+
+[![PyPI](https://img.shields.io/pypi/v/gsd-lite)](https://pypi.org/project/gsd-lite/)
+
+---
+
+## The Core Idea
+
+Most AI workflows treat the agent as a task executor: you command, it obeys. This produces code you don't fully understand and decisions you can't defend.
+
+GSD-Lite flips the script. The agent becomes a **Navigator** who proposes, challenges, and teaches. You remain the **Driver** who decides, approves, and *owns* the outcome.
+
+```mermaid
+graph LR
+    subgraph "Traditional AI Workflow"
+        U1[User] -->|Command| A1[Agent]
+        A1 -->|Code| U1
+    end
+
+    subgraph "GSD-Lite Pair Programming"
+        U2[Driver - You] <-->|Dialogue| A2[Navigator - Agent]
+        A2 -->|Proposes| U2
+        U2 -->|Decides| A2
+        A2 -.->|Logs| M[Memory - Artifacts]
+        M -.->|Resumes| A2
+    end
+```
+
+**The result:** You can explain every decision to your team lead, debug at 2am without the agent, and onboard the next engineer with logs that read like documentation.
+
+---
 
 ## Philosophy
 
-### Thinking Partners, Not Task Executors
+### 1. Thinking Partners, Not Task Executors
 
-GSD-Lite treats you and the agent as **thinking partners exploring together**, not a traditional user-command hierarchy.
+The agent's job is to *sharpen your thinking*, not replace it.
 
-**Agent as Navigator:**
-- Proposes hypotheses for you to react to ("What if we tried X?")
-- Challenges your assumptions ("Why do you think that?")
-- Teaches concepts with relatable analogies (like "Road Map vs Road Trip")
-- Celebrates discoveries with you ("Exactly! You nailed it")
-- Explains WHY it's asking questions or suggesting paths
+| Agent as Navigator | You as Driver |
+|--------------------|---------------|
+| Proposes hypotheses ("What if we tried X?") | Makes all key decisions |
+| Challenges assumptions ("Why do you think that?") | Owns the outcome |
+| Teaches concepts with analogies | Approves or rejects proposals |
+| Explains *why* it's asking questions | Curates what gets logged |
 
-**You as Driver:**
-- Make all key decisions about direction and scope
-- Own the outcome and understand the reasoning behind it
-- Approve or reject the agent's proposals
-- Stay engaged throughout the exploration, not just at the start
+### 2. The Grounding Loop (Search → Echo → Verify)
 
-This approach produces better outcomes because exploration-first agents ask better questions, and you maintain ownership of the reasoning process. You're the author who can explain the "why" behind every decision, not a passenger consuming agent output.
+Agents love to jump from "I found the file" to "Here's the refactored code." GSD-Lite enforces a strict loop to prevent this **Eager Executor** anti-pattern:
 
-### Why Perpetual WORK.md?
+```mermaid
+graph LR
+    S[Search] --> E[Echo]
+    E --> V{Verify}
+    V -->|Mismatch| S
+    V -->|Match| P[Plan/Execute]
+```
 
-Traditional approaches delete session logs after each phase ("ephemeral state"). GSD-Lite keeps logs perpetually until you explicitly request archiving.
+1. **Search:** Agent uses tools to find files or content.
+2. **Echo:** Agent reports *exactly* what it found (file, line, content).
+3. **Verify:** You confirm if this matches your intent.
+4. **Execute:** Only *then* does the agent propose a plan or write code.
 
-**Benefits:**
-- **PR extraction anytime:** Generate pull request descriptions from detailed execution logs at any point
-- **Multi-session continuity:** Pick up where you left off, even weeks later
-- **Full evidence trail:** Code snippets preserved in logs show exactly what was built and why
-- **User-controlled cleanup:** You decide when to archive, based on your project rhythm
+Tool output is **evidence for discussion**, not permission to execute.
 
-You manage growth through the housekeeping workflow, not automatic deletion.
+### 3. Universal Onboarding (Every Session is Fresh)
 
-### Why Grep-First?
+AI agents have no memory between sessions. GSD-Lite treats *every* session as a "fresh agent" boot. The agent must read the artifacts in order:
 
-As your WORK.md grows to hundreds of lines, reading it sequentially becomes inefficient. Grep patterns enable **non-linear access** — discover structure first, then surgically read what you need.
+1. **PROTOCOL.md** — The rules and router
+2. **PROJECT.md** — The "why" (vision, success criteria)
+3. **ARCHITECTURE.md** — The "how" (tech stack, entry points)
+4. **WORK.md** — The "where" (current state, next action)
 
-**Two-step pattern:**
-1. **Discover:** `grep "^## " WORK.md` → returns section headers with line numbers
-2. **Surgical read:** Read specific sections using line ranges
+By the time the agent loads a workflow, it has full context to ask intelligent questions. **No skipping.**
 
-This scales to files with 1000+ lines without overwhelming the agent's context window.
+### 4. Echo-Back Protocol (Prove Understanding First)
+
+Before executing, agents must *prove* they understand the project. They echo back the vision and architecture in their own words. You verify. Only then do they earn the right to write code.
+
+This prevents the "forwarder problem" — agents who execute commands without context.
+
+### 5. Perpetual Memory (WORK.md Never Dies)
+
+Traditional approaches delete session logs after each phase. GSD-Lite keeps `WORK.md` perpetually until you explicitly request archiving.
+
+**Why this matters:**
+- Extract PR descriptions from logs at any point
+- Resume work weeks later without re-explaining context
+- Full evidence trail with code snippets showing *exactly* what was built
+
+You control cleanup via the `housekeeping` workflow, not automatic deletion.
+
+---
 
 ## How It Works
 
-### Quick Start
-
-1. **Agent reads PROTOCOL.md** to understand the system and routing logic
-2. **Agent reads WORK.md** to get current context (30-second summary in "Current Understanding")
-3. **Agent loads appropriate workflow** based on current mode (moodboard, execution, checkpoint, etc.)
-4. **You and agent explore together** — planning, executing, discovering
-5. **Housekeeping workflow** extracts PRs from task logs and archives completed work when you request it
-
-Fresh agents resume by reading artifacts (not chat history), enabling seamless handoffs across context resets.
-
-## Artifact Overview
-
-| File | Purpose | Lifecycle | How to Read |
-|------|---------|-----------|-------------|
-| PROTOCOL.md | Router - tells agent which workflow to load | Immutable template | Read in full (small) |
-| WORK.md | Session state + detailed log | Perpetual - grows over time, housekeeping archives | `grep "^## "` for sections, `grep "[LOG-NNN]"` for entries |
-| INBOX.md | Open questions and loops | Cleared when loops resolved | Read in full (small) |
-| HISTORY.md | Completed phases (one-liner each) | Append-only archive | `grep "Phase:"` for phases |
-
-**How they connect:**
-- **PROTOCOL.md** routes to workflows based on current mode in WORK.md
-- **Workflows** read/write WORK.md to track progress and decisions
-- **Open loops** captured in INBOX.md during exploration
-- **Completed work** archived from WORK.md to HISTORY.md via housekeeping
-
-For detailed grep patterns, see PROTOCOL.md's "File Reading Strategy" section.
-
-## Grep Workflow (For Agents and Power Users)
-
-GSD-Lite is optimized for grep-based discovery. Use these patterns to navigate large files efficiently:
-
-**Discover structure:**
-```bash
-grep "^## " WORK.md
-```
-Returns all section headers (Current Understanding, Key Events Index, Atomic Session Log)
-
-**Find specific log entry:**
-```bash
-grep "\[LOG-015\]" WORK.md
-```
-Jump directly to entry 015 without scanning the entire file
-
-**Filter by type:**
-```bash
-grep "\[DECISION\]" WORK.md
-```
-Find all decisions made during the session
-
-**Filter by task:**
-```bash
-grep "Task: MODEL-A" WORK.md
-```
-Show only logs related to MODEL-A task (useful for multi-task projects)
-
-**Core workflow:** Grep to discover structure, then surgical read of relevant sections. This enables efficient context loading even with 500+ line WORK.md files.
-
-## Typical Session
-
-Here's what a real GSD-Lite session looks like, from initial exploration to completed work.
-
-### Starting Fresh (Moodboard)
-
-**You:** "I want to build a simple REST API for my notes app"
-
-**Agent:** "Let me understand what you're picturing. When you say 'simple', are you thinking:
-1. Just CRUD operations (create, read, update, delete)?
-2. With authentication and user accounts?
-3. Something else?
-
-[YOUR TURN] - Which matches your mental model?"
-
-**You:** "Just CRUD for now. I want to validate the idea first."
-
-**Agent:** "Perfect. So a minimal viable API - we can always add auth later.
-What would creating a note look like? Are you thinking:
-- A title + body?
-- Just free-form text?
-- Tags or categories?
-
-[YOUR TURN] - What feels right to you?"
-
-**You:** "Title and body. Keep it simple."
-
-**Agent:** "Got it. So we're looking at:
-- POST /notes (create with title + body)
-- GET /notes (list all)
-- GET /notes/:id (get one)
-- PUT /notes/:id (update)
-- DELETE /notes/:id (delete)
-
-Does that match your vision?
-
-[YOUR TURN]"
-
-**You:** "Yes, exactly."
-
-**Agent:** "Excellent. I'll log this vision to WORK.md and present you with a plan for review."
-
-### Mid-Session (Execution)
-
-**Agent:** "I'm noticing the notes endpoint doesn't validate empty titles. What if we tried adding validation here?
-
-```typescript
-if (!title || title.trim().length === 0) {
-  throw new ValidationError('Title cannot be empty');
-}
-```
-
-This prevents orphaned notes with no identifier. Does this align with your expectations?
-
-[YOUR TURN] - Should we validate, or allow empty titles?"
-
-**You:** "Yes, validate. Empty titles don't make sense."
-
-**Agent:** "Perfect. Adding validation and logging the decision."
-
-*(Agent executes, logs to WORK.md with code snippet, continues to next task)*
-
-### Wrapping Up (Housekeeping)
-
-**You:** "Write PR for the notes API work"
-
-**Agent:** "Generating PR description from WORK.md logs..."
-
-```markdown
-## Notes API Implementation
-
-Created basic CRUD API for notes with title + body fields.
-
-### Changes
-- POST /notes - create note with validation
-- GET /notes - list all notes
-- GET /notes/:id - retrieve single note
-- PUT /notes/:id - update note
-- DELETE /notes/:id - delete note
-
-### Key Decisions
-- Title validation: reject empty titles (prevents orphaned notes)
-- In-memory storage for MVP (deferred database to future iteration)
-
-### Code Snippets
-[Extracted from WORK.md execution logs with full context]
-```
-
-**You:** "Perfect. Archive this and start fresh for the auth work."
-
-**Agent:** "Archived notes API logs to HISTORY.md. Ready for next session."
-
-## Workflow Diagram
+### The Session Lifecycle
 
 ```mermaid
 graph TD
-    Start([New Session]) --> ReadProtocol[Read PROTOCOL.md]
-    ReadProtocol --> ReadWork[Read WORK.md Current Understanding]
-    ReadWork --> CheckMode{Current Mode?}
+    Start([New Session]) --> Boot[Universal Onboarding]
+    Boot --> Echo[Echo-Back: Prove Understanding]
+    Echo --> Route{Current Mode?}
 
-    CheckMode -->|none/planning| Moodboard[moodboard.md]
-    CheckMode -->|moodboard-complete| Whiteboard[whiteboard.md]
-    CheckMode -->|execution| Execution[execution.md]
-    CheckMode -->|checkpoint| Checkpoint[checkpoint.md]
+    Route -->|none/discuss| Discuss[discuss.md]
+    Route -->|execution| Execute[execution.md]
+    Route -->|checkpoint| Checkpoint[checkpoint.md]
 
-    Moodboard -->|User: ready for plan| Whiteboard
-    Whiteboard -->|User: approved| Execution
-    Execution -->|Session end| Checkpoint
-    Execution -->|User: write PR| Housekeeping[housekeeping.md]
+    Discuss -->|Plan Approved| Execute
+    Execute -->|Session End| Checkpoint
+    Execute -->|Write PR| Housekeeping[housekeeping.md]
 
     Checkpoint --> Resume([Next Session])
     Housekeeping -->|Archive| History[HISTORY.md]
 ```
 
-**Current workflows:**
-- **moodboard.md** - Extract user vision through collaborative exploration (thinking partner mode)
-- **whiteboard.md** - Present plan for approval before execution
-- **execution.md** - Execute tasks with pair programming approach (propose hypotheses, challenge assumptions)
-- **checkpoint.md** - Pause session and update WORK.md Current Understanding for fresh agent resume
-- **housekeeping.md** - Extract PR from task logs or archive completed work to HISTORY.md
+### Artifacts at a Glance
 
-## For Maintainers
+| File | Purpose | Lifecycle |
+|------|---------|-----------|
+| `PROTOCOL.md` | Rules + router (immutable) | Never changes |
+| `PROJECT.md` | Vision + success criteria | Updated when vision evolves |
+| `ARCHITECTURE.md` | Tech stack + entry points | Updated when codebase changes |
+| `WORK.md` | Session state + detailed log | Perpetual until archived |
+| `INBOX.md` | Open loops + parked ideas | Cleared when resolved |
+| `HISTORY.md` | Completed phases (one-liner each) | Append-only archive |
 
-### Testing Changes
+### Workflows
 
-Before merging changes to templates or workflows:
+| Workflow | When It Runs | What It Does |
+|----------|--------------|--------------|
+| `discuss.md` | Fresh start or exploring ideas | Vision extraction, teaching, unblocking |
+| `execution.md` | Plan approved, building | Execute tasks, log decisions with code snippets |
+| `checkpoint.md` | Session ending | Update WORK.md for fresh agent resume |
+| `housekeeping.md` | User requests cleanup | Extract PR from logs, archive to HISTORY.md |
+| `map-codebase.md` | New codebase, no ARCHITECTURE.md | Generate ARCHITECTURE.md from codebase |
+| `new-project.md` | New project, no PROJECT.md | Generate PROJECT.md from vision discussion |
 
-1. **Golden sample test:** Create a WORK.md with 50+ log entries. Verify grep patterns work:
-   - `grep "^## "` finds all sections
-   - `grep "[LOG-NNN]"` finds specific entries
-   - `grep "[DECISION]"` filters by type
+---
 
-2. **Coherence check:** After updating any file, grep for cross-references:
-   - `grep "STATE.md" src/gsd_lite/template/` - should return 0 (deleted)
-   - `grep "ephemeral" src/gsd_lite/template/` - should return 0
-   - `grep "promotion.md\|revisit.md" src/gsd_lite/template/` - should return 0 (workflows deleted)
+## A Real Session
 
-3. **Eval framework:** Run scenarios in tests/eval_gsd_lite/ with different models.
+### Starting Fresh
 
-### Updating This README
+**You:** "I want to build a CLI for managing dotfiles"
 
-- Keep conversational tone (like a thinking partner explaining)
-- Show don't tell (examples > descriptions)
-- Update session walkthrough if workflows change significantly
-- Update diagram if routing logic changes
+**Agent:** "Interesting. Before we dive in, help me understand the problem you're solving.
 
-### Core Principles (Do Not Regress)
+Are you currently:
+1. Manually copying dotfiles between machines?
+2. Using a tool that's not working for you?
+3. Something else?
 
-These principles MUST be preserved in all iterations. Each principle is:
-- **Observable** in artifacts (testable via grep or review)
-- **Testable** with specific verification command
-- **Justified** with rationale
+[YOUR TURN]"
 
-| # | Principle | Observable In | Test | Rationale |
-|---|-----------|---------------|------|-----------|
-| 1 | Pair programming > task execution | workflows/*.md | `grep "thinking partner" workflows/` returns 5+ matches | Exploration-first agents ask better questions |
-| 2 | Perpetual WORK.md | WORK.md, housekeeping.md | `grep "delete WORK.md\|ephemeral" templates/` returns 0 | Session history enables PR extraction |
-| 3 | Grep-first retrieval | WORK.md | `grep "^## " WORK.md` finds all sections | Scales to large files, non-linear access |
-| 4 | User controls completion | workflows/*.md | `grep "[YOUR TURN]" workflows/` returns matches | User owns outcome, agent proposes |
-| 5 | First-turn conversation | moodboard.md | Review moodboard.md - no file writes before dialogue | Understanding before implementation |
-| 6 | Confirmation loops | workflows/*.md | `grep "handoff\|YOUR TURN" workflows/` returns matches | Every response invites user input |
+**You:** "I'm manually copying. It's a pain when I set up a new laptop."
 
-If a change would violate these principles, it needs explicit approval and documented rationale.
+**Agent:** "Got it — so the core pain is the manual work during machine setup.
+
+When you imagine the solution, are you thinking:
+- A sync tool (like Dropbox for dotfiles)?
+- A declarative config (describe desired state, tool applies it)?
+- Something simpler (just a script that copies files)?
+
+[YOUR TURN]"
+
+**You:** "Declarative. I want to define what should be where and have the tool figure it out."
+
+**Agent:** "That's a clear vision. Let me echo it back:
+
+> *A CLI that reads a declarative config file, compares it to the current state, and applies changes to make them match. The user defines 'desired state', the tool handles the rest.*
+
+Does that capture it?
+
+[YOUR TURN]"
+
+**You:** "Yes, exactly."
+
+**Agent:** "Perfect. I'll present a plan for your approval."
+
+### Mid-Session (Execution)
+
+**Agent:** "I'm looking at the `apply` command. I found this in `src/cli.py`:
+
+```python
+# Line 45-52
+def apply(config_path: str):
+    config = load_config(config_path)
+    for file in config.files:
+        shutil.copy(file.source, file.dest)
+```
+
+This copies files but doesn't check if they already exist. If the destination has local changes, they'd be overwritten silently.
+
+**Options:**
+1. Add a diff check — show changes before applying, require confirmation
+2. Add a backup — copy existing file to `.bak` before overwriting
+3. Keep as-is — trust the user knows what they're doing
+
+Which fits your philosophy for this tool?
+
+[YOUR TURN]"
+
+**You:** "Option 1. Always show the diff."
+
+**Agent:** "Agreed — explicit is better than silent. Logging this decision and implementing."
+
+### Wrapping Up
+
+**You:** "Write PR for this work"
+
+**Agent:** "Generating from WORK.md logs..."
+
+```markdown
+## Dotfile Manager: Apply Command with Diff Check
+
+Added safe apply logic that shows a diff before overwriting files.
+
+### Changes
+- `apply` command now diffs source vs destination
+- User must confirm before changes are applied
+- Added `--force` flag to skip confirmation
+
+### Key Decisions
+- **DECISION-003:** Always show diff before overwriting (rationale: explicit > silent, prevents accidental data loss)
+```
+
+---
 
 ## Installation
 
-No installation required. Run directly with `uv` (recommended):
-
 ```bash
-# Initialize a new project
-uvx gsd-lite
+# Global Install (recommended)
+# Agents + workflows available in ANY project
+uvx gsd-lite@latest install
 
-# Or update an existing one
-uvx gsd-lite --update
+# Local Install
+# Agents + workflows scoped to THIS project only
+uvx gsd-lite@latest install --local
 ```
+
+After installation, invoke the agent with `@gsd-lite` in your MCP client (OpenCode, Claude Desktop, etc.).
+
+---
+
+## For Maintainers
+
+### Core Principles (Do Not Regress)
+
+| # | Principle | Test |
+|---|-----------|------|
+| 1 | Pair programming > task execution | `grep "thinking partner" workflows/` returns matches |
+| 2 | Grounding Loop enforced | `grep "Echo.*Verify" PROTOCOL.md` returns matches |
+| 3 | Universal Onboarding required | Boot sequence in PROTOCOL.md reads all 4 artifacts |
+| 4 | User controls artifact writes | `grep "[YOUR TURN]" workflows/` returns matches |
+| 5 | Perpetual WORK.md | `grep "ephemeral\|delete WORK.md" templates/` returns 0 |
+
+### Testing Changes
+
+1. **Grep patterns:** Verify `grep "^## " WORK.md` finds all sections
+2. **Coherence:** `grep "STATE.md" src/gsd_lite/template/` returns 0 (deleted artifact)
+3. **Eval framework:** Run scenarios in `tests/eval_gsd_lite/` with different models
+
+---
 
 ## License
 
 MIT
+
+---
+
+*Inspired by [get-shit-done](https://github.com/glittercowboy/get-shit-done). Built for engineers who want to own their code.*
