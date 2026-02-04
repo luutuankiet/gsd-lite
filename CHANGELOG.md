@@ -2,6 +2,19 @@
 
 <!-- version list -->
 
+## v1.12.0 (2026-02-04)
+
+### Chores
+
+- Docs bump
+  ([`823e1cc`](https://github.com/luutuankiet/gsd-lite/commit/823e1cc3a7bdc53b2d2d9a75014664f8d0dcd48a))
+
+### Features
+
+- Installation script to integrate opencode
+  ([`4d18c11`](https://github.com/luutuankiet/gsd-lite/commit/4d18c1140d485c9be400cded4b0a2268dfab7e9d))
+
+
 ## v1.11.0 (2026-02-03)
 
 ### Features
