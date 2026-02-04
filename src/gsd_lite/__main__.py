@@ -4,11 +4,10 @@ from pathlib import Path
 import typer
 from rich.console import Console
 from rich.panel import Panel
+from importlib.metadata import version as get_package_version, PackageNotFoundError
 
 app = typer.Typer()
 console = Console()
-
-from importlib.metadata import version as get_package_version, PackageNotFoundError
 
 def get_version():
     try:
@@ -16,96 +15,121 @@ def get_version():
     except PackageNotFoundError:
         return "dev"
 
-@app.command()
-def main(
-    force: bool = typer.Option(False, "--force", "-f", help="Force overwrite existing files"),
-    update: bool = typer.Option(False, "--update", "-u", help="Update templates in an existing project"),
-    version: bool = typer.Option(False, "--version", "-v", help="Show version")
-):
+@app.callback(invoke_without_command=True)
+def callback(ctx: typer.Context, version: bool = typer.Option(False, "--version", "-v", help="Show version")):
     """
     GSD-Lite Manager
     """
     if version:
         console.print(f"gsd-lite version: {get_version()}")
         raise typer.Exit()
-
-    # 1. Setup paths
-    package_dir = Path(__file__).parent
-    source_dir = package_dir / "template"
     
-    cwd = Path.cwd()
-    root_dir = cwd / "gsd-lite"
-    template_dest = root_dir / "template"
+    if ctx.invoked_subcommand is None:
+        console.print(Panel.fit("[bold cyan]GSD-Lite Manager[/bold cyan]", border_style="cyan"))
+        console.print("Run [bold]gsd-lite install[/bold] to set up globally.")
+        console.print("Run [bold]gsd-lite install --local[/bold] to set up for this project.")
+        console.print("Run [bold]gsd-lite --help[/bold] for options.")
 
-    console.print(Panel.fit("[bold cyan]GSD-Lite Manager[/bold cyan]", border_style="cyan"))
+@app.command()
+def install(
+    local: bool = typer.Option(False, "--local", "-l", help="Install locally in current directory"),
+    force: bool = typer.Option(False, "--force", "-f", help="Force overwrite of ALL files (including user artifacts)"),
+    update: bool = typer.Option(False, "--update", "-u", help="Update templates (preserves user artifacts)")
+):
+    """
+    Install GSD-Lite artifacts.
+    Global (default): ~/.config/opencode/
+    Local (--local):  ./.opencode/ + ./gsd-lite/
+    """
+    # Force is stronger than update
+    if force:
+        update = True
 
-    # 2. Validation of source
-    if not source_dir.exists():
-        console.print(f"[bold red]Error:[/bold red] Template directory not found at {source_dir}")
+    # 1. Determine Roots
+    if local:
+        base_root = Path.cwd()
+        config_root = base_root / ".opencode"
+        console.print(f"[bold cyan]Installing GSD-Lite Locally[/bold cyan] to {base_root}")
+    else:
+        base_root = Path.home() / ".config" / "opencode"
+        config_root = base_root
+        console.print(f"[bold cyan]Installing GSD-Lite Globally[/bold cyan] to {base_root}")
+
+    # 2. Define Targets
+    agents_dir = config_root / "agents"
+    command_dir = config_root / "command" / "gsd-lite"
+    artifacts_dir = base_root / "gsd-lite"
+    
+    # 3. Source
+    template_src = Path(__file__).parent / "template"
+    if not template_src.exists():
+        console.print(f"[bold red]Error:[/bold red] Template directory not found at {template_src}")
         raise typer.Exit(code=1)
 
-    # 3. Update Mode
-    if update:
-        if not root_dir.exists():
-            console.print(f"[bold red]Error:[/bold red] No gsd-lite project found at {root_dir}")
-            console.print("Run without --update to initialize a new project.")
-            raise typer.Exit(code=1)
-        
-        console.print(f"[yellow]Updating templates to version {get_version()}...[/yellow]")
-        # Force enable overwrite for update
-        force = True
-
-    # 4. Install/Check
-    if template_dest.exists() and not force:
-        console.print(f"[yellow]Warning:[/yellow] Directory [bold]{template_dest}[/bold] already exists.")
-        console.print("Use [bold]--update[/bold] to refresh templates.")
-        console.print("Use [bold]--force[/bold] to overwrite everything.")
-        raise typer.Exit(code=1)
-
-    # 5. Execution
+    # 4. Create Directories
     try:
-        root_dir.mkdir(exist_ok=True)
+        agents_dir.mkdir(parents=True, exist_ok=True)
+        command_dir.mkdir(parents=True, exist_ok=True)
+        artifacts_dir.mkdir(parents=True, exist_ok=True)
 
-        if template_dest.exists():
-            shutil.rmtree(template_dest)
+        # 5. Install Agent
+        agent_src = template_src / "AGENTS.md"
+        agent_dest = agents_dir / "gsd-lite.md"
+        shutil.copy2(agent_src, agent_dest)
+        console.print(f"[green]✔ Installed Agent:[/green] {agent_dest}")
 
-        shutil.copytree(source_dir, template_dest)
+        # 6. Install Workflows (Always overwrite)
+        workflow_src = template_src / "workflows"
+        count = 0
+        if workflow_src.exists():
+            for item in workflow_src.iterdir():
+                if item.suffix == ".md":
+                    shutil.copy2(item, command_dir / item.name)
+                    count += 1
+            console.print(f"[green]✔ Installed Workflows:[/green] {command_dir} ({count} files)")
+        else:
+            console.print(f"[yellow]⚠ Warning:[/yellow] No workflows directory found at {workflow_src}")
 
-        # Write version receipt
-        (template_dest / "VERSION").write_text(get_version())
+        # 7. Install/Update Artifacts (gsd-lite/)
+        
+        # 7a. Templates subdir (Reference) - ALWAYS OVERWRITE
+        artifacts_template_dest = artifacts_dir / "template"
+        if artifacts_template_dest.exists():
+            shutil.rmtree(artifacts_template_dest)
+        shutil.copytree(template_src, artifacts_template_dest)
+        
+        # Write version
+        (artifacts_template_dest / "VERSION").write_text(get_version())
+        console.print(f"[green]✔ Updated Templates:[/green] {artifacts_template_dest}")
 
-        # 6. Scaffold core files to gsd-lite root (only if they don't exist)
-        core_files = ["WORK.md", "STATE.md", "INBOX.md", "HISTORY.md"]
+        # 7b. Core Files (User Data) - SKIP IF EXISTS
+        core_files = ["WORK.md", "INBOX.md", "HISTORY.md", "PROJECT.md", "ARCHITECTURE.md"]
         scaffolded = []
         skipped = []
-
+        
         for filename in core_files:
-            dest_file = root_dir / filename
-            source_file = template_dest / filename
+            dest_file = artifacts_dir / filename
+            source_file = template_src / filename
+            
+            if not source_file.exists():
+                continue
 
-            if dest_file.exists():
+            if dest_file.exists() and not force:
                 skipped.append(filename)
             else:
-                if source_file.exists():
-                    shutil.copy2(source_file, dest_file)
-                    scaffolded.append(filename)
+                shutil.copy2(source_file, dest_file)
+                scaffolded.append(filename)
 
-        if update:
-             console.print(f"[green]✔ Successfully updated templates (v{get_version()}) in:[/green] {template_dest}")
-        else:
-             console.print(f"[green]✔ Successfully initialized GSD-Lite templates in:[/green] {template_dest}")
-
-        # Report on scaffolded files
         if scaffolded:
-            console.print(f"[green]✔ Scaffolded core files:[/green] {', '.join(scaffolded)}")
-
+            console.print(f"[green]✔ Scaffolded Artifacts:[/green] {', '.join(scaffolded)}")
         if skipped:
-            console.print(f"[blue]ℹ Skipped existing files:[/blue] {', '.join(skipped)}")
+            console.print(f"[blue]ℹ Preserved User Artifacts:[/blue] {', '.join(skipped)}")
 
-        if not update:
-             console.print("\n[bold]Next Steps:[/bold]")
-             console.print("1. Tell your agent to load file [bold]gsd-lite/template/PROTOCOL.md[/bold]")
-             console.print("2. Describe your task - your session is now powered by gsd!")
+        console.print("\n[bold]Installation Complete![/bold]")
+        if local:
+            console.print("Run [bold]@gsd-lite[/bold] to start.")
+        else:
+            console.print("Run [bold]@gsd-lite[/bold] in any project to start.")
 
     except Exception as e:
         console.print(f"[bold red]Error:[/bold red] {e}")
