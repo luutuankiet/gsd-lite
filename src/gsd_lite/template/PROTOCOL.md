@@ -139,6 +139,18 @@ read_files([{
 
 **WHY log headers include summaries:** When agents grep `^### \[LOG-`, they see the full header with summary inline (e.g., `### [LOG-005] - [DECISION] - Use card layout - Task: MODEL-A`). This enables quick context onboarding without reading full entry content.
 
+**⚠️ WORK.md Header Hierarchy (CRITICAL for Writing):**
+
+Log entries use `### [LOG-NNN]` (level 3). When writing content **inside** a log entry, ALL headers must be level 4 (`####`) or deeper:
+
+| Context | Correct | Wrong |
+|---------|---------|-------|
+| Log entry header | `### [LOG-042]` | — |
+| Section inside log | `#### Part 1: Analysis` | `### Part 1: Analysis` ❌ |
+| Subsection inside log | `##### 1.1 Details` | `## Details` ❌ |
+
+**Why this matters:** The grep pattern `^### \[LOG-` assumes `###` is **only** used for log entry headers. Using `###` or `##` inside a log corrupts the structure and breaks all future regex scans.
+
 **Fallback: Manual Line Calculation (legacy servers)**
 
 If `read_to_next_pattern` is not available:
@@ -162,6 +174,38 @@ Read first 50 lines of WORK.md — Current Understanding is always at top.
 | HISTORY.md | Completed tasks/phases | gsd-lite/HISTORY.md |
 | ARCHITECTURE.md | Codebase structure | gsd-lite/ARCHITECTURE.md |
 | PROJECT.md | Project vision | gsd-lite/PROJECT.md |
+
+## WORK.md Structure (3 Sections)
+
+WORK.md has three `## ` level sections. Agents should understand their purpose:
+
+### Section 1: Current Understanding (Read First)
+- **Purpose:** 30-second context for fresh agents
+- **Contains:** current_mode, active_task, parked_tasks, vision, decisions, blockers, next_action
+- **When to read:** ALWAYS on session start (Universal Onboarding step 4)
+- **When to update:** At checkpoint time, or when significant state changes
+
+### Section 2: Key Events Index (Project Foundation)
+- **Purpose:** Canonical source of truth for Layer 2 of stateless handoff packets
+- **Contains:** Table of project-wide decisions that affect multiple tasks/phases
+- **When to read:** When generating handoff packets (pull global context from here)
+- **When to update:** Agent proposes "Add LOG-XXX to Key Events Index?" — human approves
+
+**Inclusion criteria:**
+- ✅ Decision affects multiple tasks/phases
+- ✅ Decision establishes a reusable pattern
+- ✅ Decision changes data flow or ownership
+
+**Exclusion criteria:**
+- ❌ Task-specific implementation detail
+- ❌ Superseded decision (context captured in successor)
+- ❌ Process decision, not product decision
+
+### Section 3: Atomic Session Log (Chronological)
+- **Purpose:** Full history of all work — the "HOW we got here"
+- **Contains:** Type-tagged entries: [VISION], [DECISION], [DISCOVERY], [PLAN], [BLOCKER], [EXEC]
+- **When to read:** Grep by ID, type, or task — never read entire section
+- **When to write:** During execution workflow, following Journalist Rule
 
 ## Systematic ID Format
 
