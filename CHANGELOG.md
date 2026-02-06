@@ -2,6 +2,22 @@
 
 <!-- version list -->
 
+## v1.13.0 (2026-02-06)
+
+### Documentation
+
+- Commit gsd-lite
+  ([`daeefba`](https://github.com/luutuankiet/gsd-lite/commit/daeefba7a21e3ccc5d014fa2be974f05659bbbd2))
+
+- README makover
+  ([`247ded8`](https://github.com/luutuankiet/gsd-lite/commit/247ded8a835bbb27b210e3de4fadc93d400128fa))
+
+### Features
+
+- Add stateless first protocol
+  ([`d53aa04`](https://github.com/luutuankiet/gsd-lite/commit/d53aa0490448a7b815e6f065d813a1bf4cf3db3d))
+
+
 ## v1.12.0 (2026-02-04)
 
 ### Chores
