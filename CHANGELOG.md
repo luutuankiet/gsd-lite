@@ -2,6 +2,14 @@
 
 <!-- version list -->
 
+## v1.13.1 (2026-02-06)
+
+### Bug Fixes
+
+- AGENTS.md update
+  ([`5d08296`](https://github.com/luutuankiet/gsd-lite/commit/5d082967019a3a16d12befd719d6d6dbda69b605))
+
+
 ## v1.13.0 (2026-02-06)
 
 ### Documentation
