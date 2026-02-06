@@ -212,6 +212,116 @@ Sessions use checkpoint -> clear -> resume:
 
 ---
 
+## Stateless-First Architecture
+
+**Core Principle:** Every agent turn is potentially its last. The agent MUST generate a handoff packet at the end of every response that enables any future agent to continue with zero chat history.
+
+**No exceptions:** Even Turn 1. Even mid-discussion. The user owns context management via micro-forking.
+
+### Why Stateless-First?
+
+Users practice **micro-forking** to manage context rot:
+1. Start session, work 2-8 turns with agent
+2. Agent generates rich logs (journalism-style, agent-optimized)
+3. When context approaches 60-80k tokens, user **forks back** to turn 1-2
+4. Feed curated log references to fresh agent
+5. Continue with optimal LLM performance
+
+**The insight:** Logs written by a strong reasoning model are *better context* than the original conversation — synthesized, polished, minimal. The micro-fork is a context *upgrade*, not a workaround.
+
+### Two-Layer Handoff Structure
+
+Every handoff contains two layers:
+
+| Layer | Purpose | Source | Maintainer |
+|-------|---------|--------|------------|
+| **Layer 1 — Local** | This task's dependency chain | Agent traces backwards | Agent (dynamic) |
+| **Layer 2 — Global** | Project foundation decisions | Key Events Index in WORK.md | Human curates |
+
+**Layer 1** answers: "How do I continue this specific task?"
+**Layer 2** answers: "How do I pivot to something completely different?"
+
+### Canonical Handoff Format
+
+```
+---
+📦 STATELESS HANDOFF
+
+**Layer 1 — Local Context:**
+→ Last action: [LOG-XXX (brief description)]
+→ Dependency chain: [LOG-XXX ← LOG-YYY ← LOG-ZZZ]
+→ Next action: [specific next step]
+
+**Layer 2 — Global Context:**
+→ Architecture: [from Key Events Index]
+→ Patterns: [from Key Events Index]
+→ Data Flow: [from Key Events Index]
+
+**Fork paths:**
+- Continue execution → [specific logs]
+- Discuss [topic] → [specific logs]
+- Pivot to new topic → [L2 refs] + state your question
+```
+
+### Turn-Type Variations
+
+Structure stays rigid. Content adapts:
+
+**Mid-Discussion (no decision yet):**
+```
+**Layer 1 — Local Context:**
+→ Status: Discussing [topic] — no decision yet
+→ Key refs: [LOG-XXX, LOG-YYY]
+→ Resume: Restate your position on [open question]
+```
+
+**Post-Decision (DECISION logged):**
+```
+**Layer 1 — Local Context:**
+→ Last action: LOG-XXX (DECISION-NNN: [title])
+→ Dependency chain: LOG-XXX ← LOG-YYY ← LOG-ZZZ
+→ Next action: [implementation step]
+```
+
+**Teaching Detour:**
+```
+**Layer 1 — Local Context:**
+→ Status: Teaching detour on [concept]
+→ Task paused at: LOG-XXX ([last exec])
+→ Resume: [LOG refs] → [next action]
+```
+
+**First Turn (just forked in):**
+```
+**Layer 1 — Local Context:**
+→ Onboarded via: [LOG-XXX (how you got here)]
+→ Current action: [what you're doing this turn]
+→ Will log as: LOG-YYY (on completion)
+```
+
+### Rigid Rules
+
+| Rule | Specification |
+|------|---------------|
+| **Delimiter** | Always `---` followed by `📦 STATELESS HANDOFF` |
+| **Layer 1** | Always present. Describes local/task context. |
+| **Layer 2** | Always present. Pulled from Key Events Index. |
+| **Fork paths** | Minimum 2 (continue + pivot). Maximum 4. |
+| **Log references** | Always `LOG-XXX (brief description)` format. |
+| **No prose** | Arrows `→` and bullets `-` only. No paragraphs. |
+| **Dependency chain** | Uses `←` to show lineage (newest ← oldest). |
+
+### Handoff Anti-Patterns
+
+**❌ Too vague:** `We discussed filters. Read the recent logs.`
+**❌ Wall of text:** Prose paragraph burying actionable items.
+**❌ Missing Layer 2:** Only local context, useless for pivots.
+**❌ Stale references:** Pointing to superseded logs.
+**❌ "Read everything":** `LOG-001 through LOG-056` defeats curation.
+**❌ Inconsistent format:** Different structure each turn.
+
+---
+
 # Questioning Philosophy
 
 *The DNA for Socratic pair programming — always loaded, always applied.*
