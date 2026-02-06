@@ -1,0 +1,118 @@
+# GSD-Lite
+
+*Initialized: 2026-02-03*
+
+## What This Is
+
+A pair programming protocol that helps human engineers collaborate with AI agents while maintaining ownership of reasoning and decisions. GSD-Lite scaffolds markdown artifacts (PROTOCOL.md, WORK.md, INBOX.md) that capture the *why* behind every decision — creating institutional memory that survives ephemeral agent sessions.
+
+The framework enables a "fork & resume" workflow: pair program with an agent, log rich findings to artifacts, kill the session when token budget rises, and resume with a fresh agent pointing at the curated logs. Engineers stay in the driver seat, learning and owning every decision.
+
+## Core Value
+
+Engineers own and comprehend the reasoning behind every line of code — agents are brilliant collaborators, but ephemeral. The human stakes their reputation on the outcome and must be able to explain the "why" to anyone.
+
+## Success Criteria
+
+Project succeeds when:
+- [ ] Engineers can explain any logged decision without re-consulting the agent
+- [ ] Fresh agent resumes work by reading curated logs (not reconstructing from scratch)
+- [ ] Session token budget stays under 80k via deliberate fork-and-condense workflow
+- [ ] Log entries read like journalism: narrative, analogies, code snippets, zero-friction onboarding
+- [ ] Artifacts feed directly into PR descriptions and documentation
+
+## The Pair Programming Model
+
+**Roles:**
+- **Engineer (Driver):** Owns decisions, curates what gets logged, stakes reputation on outcome
+- **Agent (Navigator):** Proposes solutions, executes tasks, narrates reasoning in log entries
+- **Artifacts (Memory):** Persist beyond any single session, become institutional knowledge
+
+**The Fork & Resume Cycle:**
+
+```
+SESSION 1 (tokens: 0 → 60k)
+├── Pair program back-and-forth
+├── Hit interesting finding → "Log this with journalism narrative"
+├── Agent writes LOG-017 (Time Traveler Bug)
+├── Continue working → tokens rising
+└── Hit 80k threshold → FORK
+
+SESSION 2 (tokens: 0 → fresh start)
+├── "Read LOG-017, continue from there"
+├── Agent onboards from curated artifact (not chat history)
+├── Continue pair programming
+├── New decision → "Log this decision with analogy"
+├── Agent writes LOG-025 (Blank String Philosophy)
+└── Continue or FORK again
+```
+
+**Why This Matters:**
+- Chat history is expensive (tokens) and ephemeral (session dies)
+- Artifacts are cheap (grep-optimized) and permanent (survives sessions)
+- Engineer decides what's worth preserving — not the agent
+- Curated logs become onboarding docs for future engineers AND weaker agents
+
+## Context
+
+**Technical environment:**
+- Python 3.9+ CLI built with Typer/Rich
+- Distributed as pip-installable package
+- Templates bundled in `src/gsd_lite/template/`
+- Designed for synergy with fs-mcp (grep-first file reading)
+
+**Prior work:**
+- Evolved from "Data Engineering Copilot Patterns" knowledge base project
+- Inspired by upstream GSD framework (reference in `.claude/gsd_reference/`)
+- 8 iterative phases: Foundation → Template Coherence → Context Lifecycle → Checkpoint → Evaluation → Grep Synergy → Workflows → Echo-back Onboarding
+
+**Key architectural decisions:**
+- Workflow decomposition: 929-line monolith → 5 focused ~350-line workflows
+- Checkpoint ≠ Promotion: Separate "save state" from "trim logs"
+- Summary in headers: Log entries include description for grep scanning
+- Echo-back protocol: Agents must prove understanding before executing
+- Journalism narrative: Logs include analogies, code snippets, extended context
+
+**Validated in production:**
+- Meltano pipeline project (DATA-338, DATA-339)
+- 26+ rich log entries demonstrating the pattern
+- PR descriptions generated directly from WORK.md logs
+
+## The Logging Standard
+
+When logging findings, use this prompt pattern:
+
+> *"Please include specific code snippet, reasoning, extended context in a journalism narrative style so that whoever with 0 context can onboard and pick up this key record of decision without ambiguity or friction. Add a cherry on top to include exact/synthesized example to explain the concepts/findings mentioned so that other weaker reasoning agents can grasp topic with little friction and ambiguity."*
+
+**What makes a good log entry:**
+
+| Element | Purpose | Example |
+|---------|---------|---------|
+| Narrative framing | Hook the reader | "The Time Traveler Bug" |
+| The symptom | What went wrong | "DAG reported success, table remained empty" |
+| The evidence | Concrete proof | Actual error message, query results |
+| The root cause | Why it happened | "Business Central uses 0001-01-01 for NULL" |
+| The analogy | ELI5 for onboarding | "Like writing 01/01/0001 on a form when you don't have a date" |
+| The decision | What we chose | "Sanitize in post_process(), not relax schema" |
+| Code snippet | Executable proof | The actual fix |
+
+## Constraints
+
+- **Engineer ownership:** Human must be able to explain any decision without the agent
+- **Token discipline:** Sessions stay under 80k via deliberate fork-and-condense
+- **Vendor agnostic:** Works with any agent via file read/write or copy/paste
+- **Grep-optimized:** Artifacts designed for surgical reads via `grep → read_files`
+- **Journalism quality:** Logs are onboarding documents, not bullet points
+
+## Philosophy
+
+**Agents are brilliant but ephemeral.** They can reason through complex problems, spot patterns humans miss, and execute with precision. But when the session ends, that brilliance evaporates.
+
+**Engineers are permanent.** They stake their reputation on the code. They get paged at 2am. They explain to the team lead why this approach was chosen. They onboard the next engineer who inherits the system.
+
+**GSD-Lite bridges the gap.** It captures the agent's brilliance in artifacts that the engineer owns, comprehends, and can defend. The engineer learns from the best (the agent's reasoning) while maintaining the ability to stand behind every decision.
+
+> *"I may or may not write the code, but I understand the reasoning for the final code that got written."*
+
+---
+*Dogfood instance: Using GSD-Lite to build GSD-Lite*
