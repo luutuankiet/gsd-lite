@@ -92,29 +92,51 @@ Example: Implement token validation middleware (TASK-003)
 
 ---
 
-## 2. Key Events Index (Query Accelerator)
+## 2. Key Events Index (Project Foundation)
 
 <!--
-GREP ACCELERATOR - One-line summaries of major log entries.
-Updated for "major" entries: VISION, DECISION, BLOCKER, DISCOVERY with code.
-Skip EXEC/PLAN entries unless they're phase-changing.
+PROJECT FOUNDATION - Canonical source of truth for Layer 2 of stateless handoff packets.
 
-Purpose: Quick scan without reading full atomic log.
-Agent greps for type/task, reads index for context, then reads full log entry if needed.
+PURPOSE:
+- Agents MUST pull global context from here when generating handoff packets
+- Enables fresh agents to understand project-wide decisions without reading all logs
+- Human-curated: agent proposes additions, human approves
 
-Format: 10 words max per summary.
+STRUCTURE BY CATEGORY:
+- Architecture Decisions: System-level choices (data ownership, model structure)
+- Pattern Decisions: Reusable patterns (dashboard config, filter cascading)
+- Data Flow Decisions: How data moves through the system
+
+INCLUSION CRITERIA:
+✅ Decision affects multiple tasks/phases
+✅ Decision establishes a reusable pattern
+✅ Decision changes data flow or ownership
+✅ Decision is frequently referenced by other logs
+
+EXCLUSION CRITERIA:
+❌ Task-specific implementation detail
+❌ Superseded decision (context captured in successor)
+❌ Process decision, not product decision
+
+MAINTENANCE:
+- When adding new DECISION logs, check if project-wide impact warrants index entry
+- Agent may propose: "Add LOG-XXX to Key Events Index? Reason: [impact]"
+- User approves before agent updates this section
+
+FORMAT: Category headers (###), then bullet list of LOG-XXX: Title — 10-word summary
 
 IMPORTANT: Below are EXAMPLE entries showing format - replace with your actual index content.
 -->
 
-| Log ID | Type | Task | Summary |
-|--------|------|------|---------|
-| EXAMPLE-001 | VISION | MODEL-A | Linear-like + Bloomberg density for power users |
-| EXAMPLE-005 | DECISION | MODEL-A | Card-based layout over timeline view |
-| EXAMPLE-012 | DISCOVERY | MODEL-A | Found engagement pattern in reference app |
-| EXAMPLE-018 | BLOCKER | AUTH-IMPL | Password reset token expiry unclear |
-| EXAMPLE-022 | DECISION | AUTH-IMPL | Separate reset token with 1-hour expiry |
-| EXAMPLE-030 | DISCOVERY | AUTH-IMPL | bcrypt cost factor 12 optimal for performance |
+### Architecture Decisions
+- EXAMPLE-005: Card Layout — Card-based over timeline for content flexibility
+- EXAMPLE-022: Token Expiry — Separate reset token with 1-hour expiry
+
+### Pattern Decisions
+- EXAMPLE-012: Engagement Pattern — Reusable engagement metrics display pattern
+
+### Data Flow Decisions
+- EXAMPLE-030: Auth Performance — bcrypt cost factor 12 balances security/speed
 
 ---
 
@@ -137,11 +159,21 @@ Entry format:
 **Timestamp:** [YYYY-MM-DD HH:MM]
 **Details:** [Full context with code snippets for EXEC/DISCOVERY]
 
+⚠️  HEADER HIERARCHY RULE (CRITICAL):
+Log entries are `###` (level 3). ALL headers INSIDE a log entry MUST be level 4 or deeper:
+- #### Part 1: [Section]     ← Level 4 for major sections within log
+- ##### 1.1 [Subsection]     ← Level 5 for subsections
+- ###### [Detail]            ← Level 6 for fine detail
+
+NEVER use `##` or `###` inside a log entry — this corrupts WORK.md structure.
+The grep pattern `^### \[LOG-` relies on `###` being ONLY for log entry headers.
+
 WHY THIS FORMAT:
 - Agents grep headers (`^### \[LOG-`) to scan project evolution without reading full content
 - Summary in header line enables quick onboarding from grep output alone
 - "###" level headers render nicely in IDE outlines for human navigation
 - Timestamp moved under header keeps the grep-scanned line focused on WHAT happened
+- Header hierarchy enables clean document outline in IDEs and markdown renderers
 
 Use action timestamp (when decision made or action taken), not entry-write time.
 Code snippets REQUIRED for EXEC and DISCOVERY entries (enables PR extraction).
