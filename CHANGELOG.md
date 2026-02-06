@@ -2,6 +2,14 @@
 
 <!-- version list -->
 
+## v1.13.2 (2026-02-06)
+
+### Bug Fixes
+
+- Migrate gotchas from WORK to PROTOCOL
+  ([`79b7fae`](https://github.com/luutuankiet/gsd-lite/commit/79b7fae3a54a2a59ce83ce6851fc5179e7619ddf))
+
+
 ## v1.13.1 (2026-02-06)
 
 ### Bug Fixes
