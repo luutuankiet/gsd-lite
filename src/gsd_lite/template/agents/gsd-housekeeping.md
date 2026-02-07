@@ -1,16 +1,16 @@
 ---
 description: Context Gardener + Archiver - Full housekeeping lifecycle: infer supersession, interview, tag, archive, extract PRs
-tools:
-  read: true
-  edit: true
-  bash: true
-  grep: true
-  glob: true
-  list: true
+tools:  
+  read: false
+  edit: false
+  bash: false
+  grep: false
+  glob: false
+  list: false
 
-permission:
-  task:
-    "*": "allow"
+permission:  
+  task:  
+    "*": "deny"
 ---
 
 # Context Gardener Protocol

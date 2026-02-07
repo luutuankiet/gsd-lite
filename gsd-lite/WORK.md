@@ -53,17 +53,19 @@ IMPORTANT: Below are EXAMPLE entries showing format - replace with your actual s
 -->
 
 <current_mode>
-discuss → execution (decisions made, ready to implement)
+execution (decisions made, ready to implement)
 </current_mode>
 
 <active_task>
-Task: TASK-PROTOCOL-DOCS-001 - Migrate artifact documentation to gsd-lite.md
-Status: READY - Decision made in LOG-020. Next: implement the "Artifact Format Reference" section.
+Task: LOOP-003 - Design CI framework for structural regression prevention
+Status: IN DISCUSSION - Discovered via LOG-022. Need to define deterministic checks.
 </active_task>
 
 <parked_tasks>
+- TASK-PROTOCOL-DOCS-002: Add executable templates to gsd-lite.md (COMPLETED LOG-023)
+- TASK-PROTOCOL-DOCS-001: Migrate artifact documentation to gsd-lite.md (COMPLETED LOG-021)
 - TASK-HA-001 through TASK-HA-004: All COMPLETED (LOG-019)
-- TASK-CI-TOKEN-001: Implement token budget CI check (pending, depends on TASK-PROTOCOL-DOCS-001)
+- TASK-CI-TOKEN-001: Implement token budget CI check (pending)
 - TASK-CI-STRUCTURE-001: Implement deterministic structure checks (pending)
 - PROTOCOL-STATELESS-001: Implement Stateless-First section in PROTOCOL.md (pending)
 - DIST-002: Unified Installer (COMPLETED)
@@ -105,7 +107,7 @@ None - Decisions clear, ready to execute.
 </blockers>
 
 <next_action>
-Implement TASK-PROTOCOL-DOCS-001: Add "Artifact Format Reference" section to gsd-lite.md
+Implement TASK-CI-TOKEN-001: Add deterministic 10k token budget check to CI
 </next_action>
 
 ---
@@ -772,6 +774,276 @@ export async function generateResetToken(userId: string): Promise<string> {
 
 ---
 
+### [LOG-021] - [EXEC] - Migrated Artifact Docs to Agent Instruction - Task: PROTOCOL-DOCS-001
+**Timestamp:** 2026-02-07 17:15
+**Status:** COMPLETE
+**Tasks:** TASK-PROTOCOL-DOCS-001
+
+**Context:**
+Per DECISION-020a, we migrated essential artifact documentation from HTML comments (invisible to grep-first agents) to `gsd-lite.md` agent instruction (always loaded). Also decommissioned the redundant `PROTOCOL.md` template.
+
+**Changes:**
+1. **Decommissioned PROTOCOL.md:** Deleted `src/gsd_lite/template/PROTOCOL.md`. The agent instruction at `src/gsd_lite/template/agents/gsd-lite.md` is now the single source of truth for the protocol.
+2. **Updated Agent Instruction:** Added `## WORK.md Structure`, `## INBOX.md Structure`, and `## HISTORY.md Structure` sections to `src/gsd_lite/template/agents/gsd-lite.md`.
+3. **Cleaned Templates:** Removed HTML comments from `src/gsd_lite/template/WORK.md`. (INBOX/HISTORY cleanup left for user per request).
+
+**Impact:**
+- **Visibility:** Fresh agents now see WORK/INBOX/HISTORY structure immediately upon reading system prompt.
+- **Maintenance:** Single source of truth (gsd-lite.md), no drift between template comments and instruction.
+- **Token Budget:** Added ~400 tokens to agent instruction, still well within 10k headroom.
+
+**Next:** Implement `TASK-CI-TOKEN-001` to enforce the 10k budget in CI.
+
+---
+
+### [LOG-022] - [DISCOVERY] - The Missing Metadata Line: Agent Instruction Describes Format But Lacks Executable Template - Task: PROTOCOL-DOCS-001
+**Timestamp:** 2026-02-07 17:45
+**Status:** DISCOVERY → DECISION
+**Depends On:** LOG-021 (Artifact doc migration), LOG-020 (Invisible Documentation Problem)
+**Decision IDs:** DECISION-022a (Add executable templates to agent instruction)
+
+---
+
+#### Part 1: The Discovery — Agent Wrote Non-Compliant Entry
+
+##### The Trigger
+
+Immediately after completing LOG-021 (migrating artifact docs to agent instruction), user asked the agent to capture LOOP-003. The agent produced an entry that **partially violated the INBOX format spec** it had just helped write.
+
+##### The Evidence: What Agent Wrote vs. What Spec Requires
+
+**The Spec** (from `src/gsd_lite/template/agents/gsd-lite.md:228-232`):
+
+```markdown
+### Entry Format
+- **Header:** `### [LOOP-NNN] - {{summary}} - Status: {{Open|Clarifying|Resolved}}`
+- **Fields:** Created, Source, Origin (User|Agent), Context, Details, Resolution
+- **Rule:** Write context-rich entries, not just titles — tell the story
+```
+
+**What Agent Actually Wrote** (LOOP-003 in `gsd-lite/INBOX.md`):
+
+```markdown
+### [LOOP-003] - Structural Regression Prevention: CI for Documentation Drift - Status: Open
+**Created:** 2026-02-07 | **Source:** Post-mortem on LOG-020/LOG-021 | **Origin:** User
+
+**Context:**
+...
+```
+
+Wait — on re-reading, the agent DID include the metadata line. Let me re-check the actual file:
+
+```mermaid
+flowchart TD
+    subgraph AUDIT["🔍 Compliance Audit"]
+        A1["Header Format"] -->|"✅"| A1R["[LOOP-003] - Summary - Status: Open"]
+        A2["Metadata Line"] -->|"❓"| A2R["Check if present"]
+        A3["Context Section"] -->|"✅"| A3R["Present with full narrative"]
+        A4["Details Section"] -->|"✅"| A4R["Present with tables and diagrams"]
+        A5["Resolution"] -->|"✅"| A5R["_(pending)_ present"]
+    end
+```
+
+##### The Real Finding: Spec Describes But Doesn't Show
+
+The deeper issue isn't that the agent failed — it's that **the spec describes the format abstractly but doesn't provide an executable template**.
+
+**Current spec in `gsd-lite.md:228-232`:**
+```markdown
+### Entry Format
+- **Header:** `### [LOOP-NNN] - {{summary}} - Status: {{Open|Clarifying|Resolved}}`
+- **Fields:** Created, Source, Origin (User|Agent), Context, Details, Resolution
+- **Rule:** Write context-rich entries, not just titles — tell the story
+```
+
+**What's missing:** A concrete, copy-paste-ready template that shows the EXACT structure:
+
+```markdown
+### [LOOP-NNN] - {{one-line summary}} - Status: Open
+**Created:** YYYY-MM-DD | **Source:** {{task/context}} | **Origin:** User|Agent
+
+**Context:**
+{{Why this loop exists — the situation that triggered it}}
+
+**Details:**
+{{Specific question/concern with code references}}
+
+**Resolution:** _(pending)_
+```
+
+##### Why This Matters: The Template-Instruction Gap
+
+```mermaid
+flowchart LR
+    subgraph CURRENT["Current State"]
+        C1["gsd-lite.md<br/>Describes format abstractly"]
+        C2["INBOX.md template<br/>Has EXAMPLE-LOOP-NNN entries"]
+        C3["Agent reads gsd-lite.md<br/>Never sees examples"]
+    end
+    
+    subgraph PROBLEM["The Gap"]
+        P1["Abstract description<br/>≠<br/>Executable template"]
+    end
+    
+    subgraph RESULT["Outcome"]
+        R1["Agent interprets spec<br/>May miss fields"]
+        R2["Inconsistent entries<br/>Harder to grep/audit"]
+    end
+    
+    C1 --> P1
+    C2 -->|"grep skips EXAMPLE-"| P1
+    P1 --> R1
+    R1 --> R2
+    
+    style PROBLEM fill:#fff3cd,stroke:#856404
+    style RESULT fill:#f8d7da,stroke:#721c24
+```
+
+The template file (`src/gsd_lite/template/INBOX.md`) contains rich examples like `[EXAMPLE-LOOP-001]`, but:
+1. Agents grep `^### \[LOOP-` which **skips** `EXAMPLE-LOOP-` entries (see LOG-020, LOOP-002)
+2. The agent instruction describes format but doesn't include a copy-paste template
+3. Result: Agent must interpret abstract description → inconsistent output
+
+---
+
+#### Part 2: The Pattern — This Affects All Artifact Formats
+
+##### Audit of Current Agent Instruction Sections
+
+| Section | Has Description | Has Executable Template | Gap |
+|---------|-----------------|------------------------|-----|
+| `## WORK.md Structure` | ✅ Describes 3 sections | ❌ No log entry template | **YES** |
+| `## INBOX.md Structure` | ✅ Describes fields | ❌ No loop entry template | **YES** |
+| `## HISTORY.md Structure` | ✅ Describes table format | ✅ Shows table example | No |
+
+**Citations:**
+- WORK.md Structure: `src/gsd_lite/template/agents/gsd-lite.md:188-219`
+- INBOX.md Structure: `src/gsd_lite/template/agents/gsd-lite.md:221-244`
+- HISTORY.md Structure: `src/gsd_lite/template/agents/gsd-lite.md:246-264`
+
+##### What Needs Executable Templates
+
+1. **WORK.md Log Entry Template:**
+```markdown
+### [LOG-NNN] - [TYPE] - {{one-line summary}} - Task: TASK-ID
+**Timestamp:** YYYY-MM-DD HH:MM
+**Status:** {{status if applicable}}
+**Depends On:** {{LOG-XXX (brief description), LOG-YYY (brief description)}}
+
+**Context:**
+{{Why this log exists — what triggered it}}
+
+**Details:**
+{{Full narrative with code snippets for EXEC/DISCOVERY}}
+
+**Next:** {{Immediate next action}}
+```
+
+2. **INBOX.md Loop Entry Template:**
+```markdown
+### [LOOP-NNN] - {{one-line summary}} - Status: Open
+**Created:** YYYY-MM-DD | **Source:** {{task/context}} | **Origin:** User|Agent
+
+**Context:**
+{{Why this loop exists — the situation that triggered it}}
+
+**Details:**
+{{Specific question/concern with code references}}
+
+**Resolution:** _(pending)_
+```
+
+---
+
+#### Part 3: The Decision — Embed Executable Templates in Agent Instruction
+
+##### DECISION-022a: Add Executable Templates to gsd-lite.md
+
+**What:** Enhance each artifact structure section with a copy-paste-ready template block.
+
+**Why:**
+1. **Removes interpretation burden** — Agent copies template, fills placeholders
+2. **Guarantees field presence** — Template includes all required fields
+3. **Enables auditing** — Reviewers can compare entry against template
+4. **Compensates for invisible examples** — Templates are visible even though EXAMPLE-NNN entries are not
+
+**Trade-off accepted:** Adds ~200 tokens to agent instruction. Budget impact: ~6,163 + 200 = ~6,363 tokens, still under 10k headroom.
+
+**Implementation:**
+- Add template block under each "Entry Format" subsection
+- Use `{{placeholder}}` syntax for variable parts
+- Include all required fields with inline comments
+
+---
+
+#### Part 4: Relationship to Other Findings
+
+| Log/Loop | Relationship | Summary |
+|----------|--------------|---------|
+| LOG-020 | Parent discovery | HTML comments invisible to grep-first agents |
+| LOG-021 | Immediate predecessor | Migrated docs to agent instruction, but missed templates |
+| LOOP-002 | Same root cause | EXAMPLE-NNN entries invisible to grep patterns |
+| LOOP-003 | Sibling concern | How to prevent structural regression via CI |
+
+---
+
+#### Part 5: Immediate Next Action
+
+| Task ID | Description | Priority |
+|---------|-------------|----------|
+| TASK-PROTOCOL-DOCS-002 | Add executable templates to gsd-lite.md artifact sections | High |
+
+---
+
+📦 STATELESS HANDOFF
+
+**Layer 1 — Local Context:**
+→ Last action: LOG-022 (Discovery: Missing executable templates in agent instruction)
+→ Dependency chain: LOG-022 ← LOG-021 ← LOG-020 ← LOG-019
+→ Next action: Implement TASK-PROTOCOL-DOCS-002 (add templates to gsd-lite.md)
+
+**Layer 2 — Global Context:**
+→ Architecture: Single source of truth at `src/gsd_lite/template/agents/gsd-lite.md`
+→ Patterns: Grep-first file reading, 10k token budget, invisible EXAMPLE-NNN entries
+→ Decision: DECISION-022a — embed executable templates
+
+**Fork paths:**
+- Execute template addition → TASK-PROTOCOL-DOCS-002
+- Discuss CI framework → Continue LOOP-003
+- Fix LOOP-003 metadata → Correct existing entry
+
+---
+
+### [LOG-023] - [EXEC] - Added Executable Templates to Agent Instruction - Task: PROTOCOL-DOCS-002
+**Timestamp:** 2026-02-07 18:00
+**Status:** COMPLETE
+**Depends On:** LOG-022 (Discovery: Missing templates), DECISION-022a (Add templates to gsd-lite.md)
+
+**Context:**
+Per DECISION-022a, we added copy-paste-ready templates to the agent instruction so agents don't have to interpret abstract format descriptions.
+
+**Changes:**
+
+| Section | What Was Added | Location |
+|---------|----------------|----------|
+| `## WORK.md Structure` | Log Entry Template with field requirements | `src/gsd_lite/template/agents/gsd-lite.md:216-250` |
+| `## INBOX.md Structure` | Loop Entry Template with field requirements | `src/gsd_lite/template/agents/gsd-lite.md:270-295` |
+
+**Template Features:**
+- Copy-paste ready markdown blocks
+- `{{placeholder}}` syntax for variable parts
+- Field requirements table explaining each field
+- Includes stateless handoff structure for logs
+
+**Impact:**
+- Agents can now copy template and fill placeholders
+- All required fields are visible in template (no interpretation needed)
+- Enables auditing: compare entry against template
+- Token cost: ~200 tokens added, still well under 10k budget
+
+**Next:** Continue LOOP-003 discussion (CI framework for structural regression prevention)
+
+---
 
 ### [LOG-001] - [DISCOVERY] - Vision Archaeology: Unearthing GSD-Lite's True Purpose from Artifacts and PRs - Task: BOOTSTRAP-001
 **Timestamp:** 2026-02-03 14:30

@@ -219,6 +219,143 @@ flowchart TD
 
 **Citations — Where Grep-First Instructions Live:**
 
+**Resolution:** _(pending — related to LOOP-003)_
+
+---
+
+### [LOOP-003] - Structural Regression Prevention: CI for Documentation Drift - Status: Open
+**Created:** 2026-02-07 | **Source:** Post-mortem on LOG-020/LOG-021 (Invisible Documentation Problem) | **Origin:** User
+
+**Context:**
+We just completed TASK-PROTOCOL-DOCS-001, migrating HTML comments from templates to the `gsd-lite.md` agent instruction. The root cause was discovered only through deep inspection: HTML comments were invisible to grep-first agents, creating a gap between "what we documented" and "what agents actually read."
+
+**The concern:** How do we prevent future changes from regressing into this same anti-pattern? Without a structural safeguard, someone could:
+1. Add new documentation as HTML comments in templates (invisible to agents)
+2. Add a new section to PROTOCOL.md (which no longer exists) instead of gsd-lite.md
+3. Create drift between template examples and agent instruction definitions
+
+**What We Need to Prevent:**
+
+| Regression Type | Example | Why It's Bad |
+|-----------------|---------|--------------|
+| **Invisible Docs** | New HTML comment in WORK.md explaining a feature | Agent never sees it via grep-first |
+| **Orphaned Templates** | Re-creating PROTOCOL.md or similar file | Two sources of truth, drift inevitable |
+| **Structural Drift** | Template defines 4 log types, agent instruction says 6 | Agent follows instruction, template examples are misleading |
+| **Token Bloat** | Agent instruction grows past 10k without notice | First-turn context overflow |
+
+**Proposed CI Framework (Discussion Needed):**
+
+1. **Deterministic Checks (fast, cheap):**
+   - Token budget: `gsd-lite.md` ≤ 10k tokens
+   - No HTML comments in templates (or only one-liner pointers)
+   - No orphaned files (PROTOCOL.md should not exist)
+   - Section parity: Agent instruction sections match template structure
+
+2. **Structural Consistency Checks:**
+   - Log types in agent instruction match example types in templates
+   - Grep patterns in instruction actually match template content
+   - ID formats (LOG-NNN, LOOP-NNN) consistent across all files
+
+3. **Behavioral Checks (slow, expensive):** — See LOOP-001
+   - Intern Test scenarios verify agent actually follows structure
+
+**Open Questions:**
+- What's the minimal set of deterministic checks that catches 80% of regressions?
+- Should we lint templates for HTML comments? Or allow them with explicit "human-only" markers?
+- How do we test "grep patterns actually work" without running an agent?
+
+**Relationship to Other Loops:**
+- **LOOP-001** (Philosophical CI): This is the deterministic complement — LOOP-001 tests behavior, LOOP-003 tests structure
+- **LOOP-002** (Few-Shot Visibility): Same root cause — structure that agents can't see
+
+**Resolution:** _(pending — requires design discussion)_
+
+---
+
+### [LOOP-004] - Document the Manual Reconciliation Pattern for Regression Discovery - Status: Open
+**Created:** 2026-02-07 | **Source:** Post-mortem on LOG-020 through LOG-023 | **Origin:** User
+
+**Context:**
+We just went through a multi-step manual process to discover and fix the "invisible documentation" regression (HTML comments not embedded in agent instruction). The process worked, but it was ad-hoc. We should document this pattern so future reconciliation efforts follow the same rigor.
+
+**The Pattern We Used (Reconstructed):**
+
+```mermaid
+flowchart TD
+    subgraph PHASE1["Phase 1: Discovery"]
+        D1["Trigger: Agent behavior doesn't match expectation"]
+        D2["Question: What does agent actually read?"]
+        D3["Trace: Map agent onboarding path"]
+        D4["Compare: What exists vs what agent sees"]
+        D5["Evidence: Build inventory of gaps"]
+    end
+    
+    subgraph PHASE2["Phase 2: Decision"]
+        E1["Analyze: Token budget, structural constraints"]
+        E2["Propose: Migration/consolidation approach"]
+        E3["Decide: Single source of truth location"]
+    end
+    
+    subgraph PHASE3["Phase 3: Execution"]
+        F1["Migrate: Move docs to authoritative location"]
+        F2["Clean: Remove redundant sources"]
+        F3["Enhance: Add executable templates"]
+    end
+    
+    subgraph PHASE4["Phase 4: Validation"]
+        G1["Audit: Does agent now see the docs?"]
+        G2["Test: Agent produces compliant output?"]
+        G3["CI: How to prevent regression?"]
+    end
+    
+    D1 --> D2 --> D3 --> D4 --> D5
+    D5 --> E1 --> E2 --> E3
+    E3 --> F1 --> F2 --> F3
+    F3 --> G1 --> G2 --> G3
+    
+    style PHASE1 fill:#e3f2fd,stroke:#1976d2
+    style PHASE2 fill:#fff3e0,stroke:#f57c00
+    style PHASE3 fill:#e8f5e9,stroke:#388e3c
+    style PHASE4 fill:#fce4ec,stroke:#c2185b
+```
+
+**Details — What We Did This Session:**
+
+| Phase | What We Did | Log Reference |
+|-------|-------------|---------------|
+| **Discovery** | Asked "what does agent actually read?" Traced grep-first path. Found HTML comments invisible. | LOG-020 Part 1 |
+| **Decision** | Analyzed token budget (4,913 + 1,250 = 6,163 < 10k). Decided to consolidate to gsd-lite.md. | LOG-020 Part 2-3, DECISION-020a |
+| **Execution** | Deleted PROTOCOL.md. Added structure sections to gsd-lite.md. Removed HTML comments from templates. | LOG-021 |
+| **Validation (partial)** | Agent wrote LOOP-003, user audited compliance → discovered missing executable templates. | LOG-022, LOG-023 |
+
+**What's Still Fuzzy:**
+
+1. **No formal audit checklist** — We manually compared agent output to spec
+2. **No automated validation** — CI doesn't catch structural drift yet (see LOOP-003)
+3. **Pattern not codified** — Next time we hit a regression, we'll reinvent this process
+
+**Why Document This:**
+
+The pattern we used is valuable:
+- **Trigger → Trace → Compare → Evidence** is a reusable debugging approach
+- **Token budget analysis** should be standard for any doc consolidation
+- **Executable templates** emerged as a solution — should be default practice
+
+**Proposed Next Steps:**
+
+1. Codify this pattern in a workflow or reference doc
+2. Create an "Agent Visibility Audit" checklist
+3. Build CI checks (LOOP-003) to automate Phase 4
+
+**Relationship to Other Loops:**
+- **LOOP-001** (Intern Test): Behavioral validation — does agent follow philosophy?
+- **LOOP-002** (Few-Shot Visibility): Same root cause — structural invisibility
+- **LOOP-003** (CI for Regression): Automated prevention — Phase 4 automation
+
+**Resolution:** _(pending — collect more data points before formalizing)_
+
+---
+
 1. **PROTOCOL.md, Line 101:**
    > `**Grep-first behavior:** Always grep to discover structure before reading large artifacts. Use `grep "^## " WORK.md` to find section boundaries, then surgical read of relevant sections.`
 

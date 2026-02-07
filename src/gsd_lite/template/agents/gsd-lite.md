@@ -213,6 +213,50 @@ WORK.md has three `## ` level sections. Agents should understand their purpose:
 - **When to read:** Grep by ID, type, or task — never read entire section
 - **When to write:** During execution workflow, following Journalist Rule
 
+### Log Entry Template (Copy-Paste Ready)
+
+```markdown
+### [LOG-NNN] - [TYPE] - {{one-line summary}} - Task: TASK-ID
+**Timestamp:** YYYY-MM-DD HH:MM
+**Status:** {{DISCOVERY → DECISION | COMPLETE | etc.}}
+**Depends On:** LOG-XXX (brief context), LOG-YYY (brief context)
+**Decision IDs:** DECISION-NNN (if applicable)
+
+---
+
+#### Part 1: {{Section Title}}
+
+{{Narrative content with context, evidence, code snippets}}
+
+#### Part 2: {{Next Section}}
+
+{{Continue with journalism-style narrative}}
+
+---
+
+📦 STATELESS HANDOFF
+
+**Layer 1 — Local Context:**
+→ Last action: LOG-NNN (brief description)
+→ Dependency chain: LOG-NNN ← LOG-XXX ← LOG-YYY
+→ Next action: {{specific next step}}
+
+**Layer 2 — Global Context:**
+→ Architecture: {{from Key Events Index}}
+→ Patterns: {{from Key Events Index}}
+
+**Fork paths:**
+- Continue execution → {{specific logs}}
+- Discuss → {{specific logs}}
+```
+
+**Field Requirements:**
+- `[TYPE]`: One of [VISION], [DECISION], [DISCOVERY], [PLAN], [BLOCKER], [EXEC]
+- `Timestamp`: When action occurred (not when logged)
+- `Depends On`: Prior logs this builds on — enables dependency chain tracing
+- `#### Part N`: Use level-4 headers inside logs (level-3 is for log headers only)
+- `📦 STATELESS HANDOFF`: Required at end of significant logs — enables fresh agent resume
+
 ## INBOX.md Structure (Loop Capture)
 
 INBOX.md captures ideas, questions, and concerns that shouldn't interrupt current execution.
@@ -226,6 +270,30 @@ INBOX.md captures ideas, questions, and concerns that shouldn't interrupt curren
 - **Header:** `### [LOOP-NNN] - {{summary}} - Status: {{Open|Clarifying|Resolved}}`
 - **Fields:** Created, Source, Origin (User|Agent), Context, Details, Resolution
 - **Rule:** Write context-rich entries, not just titles — tell the story
+
+### Loop Entry Template (Copy-Paste Ready)
+
+```markdown
+### [LOOP-NNN] - {{one-line summary}} - Status: Open
+**Created:** YYYY-MM-DD | **Source:** {{task/context where discovered}} | **Origin:** User|Agent
+
+**Context:**
+{{Why this loop exists — the situation that triggered it, what prompted the question}}
+
+**Details:**
+{{Specific question/concern with code references where applicable}}
+{{Options considered, tradeoffs identified}}
+
+**Resolution:** _(pending)_
+```
+
+**Field Requirements:**
+- `Status`: One of `Open`, `Clarifying`, `Resolved`
+- `Source`: The task or context where this loop was discovered (e.g., "During TASK-AUTH-001")
+- `Origin`: `User` (human raised it) or `Agent` (agent discovered it)
+- `Context`: The WHY — situation and trigger (not just the question)
+- `Details`: The WHAT — specific concern with code refs if applicable
+- `Resolution`: How it was resolved (update when closing loop)
 
 ### When to Use
 - **Capture:** Immediately when loop discovered (don't interrupt current task)
