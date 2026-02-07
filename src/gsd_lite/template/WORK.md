@@ -1,56 +1,8 @@
 # GSD-Lite Work Log
 
-<!--
-PERPETUAL SESSION WORK LOG - captures all work during project execution.
-Tracks vision, planning, execution, decisions, and blockers across multiple tasks.
-
-LIFECYCLE:
-- Created: When project starts
-- Updated: Throughout project execution
-- Housekeeping: User-controlled archiving of completed tasks to HISTORY.md
-- Perpetual: Logs persist until user requests archiving
-
-PURPOSE:
-- Session continuity: Fresh agents resume by reading Current Understanding (30-second context)
-- Detailed history: Atomic log provides HOW we got here with full evidence
-- Non-linear access: Grep patterns enable quick discovery (headers, log IDs, types, tasks)
-- PR extraction: Filter by task to generate PR descriptions from execution logs
-
-GREP PATTERNS FOR DISCOVERY:
-- Headers: grep "^## " WORK.md — discover 3-part structure
-- All logs with summaries: grep "^### \[LOG-" WORK.md — scan project evolution from headers
-- Log by ID: grep "\[LOG-015\]" WORK.md — find specific entry
-- Log by type: grep "\[DECISION\]" WORK.md — find all decisions
-- Log by task: grep "Task: MODEL-A" WORK.md — filter by task
-
-FILE READING STRATEGY:
-1. Discover structure: grep "^## " to find section boundaries
-2. Surgical read: Read from start_line using read_to_next_pattern or calculate end_line
-3. See PROTOCOL.md "File Reading Strategy" section for detailed patterns
--->
-
 ---
 
 ## 1. Current Understanding (Read First)
-
-<!--
-HANDOFF SECTION - Read this first when resuming work.
-Updated at checkpoint time or when significant state changes.
-Target: Fresh agent can understand current state in 30 seconds.
-
-Structure:
-- current_mode: What workflow are we in? (moodboard, execution, checkpoint, etc.)
-- active_task: What task is being worked on NOW
-- parked_tasks: What tasks are on hold (waiting for decisions, dependencies, etc.)
-- vision: What user wants - the intent, feel, references, success criteria
-- decisions: Key decisions with rationale - not just WHAT but WHY
-- blockers: Open questions, stuck items, waiting on user, ambiguities
-- next_action: Specific first action when resuming this session
-
-Use concrete facts, not jargon. Avoid "as discussed" or "per original vision" - fresh agent has zero context.
-
-IMPORTANT: Below are EXAMPLE entries showing format - replace with your actual session content.
--->
 
 <current_mode>
 Example: execution (following execution.md workflow)
@@ -94,40 +46,6 @@ Example: Implement token validation middleware (TASK-003)
 
 ## 2. Key Events Index (Project Foundation)
 
-<!--
-PROJECT FOUNDATION - Canonical source of truth for Layer 2 of stateless handoff packets.
-
-PURPOSE:
-- Agents MUST pull global context from here when generating handoff packets
-- Enables fresh agents to understand project-wide decisions without reading all logs
-- Human-curated: agent proposes additions, human approves
-
-STRUCTURE BY CATEGORY:
-- Architecture Decisions: System-level choices (data ownership, model structure)
-- Pattern Decisions: Reusable patterns (dashboard config, filter cascading)
-- Data Flow Decisions: How data moves through the system
-
-INCLUSION CRITERIA:
-✅ Decision affects multiple tasks/phases
-✅ Decision establishes a reusable pattern
-✅ Decision changes data flow or ownership
-✅ Decision is frequently referenced by other logs
-
-EXCLUSION CRITERIA:
-❌ Task-specific implementation detail
-❌ Superseded decision (context captured in successor)
-❌ Process decision, not product decision
-
-MAINTENANCE:
-- When adding new DECISION logs, check if project-wide impact warrants index entry
-- Agent may propose: "Add LOG-XXX to Key Events Index? Reason: [impact]"
-- User approves before agent updates this section
-
-FORMAT: Category headers (###), then bullet list of LOG-XXX: Title — 10-word summary
-
-IMPORTANT: Below are EXAMPLE entries showing format - replace with your actual index content.
--->
-
 ### Architecture Decisions
 - EXAMPLE-005: Card Layout — Card-based over timeline for content flexibility
 - EXAMPLE-022: Token Expiry — Separate reset token with 1-hour expiry
@@ -141,45 +59,6 @@ IMPORTANT: Below are EXAMPLE entries showing format - replace with your actual i
 ---
 
 ## 3. Atomic Session Log (Chronological)
-
-<!--
-TYPE-TAGGED ATOMIC ENTRIES - All session work captured here.
-Each entry is self-contained with code snippets where applicable.
-
-Entry types (6 types):
-- [VISION] - User vision/preferences, vision evolution, reference points
-- [DECISION] - Decision made (tech, scope, approach) with rationale
-- [DISCOVERY] - Evidence, findings, data (ALWAYS with code snippets)
-- [PLAN] - Planning work: task breakdown, risk identification, approach
-- [BLOCKER] - Open questions, stuck items, waiting states
-- [EXEC] - Execution work: files modified, commands run (ALWAYS with code snippets)
-
-Entry format:
-### [LOG-NNN] - [TYPE] - {{one line summary}} - Task: TASK-ID
-**Timestamp:** [YYYY-MM-DD HH:MM]
-**Details:** [Full context with code snippets for EXEC/DISCOVERY]
-
-⚠️  HEADER HIERARCHY RULE (CRITICAL):
-Log entries are `###` (level 3). ALL headers INSIDE a log entry MUST be level 4 or deeper:
-- #### Part 1: [Section]     ← Level 4 for major sections within log
-- ##### 1.1 [Subsection]     ← Level 5 for subsections
-- ###### [Detail]            ← Level 6 for fine detail
-
-NEVER use `##` or `###` inside a log entry — this corrupts WORK.md structure.
-The grep pattern `^### \[LOG-` relies on `###` being ONLY for log entry headers.
-
-WHY THIS FORMAT:
-- Agents grep headers (`^### \[LOG-`) to scan project evolution without reading full content
-- Summary in header line enables quick onboarding from grep output alone
-- "###" level headers render nicely in IDE outlines for human navigation
-- Timestamp moved under header keeps the grep-scanned line focused on WHAT happened
-- Header hierarchy enables clean document outline in IDEs and markdown renderers
-
-Use action timestamp (when decision made or action taken), not entry-write time.
-Code snippets REQUIRED for EXEC and DISCOVERY entries (enables PR extraction).
-
-IMPORTANT: Below are EXAMPLE entries showing format. Real entries should use [LOG-NNN] not [EXAMPLE-NNN].
--->
 
 ### [EXAMPLE-001] - [VISION] - User wants Linear-like feel + Bloomberg density for power users - Task: MODEL-A
 **Timestamp:** 2026-01-22 14:00

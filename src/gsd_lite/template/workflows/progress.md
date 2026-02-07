@@ -193,7 +193,7 @@ Based on `current_mode` and artifact state, suggest the appropriate workflow:
 | `moodboard-complete` | Ready for plan | "Ready to present plan - say 'show me the plan'" |
 | `execution` | Active work | "Continue with: [next_action]" |
 | `checkpoint` | Session paused | "Resume from checkpoint - [next_action]" |
-| `housekeeping` | Cleanup mode | "Continue PR extraction or archiving" |
+
 
 **Present routing:**
 

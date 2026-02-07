@@ -72,11 +72,17 @@ def install(
         command_dir.mkdir(parents=True, exist_ok=True)
         artifacts_dir.mkdir(parents=True, exist_ok=True)
 
-        # 5. Install Agent
-        agent_src = template_src / "AGENTS.md"
-        agent_dest = agents_dir / "gsd-lite.md"
-        shutil.copy2(agent_src, agent_dest)
-        console.print(f"[green]✔ Installed Agent:[/green] {agent_dest}")
+        # 5. Install Agents
+        agents_src_dir = template_src / "agents"
+        if agents_src_dir.exists():
+            count = 0
+            for item in agents_src_dir.iterdir():
+                if item.suffix == ".md":
+                    shutil.copy2(item, agents_dir / item.name)
+                    count += 1
+            console.print(f"[green]✔ Installed Agents:[/green] {agents_dir} ({count} files)")
+        else:
+            console.print(f"[yellow]⚠ Warning:[/yellow] No agents directory found at {agents_src_dir}")
 
         # 6. Install Workflows (Always overwrite)
         workflow_src = template_src / "workflows"
