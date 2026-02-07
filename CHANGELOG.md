@@ -2,6 +2,35 @@
 
 <!-- version list -->
 
+## v1.14.0 (2026-02-07)
+
+### Chores
+
+- Migrate html descriptions from artifact to root agent
+  ([#13](https://github.com/luutuankiet/gsd-lite/pull/13),
+  [`2f36391`](https://github.com/luutuankiet/gsd-lite/commit/2f3639126e4ead17e92f25763d2e0bc1763598ea))
+
+### Documentation
+
+- Commit worklog execution of adding housekeeping agent
+  ([#13](https://github.com/luutuankiet/gsd-lite/pull/13),
+  [`2f36391`](https://github.com/luutuankiet/gsd-lite/commit/2f3639126e4ead17e92f25763d2e0bc1763598ea))
+
+### Features
+
+- Add housekeeping agent, decomission housekeeping workflow
+  ([#13](https://github.com/luutuankiet/gsd-lite/pull/13),
+  [`2f36391`](https://github.com/luutuankiet/gsd-lite/commit/2f3639126e4ead17e92f25763d2e0bc1763598ea))
+
+- Housekeeping agent embeds instruction to use fs-mcp worklog analyzer
+  ([#13](https://github.com/luutuankiet/gsd-lite/pull/13),
+  [`2f36391`](https://github.com/luutuankiet/gsd-lite/commit/2f3639126e4ead17e92f25763d2e0bc1763598ea))
+
+- **TASK-PROTOCOL-DOCS-001**: Move all html comments from artiacts to main agent gsd-lite.
+  decomission the PROTOCOL.md file ([#13](https://github.com/luutuankiet/gsd-lite/pull/13),
+  [`2f36391`](https://github.com/luutuankiet/gsd-lite/commit/2f3639126e4ead17e92f25763d2e0bc1763598ea))
+
+
 ## v1.13.2 (2026-02-06)
 
 ### Bug Fixes
