@@ -1,34 +1,5 @@
 # GSD-Lite Inbox
 
-<!--
-LOOP CAPTURE - ideas, questions, concerns parked here.
-All loops get systematic ID: LOOP-NNN (globally unique).
-
-Loops come from TWO sources:
-1. User: Non-linear thinker, asks questions mid-task
-2. Agent: Discovers dependencies, future work, concerns
-
-ENTRY FORMAT:
-### [LOOP-NNN] - {{one line summary}} - Status: {{Open|Clarifying|Resolved}}
-**Created:** YYYY-MM-DD | **Source:** {{task/context where discovered}} | **Origin:** User|Agent
-**Context:** [The situation - why this loop exists, what triggered it]
-**Details:** [Specific question/concern with code references where applicable]
-**Resolution:** [How resolved, if applicable]
-
-WHY THIS FORMAT:
-- Agents grep headers (`^### \[LOOP-`) to scan open loops without reading full content
-- Summary in header enables quick triage from grep output alone
-- Context section preserves the "why" - future agents/humans understand the situation
-- Code references anchor abstract concerns to concrete codebase locations
-- Journalism-style narrative tells the story, not just the fact
-
-GREP PATTERNS:
-- All loops with summaries: grep "^### \[LOOP-" INBOX.md
-- Open loops only: grep "Status: Open" INBOX.md
-- Loop by ID: grep "\[LOOP-007\]" INBOX.md
-- User loops: grep "Origin: User" INBOX.md
-- Agent loops: grep "Origin: Agent" INBOX.md
--->
 
 ## How to Use
 
@@ -43,10 +14,6 @@ GREP PATTERNS:
 
 ## Active Loops
 
-<!--
-Active loops awaiting attention. Each entry is self-contained with full context.
-IMPORTANT: Below are EXAMPLE entries showing format. Real entries use [LOOP-NNN], not [EXAMPLE-LOOP-NNN].
--->
 
 ### [EXAMPLE-LOOP-001] - Client update workflow needs pull mechanism - Status: Open
 **Created:** 2026-01-23 | **Source:** During PHASE-001 planning | **Origin:** User
@@ -131,10 +98,6 @@ This isn't blocking current work but will become critical before first productio
 ---
 
 ## Resolved Loops
-
-<!--
-Resolved loops with full resolution context. Kept for historical reference.
--->
 
 ### [EXAMPLE-LOOP-004] - Password reset flow scope unclear - Status: Resolved
 **Created:** 2026-01-22 | **Source:** During TASK-002 user discussion | **Origin:** User

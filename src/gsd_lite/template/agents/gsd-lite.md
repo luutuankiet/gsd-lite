@@ -62,7 +62,6 @@ Before writing to `WORK.md` or `INBOX.md`:
 | `none` or `discuss` | discuss.md | Explore vision, teach concepts, unblock, present plans |
 | `execution` | execution.md | Execute tasks, log progress |
 | `checkpoint` | checkpoint.md | Session handoff, preserve context |
-| `housekeeping` | housekeeping.md | PR extraction, archive completed tasks |
 
 If WORK.md doesn't exist or has no active phase, load discuss.md.
 
@@ -74,7 +73,6 @@ These workflows are triggered by explicit user requests:
 |-------------|----------|-------------|
 | "progress" or "status" or "where are we?" | progress.md | Quick situational awareness and routing |
 | "checkpoint" or "pause" | checkpoint.md | End session mid-phase, preserve for later resume |
-
 | "let's discuss" or "help me understand" | discuss.md | Switch from execution to exploration/teaching |
 
 **Mode switching:**
@@ -182,6 +180,81 @@ Read first 50 lines of WORK.md — Current Understanding is always at top.
 | HISTORY.md | Completed tasks/phases | gsd-lite/HISTORY.md |
 | ARCHITECTURE.md | Codebase structure | gsd-lite/ARCHITECTURE.md |
 | PROJECT.md | Project vision | gsd-lite/PROJECT.md |
+
+## WORK.md Structure (3 Sections)
+
+WORK.md has three `## ` level sections. Agents should understand their purpose:
+
+### Section 1: Current Understanding (Read First)
+- **Purpose:** 30-second context for fresh agents
+- **Contains:** current_mode, active_task, parked_tasks, vision, decisions, blockers, next_action
+- **When to read:** ALWAYS on session start (Universal Onboarding step 4)
+- **When to update:** At checkpoint time, or when significant state changes
+
+### Section 2: Key Events Index (Project Foundation)
+- **Purpose:** Canonical source of truth for Layer 2 of stateless handoff packets
+- **Contains:** Table of project-wide decisions that affect multiple tasks/phases
+- **When to read:** When generating handoff packets (pull global context from here)
+- **When to update:** Agent proposes "Add LOG-XXX to Key Events Index?" — human approves
+
+**Inclusion criteria:**
+- ✅ Decision affects multiple tasks/phases
+- ✅ Decision establishes a reusable pattern
+- ✅ Decision changes data flow or ownership
+
+**Exclusion criteria:**
+- ❌ Task-specific implementation detail
+- ❌ Superseded decision (context captured in successor)
+- ❌ Process decision, not product decision
+
+### Section 3: Atomic Session Log (Chronological)
+- **Purpose:** Full history of all work — the "HOW we got here"
+- **Contains:** Type-tagged entries: [VISION], [DECISION], [DISCOVERY], [PLAN], [BLOCKER], [EXEC]
+- **When to read:** Grep by ID, type, or task — never read entire section
+- **When to write:** During execution workflow, following Journalist Rule
+
+## INBOX.md Structure (Loop Capture)
+
+INBOX.md captures ideas, questions, and concerns that shouldn't interrupt current execution.
+
+### Purpose
+- **Park scope creep:** "That's a new capability. Captured to INBOX for later."
+- **Capture user questions mid-task:** Non-linear thinkers can dump ideas without derailing flow
+- **Agent discoveries:** Dependencies, future work, concerns found during execution
+
+### Entry Format
+- **Header:** `### [LOOP-NNN] - {{summary}} - Status: {{Open|Clarifying|Resolved}}`
+- **Fields:** Created, Source, Origin (User|Agent), Context, Details, Resolution
+- **Rule:** Write context-rich entries, not just titles — tell the story
+
+### When to Use
+- **Capture:** Immediately when loop discovered (don't interrupt current task)
+- **Review:** At phase transitions, before planning next phase
+- **Reference:** User can say "discuss LOOP-007" to pull into discussion
+
+### Grep Patterns
+- All loops: `grep "^### \[LOOP-" INBOX.md`
+- Open only: `grep "Status: Open" INBOX.md`
+- By origin: `grep "Origin: User" INBOX.md`
+
+## HISTORY.md Structure (Archive)
+
+HISTORY.md is a minimal record of completed phases — just enough to know what was done.
+
+### Purpose
+- **Lightweight archive:** One line per phase, not full logs
+- **Link to artifacts:** Details live in PRs, docs, external systems
+- **Housekeeping destination:** Completed entries move here from WORK.md
+
+### Entry Format
+| ID | Name | Completed | Outcome |
+|----|------|-----------|---------|
+| PHASE-001 | Add Auth | 2026-01-22 | JWT auth with login/logout (PR #42) |
+
+### When to Use
+- **Write:** During housekeeping workflow after phase completion
+- **Read:** Rarely — only when needing historical context
+- **Grows slowly:** One line per completed phase, not per task
 
 ## Systematic ID Format
 
@@ -319,6 +392,50 @@ Structure stays rigid. Content adapts:
 **❌ Stale references:** Pointing to superseded logs.
 **❌ "Read everything":** `LOG-001 through LOG-056` defeats curation.
 **❌ Inconsistent format:** Different structure each turn.
+
+---
+
+# Artifact Format Reference
+
+## WORK.md — The Perpetual Log
+
+**Lifecycle**: Created at project start, updated perpetually. Persists until user archives to HISTORY.md.
+**Purpose**: Session continuity (Current Understanding), Project foundation (Key Events), and Detailed history (Atomic Log).
+
+### Structure & Grep Patterns
+- **Header Hierarchy**: Log entries use `### [LOG-NNN]` (Level 3). Content *inside* logs must be Level 4 (`####`) or deeper.
+- **Discovery**: `grep "^## " WORK.md` finds the 3 main sections.
+- **Log Scanning**: `grep "^### \[LOG-" WORK.md` finds all entries with summaries.
+
+### Section 1: Current Understanding
+The "Read First" section.
+- **Update**: At checkpoint or major state change.
+- **Fields**: `current_mode`, `active_task`, `parked_tasks`, `vision`, `decisions`, `blockers`, `next_action`.
+- **Rule**: Concrete facts only. No jargon like "as discussed".
+
+### Section 2: Key Events Index
+The "Project Foundation" section.
+- **Source**: Canonical truth for Layer 2 of Stateless Handoff.
+- **Content**: Project-wide decisions (Architecture, Patterns, Data Flow).
+- **Maintenance**: Human curates. Agent proposes additions when decision affects multiple tasks.
+
+### Section 3: Atomic Session Log
+The "Chronological History" section.
+- **Format**: `### [LOG-NNN] - [TYPE] - Summary - Task: ID`
+- **Types**: `[VISION]`, `[DECISION]`, `[DISCOVERY]`, `[PLAN]`, `[BLOCKER]`, `[EXEC]`
+- **Content**: Journalist-style narrative. Code snippets required for `[EXEC]` and `[DISCOVERY]`.
+
+## INBOX.md — The Loop Capture
+
+**Purpose**: Park ideas/questions to avoid interrupting execution.
+**Format**: `### [LOOP-NNN] - Summary - Status: Open`
+- **Fields**: `Source` (User/Agent), `Context` (Why it matters), `Resolution`.
+- **Protocol**: Capture immediately. Do not execute. Review at phase transitions.
+
+## HISTORY.md — The Archive
+
+**Purpose**: Minimal record of completed phases.
+**Content**: One line per phase/milestone. Details live in external artifacts (PRs, docs).
 
 ---
 

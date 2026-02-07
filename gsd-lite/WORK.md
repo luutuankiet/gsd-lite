@@ -53,16 +53,20 @@ IMPORTANT: Below are EXAMPLE entries showing format - replace with your actual s
 -->
 
 <current_mode>
-none
+discuss → execution (decisions made, ready to implement)
 </current_mode>
 
 <active_task>
-Task: DIST-002 - Implement Unified Installer
-Status: COMPLETED - `install` command implemented with Global/Local support.
+Task: TASK-PROTOCOL-DOCS-001 - Migrate artifact documentation to gsd-lite.md
+Status: READY - Decision made in LOG-020. Next: implement the "Artifact Format Reference" section.
 </active_task>
 
 <parked_tasks>
-None
+- TASK-HA-001 through TASK-HA-004: All COMPLETED (LOG-019)
+- TASK-CI-TOKEN-001: Implement token budget CI check (pending, depends on TASK-PROTOCOL-DOCS-001)
+- TASK-CI-STRUCTURE-001: Implement deterministic structure checks (pending)
+- PROTOCOL-STATELESS-001: Implement Stateless-First section in PROTOCOL.md (pending)
+- DIST-002: Unified Installer (COMPLETED)
 </parked_tasks>
 
 <vision>
@@ -75,6 +79,8 @@ Core insight: Agents are brilliant but ephemeral. Engineers are permanent and mu
 Fork & resume workflow: Pair program → log rich findings → kill session when tokens rise → resume with fresh agent pointing at curated logs.
 
 Distribution Goal: Unified "Hotel Model" — `gsd-lite install` (global) or `install --local` creates identical structure at different roots.
+
+Token Budget: First-turn headroom is 10k tokens. Agent instructions must stay under this (currently 4,913) to leave capacity for actual work. See LOG-020.
 </vision>
 
 <decisions>
@@ -86,29 +92,56 @@ DECISION-005: Decomission Sticky Note Protocol
 
 DECISION-013: Unified Installation Model (LOG-013)
 - Rationale: Single command structure for both global and local. Same output (opencode config + gsd-lite artifacts), different root. Smart check: skip user artifacts if exist, always overwrite templates. Simplifies mental model vs fragmented install/update/local/force flags.
+
+DECISION-020a: Consolidate artifact documentation to agent instruction (LOG-020)
+- Rationale: HTML comments in templates are invisible to grep-first onboarding. Agent instruction is ALWAYS loaded. Token budget allows: 4,913 current + 1,250 docs = ~6,163, under 10k headroom.
+
+DECISION-020b: 10k token limit as CI gate (LOG-020)
+- Rationale: Token count is deterministic and measurable. Use as fast gate before expensive LLM behavioral tests. Complements LOOP-001 (Intern Test).
 </decisions>
 
 <blockers>
-None - Plan is clear.
+None - Decisions clear, ready to execute.
 </blockers>
 
 <next_action>
-none
+Implement TASK-PROTOCOL-DOCS-001: Add "Artifact Format Reference" section to gsd-lite.md
 </next_action>
 
 ---
 
-## 2. Key Events Index (Query Accelerator)
+## 2. Key Events Index (Project Foundation)
 
 <!--
-GREP ACCELERATOR - One-line summaries of major log entries.
-Updated for "major" entries: VISION, DECISION, BLOCKER, DISCOVERY with code.
-Skip EXEC/PLAN entries unless they're phase-changing.
+PROJECT FOUNDATION - Canonical source of truth for Layer 2 of stateless handoff packets.
 
-Purpose: Quick scan without reading full atomic log.
-Agent greps for type/task, reads index for context, then reads full log entry if needed.
+PURPOSE:
+- Agents MUST pull global context from here when generating handoff packets
+- Enables fresh agents to understand project-wide decisions without reading all logs
+- Human-curated: agent proposes additions, human approves
 
-Format: 10 words max per summary.
+STRUCTURE BY CATEGORY:
+- Architecture Decisions: System-level choices (data ownership, model structure)
+- Pattern Decisions: Reusable patterns (dashboard config, filter cascading)
+- Data Flow Decisions: How data moves through the system
+
+INCLUSION CRITERIA:
+✅ Decision affects multiple tasks/phases
+✅ Decision establishes a reusable pattern
+✅ Decision changes data flow or ownership
+✅ Decision is frequently referenced by other logs
+
+EXCLUSION CRITERIA:
+❌ Task-specific implementation detail
+❌ Superseded decision (context captured in successor)
+❌ Process decision, not product decision
+
+MAINTENANCE:
+- When adding new DECISION logs, check if project-wide impact warrants index entry
+- Agent may propose: "Add LOG-XXX to Key Events Index? Reason: [impact]"
+- User approves before agent updates this section
+
+FORMAT: Category headers (###), then bullet list of LOG-XXX: Title — 10-word summary
 
 IMPORTANT: Below are EXAMPLE entries showing format - replace with your actual index content.
 -->
@@ -117,8 +150,9 @@ IMPORTANT: Below are EXAMPLE entries showing format - replace with your actual i
 |--------|------|------|---------|
 | LOG-012 | DISCOVERY | DIST-002 | Reverse-engineered get-shit-done-cc installer patterns |
 | LOG-013 | DECISION | DIST-002 | Unified install model: same output, different location |
+| LOG-016 | DECISION | PROTOCOL-STATELESS | Stateless-First Architecture: Every turn generates handoff packet |
+| **LOG-017** | **VISION** | **HOUSEKEEPING** | **⭐ Housekeeping Agent: Automated Coherence Detection for Dense Worklogs** |
 
----
 
 ## 3. Atomic Session Log (Chronological)
 
@@ -139,11 +173,21 @@ Entry format:
 **Timestamp:** [YYYY-MM-DD HH:MM]
 **Details:** [Full context with code snippets for EXEC/DISCOVERY]
 
+⚠️  HEADER HIERARCHY RULE (CRITICAL):
+Log entries are `###` (level 3). ALL headers INSIDE a log entry MUST be level 4 or deeper:
+- #### Part 1: [Section]     ← Level 4 for major sections within log
+- ##### 1.1 [Subsection]     ← Level 5 for subsections
+- ###### [Detail]            ← Level 6 for fine detail
+
+NEVER use `##` or `###` inside a log entry — this corrupts WORK.md structure.
+The grep pattern `^### \[LOG-` relies on `###` being ONLY for log entry headers.
+
 WHY THIS FORMAT:
 - Agents grep headers (`^### \[LOG-`) to scan project evolution without reading full content
 - Summary in header line enables quick onboarding from grep output alone
 - "###" level headers render nicely in IDE outlines for human navigation
 - Timestamp moved under header keeps the grep-scanned line focused on WHAT happened
+- Header hierarchy enables clean document outline in IDEs and markdown renderers
 
 Use action timestamp (when decision made or action taken), not entry-write time.
 Code snippets REQUIRED for EXEC and DISCOVERY entries (enables PR extraction).
@@ -971,9 +1015,8 @@ The "Questioning" enhancement isn't just about requirements gathering (OG GSD st
 - **Old Model:** "What feature do you want?" -> "Here are the specs."
 - **New Model:** "Why this feature?" -> "Have you considered X?" -> "Let's map the mental model."
 
-**Action:**
-New `questioning.md` reference will focus on "Thinking Partner" techniques, not just project scoping.
----
+**Action:** : New `questioning.md` reference will focus on "Thinking Partner" techniques, not just project scoping.
+
 ### [LOG-006] - [VISION] - The Questioning Enhancement: Learning Accelerator Through Socratic Pair Programming - Task: QUESTION-001
 **Timestamp:** 2026-02-04
 **Context:**
@@ -1095,7 +1138,6 @@ User's exact prompt for logging discoveries (for agent reference):
 > "Please include specific code snippet, reasoning, extended context in a journalism narrative style so that whoever with 0 context can onboard and pick up this key record of decision without ambiguity or friction. Add a cherry on top to include exact / synthesized example to explain the concepts / findings mentioned so that other weaker reasoning agents can grasp topic with little friction and ambiguity."
 
 This is the standard for LOG entries in GSD-Lite.
----
 
 ### [LOG-007] - [DECISION] - The standard length and outline for optimal gsd-lite artifacts
 
@@ -1382,7 +1424,7 @@ In this model, the **Questioning DNA** in the PROTOCOL is like the bright overhe
 5. **Resume Execution:** "Ready to proceed with the `Protocol` approach, or want to stick to ABCs?"
 
 **Status:** PROTOCOL.md v2.1 committed. Moodboard and Whiteboard deprecated and removed. Architecture is now mode-based.
----
+
 ### [LOG-010] - [DECISION] - Universal Onboarding & The End of Sticky Notes - Task: PROTO-002
 **Timestamp:** 2026-02-04 13:00
 **Context:**
@@ -1441,7 +1483,6 @@ Imagine a pilot (Agent) taking over a plane mid-flight (The Project) from anothe
 ```
 
 **Status:** `src/gsd_lite/template/` updated. Sticky notes removed. Protocol v2.2 active.
----
 
 ### [LOG-011] - [DECISION] - The Frictionless Install Paradox: Global vs Local Distribution - Task: DIST-001
 **Timestamp:** 2026-02-04 14:00
@@ -1487,7 +1528,6 @@ The installer will perform this transformation:
 ```
 
 **Next Action:** Implement `gsd-lite install --opencode` command in `src/gsd_lite/__main__.py` that copies workflows and applies this patch.
----
 
 ### [LOG-012] - [DISCOVERY] - Reverse-Engineering get-shit-done-cc: The Anatomy of a Frictionless Installer - Task: DIST-002
 
@@ -2505,3 +2545,1426 @@ Last action was implementing the thing from LOG-023...
 - Continue execution → Read LOG-016 Part 6 (Implementation Plan) → Update PROTOCOL.md
 - Discuss handoff format details → Re-read LOG-016 Part 3 (Canonical Format)
 - Pivot to new topic → Read `gsd-lite/PROJECT.md` for project vision + state your question
+
+---
+
+### [LOG-017] - [VISION] - The Housekeeping Agent: Automated Coherence Detection for Dense Worklogs - Task: HOUSEKEEPING-AGENT
+
+**Timestamp:** 2026-02-06
+**Status:** 📋 VISION CAPTURED — Discussion Phase, No Implementation Yet
+**Decision ID:** Pending (will become DECISION-017 upon approval)
+
+---
+
+#### Part 1: The Narrative — How We Got Here
+
+##### The Problem: Context Rot in Long-Running Projects
+
+During a live production evaluation using GSD-Lite on a real Looker/dbt integration project (`eval/prod/`), we encountered a fascinating paradox: **the very system that was supposed to tame context rot had itself accumulated a 64,000-token worklog**.
+
+Think of it like a historian's archive that grew so comprehensive it became difficult to navigate without a historian.
+
+**The Evidence (from `eval/prod/WORK_context_analysis.md`):**
+
+| Metric | Value | Implication |
+|--------|-------|-------------|
+| Total tokens | ~64,864 | Approaches the 80k "danger zone" for context rot |
+| Log entries | 56 (LOG-001 through LOG-056) | 7+ weeks of cross-session work |
+| Superseded entries | 6 (LOG-018, 020, 021, 022, 023, 030) | Dead branches still consuming tokens |
+| Decisions | 20 (DECISION-001 through DECISION-020) | Complex dependency graph |
+| Top heavy section | 2,663 tokens (Layer 2 semantic layer docs) | Some entries are mini-documents |
+
+**Source:** `eval/prod/WORK_context_analysis.md` (generated by `analyze_context.py`)
+
+##### The Symptoms: Four Types of Context Pain
+
+The user articulated the pain as "D — all of the above":
+
+```mermaid
+flowchart TD
+    subgraph SYMPTOMS["🔴 Context Pain Symptoms"]
+        A["(A) Finding what's CURRENT<br/>requires reading superseded entries"]
+        B["(B) Key Events Index<br/>cluttered with dead branches"]
+        C["(C) New agents waste tokens<br/>on stale context"]
+        D["(D) Human wastes time<br/>reading irrelevant history"]
+    end
+    
+    subgraph ROOT["🟠 Root Cause"]
+        R1["No automated detection<br/>of coherence drift"]
+        R2["Manual housekeeping<br/>is cognitively expensive"]
+    end
+    
+    A --> R1
+    B --> R1
+    C --> R2
+    D --> R2
+    
+    style SYMPTOMS fill:#ffcccc,stroke:#cc0000
+    style ROOT fill:#fff3cd,stroke:#856404
+```
+
+##### The Paradox: Valuable Logs Are Also Expensive Logs
+
+The dense worklog wasn't just noise — it was **incredibly valuable**:
+
+1. **PR Generation:** Two substantial PRs were extracted directly from the logs:
+   - `eval/prod/PR_artifacts/PR_dbt.md` (19.54 KB) — dbt extension models
+   - `eval/prod/PR_artifacts/PR_sightify.md` (6.26 KB) — Sightify frontend integration
+
+2. **Decision Traceability:** The log captured the journey, not just the destination:
+   - LOG-018 → LOG-020 → LOG-021 → LOG-024 shows a pivot from PDT strategy to Mirror Clone
+   - DECISION-006 → DECISION-007 shows refinement from "separate project" to "Two Galaxies"
+
+3. **Onboarding Power:** A fresh agent could (in theory) read LOG-045 "Agent Onboarding Paths" and know exactly which logs to read for each type of task.
+
+**The insight:** The value is real, but it's buried. We need **curation**, not deletion.
+
+---
+
+#### Part 2: The Research — Context Engineering Industry State (2026)
+
+Before proposing a solution, we grounded our thinking in current industry best practices.
+
+##### 2.1 Context Engineering: Beyond Prompt Engineering
+
+**Key insight from Anthropic/LangChain research:** Context engineering is *not* prompt engineering. It's about curating the *entire state* available to the LLM at any given time.
+
+> "Context engineering is defined as curating what the model sees so that you get a better result... Agent failures are often due to a lack of 'right' context."
+> — LangChain Deep Agents documentation (2026)
+
+##### 2.2 The Quality Degradation Curve
+
+Research confirms what GSD-Lite already codifies:
+
+| Context Usage | Quality | LLM Behavior |
+|---------------|---------|--------------|
+| 0-30% | PEAK | Thorough, comprehensive reasoning |
+| 30-50% | GOOD | Confident, solid work |
+| 50-70% | DEGRADING | Efficiency mode begins |
+| 70%+ | POOR | Rushed, minimal, prone to hallucination |
+
+**Source:** Anthropic context window management documentation, LangChain agent best practices
+
+##### 2.3 Industry Strategies for Managing Context Growth
+
+```mermaid
+flowchart LR
+    subgraph STRATEGIES["Context Management Strategies"]
+        direction TB
+        S1["📜 Sliding Window<br/>Drop oldest, keep recent"]
+        S2["📝 Summarization<br/>Condense old → summary"]
+        S3["🗂️ Hierarchical Summary<br/>Chunk → summarize → re-summarize"]
+        S4["💾 Filesystem Offload<br/>Store full content externally,<br/>keep pointers in context"]
+        S5["📋 Selective Retention<br/>Prioritize high-value,<br/>discard low-value"]
+    end
+    
+    style S4 fill:#d4edda,stroke:#155724
+    style S5 fill:#d4edda,stroke:#155724
+```
+
+**Highlighted strategies (S4 + S5) align with GSD-Lite's approach:**
+- **Filesystem Offload:** Logs live in WORK.md (external), agent reads surgically via grep
+- **Selective Retention:** Key Events Index surfaces high-value decisions, grep patterns enable targeted reads
+
+**What's missing:** Automated detection of *when* and *what* to curate.
+
+##### 2.4 The "Archival vs Consolidation" Dilemma
+
+The user raised a valid concern:
+
+> "I want to say merged, but there's a risk there similar to git workflows that we're 'rewriting history' and I'm afraid of the risk that it breaks coherence when agent scans logs to read and create the PR."
+
+**Industry parallel:** Git has two merge strategies:
+
+| Strategy | Git Equivalent | Pros | Cons |
+|----------|---------------|------|------|
+| **Archival** | `git merge` (preserves commits) | Full history, audit trail | Noise, requires navigation |
+| **Consolidation** | `git squash` (rewrites history) | Clean, single narrative | Loses journey, breaks refs |
+
+**Proposed GSD-Lite hybrid:** Archive to HISTORY.md (preserves journey), but also update the superseding log with a "Rejected Alternatives" section that summarizes what was tried.
+
+---
+
+#### Part 3: The Analysis — Lifecycle Patterns in Production WORK.md
+
+We scanned `eval/prod/WORK.md` to identify natural lifecycle patterns that a Housekeeping Agent could exploit.
+
+##### 3.1 Decision Status Vocabulary (Discovered)
+
+From grep analysis of `eval/prod/WORK.md` lines containing "Status:" or "SUPERSEDED":
+
+| Status Value | Count | Meaning |
+|--------------|-------|---------|
+| `SUPERSEDED` | 6 entries | Decision invalidated by later decision |
+| `APPROVED` | 8 entries | Decision finalized and active |
+| `COMPLETED` / `Complete` | 11 entries | Execution finished |
+| `IMPLEMENTATION READY` | 2 entries | Plan ready for execution |
+| `Awaiting Discussion` | 1 entry | Pending user input |
+| `DECISION-PENDING` | 1 entry | Decision proposed but not approved |
+
+**Source:** `grep "Status:|SUPERSEDED" eval/prod/WORK.md` (lines 63-5547)
+
+##### 3.2 Proposed Lifecycle Hierarchy
+
+Based on the observed patterns, we can formalize a decision lifecycle:
+
+```mermaid
+stateDiagram-v2
+    [*] --> PROPOSED: Agent proposes
+    PROPOSED --> APPROVED: User approves
+    PROPOSED --> REJECTED: User rejects
+    
+    APPROVED --> IMPLEMENTED: Code written
+    APPROVED --> SUPERSEDED: Better option found
+    
+    IMPLEMENTED --> COMPLETED: Verified working
+    IMPLEMENTED --> SUPERSEDED: Refactored away
+    
+    SUPERSEDED --> ARCHIVED: Moved to HISTORY.md
+    COMPLETED --> ARCHIVED: Housekeeping triggered
+    
+    note right of SUPERSEDED
+        Drift point: Agent detects
+        and prompts reconciliation
+    end note
+    
+    note right of ARCHIVED
+        Preserves journey in HISTORY.md
+        Removes from active WORK.md
+    end note
+```
+
+##### 3.3 Cross-Reference Patterns (Dependency Graph)
+
+The grep also revealed how decisions reference each other:
+
+```
+DECISION-007 supersedes DECISION-006 (LOG-030 → LOG-031)
+DECISION-009 depends on DECISION-004, DECISION-007
+DECISION-012 depends on DECISION-004, DECISION-007
+DECISION-018 supersedes (partially) DECISION-016
+```
+
+**This creates a DAG (Directed Acyclic Graph)** that the Housekeeping Agent can traverse to:
+1. Find orphaned decisions (approved but never implemented)
+2. Find dangling references (implemented but decision superseded)
+3. Suggest consolidation opportunities (chains that converged)
+
+---
+
+#### Part 4: The Vision — What the Housekeeping Agent Would Do
+
+##### 4.1 Core Design Principles
+
+| Principle | Rationale |
+|-----------|-----------|
+| **Interview-First** | Replicate the Socratic questioning of discuss.md — agent proposes, user decides |
+| **Lightweight Protocol** | Not full GSD-Lite — just scan, detect, propose, execute (with approval) |
+| **Non-Destructive by Default** | Archive to HISTORY.md, never delete. User can request consolidation. |
+| **Pattern from discuss.md** | Same questioning philosophy, same coaching tone, same confirmation loops |
+
+##### 4.2 The Interview Flow
+
+```mermaid
+sequenceDiagram
+    participant U as User
+    participant A as Housekeeping Agent
+    participant W as WORK.md
+    participant H as HISTORY.md
+    
+    U->>A: "Run housekeeping"
+    A->>W: Grep for SUPERSEDED, Status, DECISION-
+    A->>A: Build dependency graph
+    A->>A: Detect drift points
+    
+    A->>U: "I found 5 drift points:<br/>1. LOG-018/20/21 superseded by LOG-024<br/>2. DECISION-006 orphaned (superseded but not archived)<br/>..."
+    
+    U->>A: "Let's reconcile #1 first"
+    
+    A->>U: "Options for LOG-018/20/21:<br/>(A) Archive to HISTORY with summary<br/>(B) Merge into LOG-024 as 'Rejected Alternatives'<br/>(C) Keep as-is with strikethrough<br/>Which fits your workflow?"
+    
+    U->>A: "A - Archive with summary"
+    
+    A->>H: Append archived entries
+    A->>W: Remove archived entries
+    A->>W: Update Key Events Index
+    
+    A->>U: "Done. Archived 3 entries (1,247 tokens freed).<br/>Next drift point?"
+```
+
+##### 4.3 Detection Capabilities
+
+The agent would scan for these drift patterns:
+
+| Drift Type | Detection Method | Example |
+|------------|------------------|---------|
+| **Superseded chains** | `grep "SUPERSEDED"` | LOG-018 → LOG-024 |
+| **Orphaned decisions** | APPROVED status with no subsequent EXEC/BUILD referencing it | DECISION-005 approved but never implemented |
+| **Dangling implementations** | EXEC entries that reference a superseded DECISION | LOG-022 implemented LOG-020 which was superseded |
+| **Status drift** | `Status: COMPLETED` in log but not updated in Current Understanding | LOG-041 complete but still listed as active_task |
+| **Index staleness** | Key Events Index contains superseded entries | LOG-018 still in index despite being superseded |
+
+##### 4.4 Output Options
+
+For each drift point, the agent offers:
+
+| Option | Output | When to Use |
+|--------|--------|-------------|
+| **(A) Archive** | Move to HISTORY.md with 1-line summaries | Default — preserves journey externally |
+| **(B) Consolidate** | Merge into superseding entry as "Rejected Alternatives" section | When understanding the *journey* matters for the final decision |
+| **(C) Keep** | Leave as-is with strikethrough markup | When entries are still being referenced elsewhere |
+| **(D) Generate Doc** | Extract to standalone document (e.g., `docs/architecture-decisions/ADR-001.md`) | For decisions that should become permanent documentation |
+
+---
+
+#### Part 5: Open Questions for Next Discussion
+
+1. **Lifecycle Formalization:** Should we add explicit `status:` fields to log entries (like `status: APPROVED | SUPERSEDED | COMPLETED`)? Or infer from content?
+
+2. **Archive Granularity:** Archive whole chains (LOG-018 + LOG-020 + LOG-021 together) or individual entries?
+
+3. **Consolidation Safety:** If we merge superseded entries into the winning decision, how do we handle PR generation that might want to show the journey?
+
+4. **Agent Triggers:** Should the agent run:
+   - (A) On-demand only ("run housekeeping")
+   - (B) Suggested at checkpoints ("WORK.md is 50k+ tokens, run housekeeping?")
+   - (C) Automatically at session start with light scan
+
+5. **Token Savings Reporting:** Should the agent calculate and report tokens freed? (Motivates user to curate)
+
+---
+
+#### Part 6: Synthesized Example — A Complete Housekeeping Session
+
+**Scenario:** User has been working on the Sightify demo for 3 weeks. WORK.md has grown to 60k tokens.
+
+```markdown
+User: "Run housekeeping"
+
+Agent: I scanned WORK.md and found 7 drift points across 3 categories:
+
+**🔴 Superseded Chains (3 chains, 2,847 tokens):**
+1. LOG-018 → LOG-020 → LOG-021 (superseded by LOG-024 "Mirror Clone")
+   - Original strategy: PDT bridge for cross-region data
+   - Why superseded: BigQuery cross-region join limitation
+   
+2. LOG-030 (superseded by LOG-031 "Two Galaxies")
+   - Original strategy: Separate Looker project
+   - Why superseded: Refined to single project with dual models
+
+3. LOG-051 [DECISION-PENDING] (resolved by LOG-052 DECISION-018)
+   - Original question: Static presets vs dynamic Looker filters?
+   - Resolution: Dual Filter Sections with Mutex
+
+**🟡 Status Drift (2 entries):**
+4. Current Understanding lists TASK-006 as active, but LOG-053 shows Complete
+5. Key Events Index still contains LOG-018 (superseded)
+
+**🟢 Archival Candidates (2 completed tasks):**
+6. TASK-001 (Feature Mapping) — 10 entries, all Complete
+7. Phase 2A (dbt models) — 8 entries, merged to main
+
+---
+
+Which category would you like to tackle first?
+(Or type a number 1-7 to address a specific item)
+
+User: "1"
+
+Agent: For the PDT bridge chain (LOG-018 → LOG-020 → LOG-021):
+
+**Context:** This was a 3-step exploration of using Looker PDTs to bridge 
+cross-project permissions. It failed because BigQuery doesn't allow 
+cross-region joins (US public data vs Asia-SE1 owned data).
+
+**Options:**
+(A) Archive to HISTORY.md — I'll preserve 1-line summaries and the key 
+    learning ("cross-region limitation"). LOG-024 already has the full 
+    context of why we pivoted.
+    
+(B) Consolidate into LOG-024 — I'll add a "Rejected Alternatives" section 
+    to LOG-024 with 3-sentence summaries of each attempt.
+    
+(C) Keep as-is — Leave with strikethrough. Useful if you want to show the 
+    journey in PR descriptions.
+
+Which approach fits your workflow? [YOUR TURN]
+
+User: "A"
+
+Agent: ✅ Archived 3 entries to HISTORY.md
+- LOG-018: Pivot to Public Data (REJECTED: region mismatch)
+- LOG-020: PDT Data Bridge (REJECTED: permissions insufficient)  
+- LOG-021: PDT Implementation Guide (REJECTED: built on LOG-020)
+
+Updated:
+- Removed from WORK.md Atomic Log (freed 1,583 tokens)
+- Removed LOG-018 from Key Events Index
+- Added summary to HISTORY.md under "Phase 2: Rejected Approaches"
+
+📊 Progress: 1/7 drift points resolved. ~4% context freed.
+Next item, or continue to #2?
+```
+
+---
+
+#### Part 7: Cross-References and Citations
+
+| Reference | Location | Purpose |
+|-----------|----------|---------|
+| Production WORK.md | `eval/prod/WORK.md` | Source of drift pattern examples |
+| Context analysis | `eval/prod/WORK_context_analysis.md` | Token breakdown proving 64k accumulation |
+| PR artifacts | `eval/prod/PR_artifacts/PR_dbt.md`, `PR_sightify.md` | Proof that dense logs have value |
+| Current housekeeping workflow | `gsd-lite/template/workflows/housekeeping.md` | Baseline to extend |
+| Discuss workflow | `gsd-lite/template/workflows/discuss.md` | Source of interview/questioning patterns |
+| Questioning philosophy | Embedded in `gsd-lite/template/PROTOCOL.md` | Coaching tone to replicate |
+| Context engineering research | Google Grounding search (2026-02-06) | Industry best practices |
+| LangChain Deep Agents docs | Referenced in grounding results | Filesystem offload pattern |
+| Anthropic context management | Referenced in grounding results | Quality degradation curve |
+
+---
+
+#### Part 8: Decision Record (Pending)
+
+| Attribute | Value |
+|-----------|-------|
+| **Decision ID** | DECISION-017 (pending approval) |
+| **Title** | Housekeeping Agent: Automated Coherence Detection for Dense Worklogs |
+| **Status** | 📋 VISION CAPTURED |
+| **Supersedes** | None (extends existing housekeeping.md workflow) |
+| **Rationale** | Manual housekeeping is cognitively expensive. Automated detection of drift points + Socratic interview reduces friction while keeping human in control. |
+| **Trade-offs** | New agent to maintain. Risk of over-engineering. Mitigation: Keep protocol lightweight — interview + propose only, no autonomous action. |
+| **Next Action** | Continue discussion on open questions (Part 5), then draft agent specification |
+
+---
+
+### [LOG-018] - [DECISION] - Housekeeping Agent Design: Two-Phase Architecture with Semantic Inference - Task: HOUSEKEEPING-AGENT
+
+**Timestamp:** 2026-02-06
+**Status:** ✅ DESIGN DECISIONS APPROVED
+**Depends On:** LOG-017 (Vision: Housekeeping Agent concept)
+**Decision IDs:** DECISION-018a through DECISION-018e
+
+---
+
+#### Part 1: The Narrative — Resolving the Chicken-and-Egg Problem
+
+##### The Problem We Discovered
+
+During discussion of LOG-017's Housekeeping Agent vision, we hit a critical design flaw: **the agent was designed to scan for tags (SUPERSEDED, status:, decision references) that don't reliably exist**.
+
+The original LOG-017 design assumed:
+```
+Agent scans for SUPERSEDED tags → Builds DAG → Proposes archival
+```
+
+But in reality, fresh worklogs have **no explicit tags**. The user manually adds `SUPERSEDED` markers only after recognizing supersession — which requires the same cognitive load the agent was supposed to eliminate.
+
+**The paradox visualized:**
+
+```mermaid
+flowchart TD
+    subgraph CHICKEN_EGG["🐔🥚 The Chicken-and-Egg Problem"]
+        A["Housekeeping Agent needs tags<br/>to detect supersession"]
+        B["Tags don't exist until<br/>someone identifies supersession"]
+        C["Identifying supersession requires<br/>reading all logs (cognitive load)"]
+        D["User wanted agent to<br/>eliminate that cognitive load"]
+    end
+    
+    A --> B
+    B --> C
+    C --> D
+    D -->|"Loop!"| A
+    
+    style CHICKEN_EGG fill:#fff3cd,stroke:#856404
+```
+
+##### The Solution: Two-Phase Architecture
+
+The user proposed a clean separation:
+
+| Phase | What It Does | Who Does It |
+|-------|--------------|-------------|
+| **Phase 1: Inference + Interview** | Scan holistically, INFER relationships from semantic content, present draft DAG, interview user to confirm, write tags | Agent + User |
+| **Phase 2: Archival** | Scan confirmed tags, detect drift, propose archival | Agent (existing housekeeping.md) |
+
+**Key insight:** Phase 1 creates the tags that Phase 2 depends on. No chicken-and-egg because they run sequentially.
+
+---
+
+#### Part 2: The Four Design Questions — Decisions Made
+
+##### DECISION-018a: Tool Integration is REQUIRED
+
+**Question:** Should the Housekeeping Agent require the token analysis tool (`analyze_context.py`)?
+
+**Decision:** YES — Tool integration is mandatory, not optional.
+
+**Rationale (from user):**
+> "We need to save agent greps and divide and conquer — agent should be making the reasoning to infer DAGs, while a tool can deterministically and with little resource and consistently create the analysis in one fell swoop."
+
+**The division of labor:**
+
+| Component | Responsibility | Resource Cost |
+|-----------|----------------|---------------|
+| `analyze_context.py` | Structural extraction (sections, tokens, line numbers, titles) | Low (deterministic, fast) |
+| Agent | Semantic reasoning (infer supersession from content patterns) | High (LLM inference) |
+
+**Evidence of tool capability:** The tool already captures explicit SUPERSEDED markers in titles:
+```markdown
+# From eval/prod/WORK_context_analysis.md (Lines 42-44):
+#### [LOG-018] - [DECISION] - ~~Pivot to Public Data...~~ (SUPERSEDED by LOG-024)
+#### [LOG-020] - [DECISION] - ~~Solved Cross-Project Permissions...~~ (SUPERSEDED by LOG-024)
+#### [LOG-021] - [PLAN] - ~~Complete LookML PDT Implementation...~~ (SUPERSEDED by LOG-024)
+```
+
+**Source:** `eval/prod/WORK_context_analysis.md` (generated by `analyze_context.py`)
+
+---
+
+##### DECISION-018b: Semantic Inference from Content (Three-Tier Signal Hierarchy)
+
+**Question:** What content signals should the agent look for when inferring supersession?
+
+**Decision:** Use a three-tier hierarchy based on confidence level. Agent acts on Tier 1, confirms Tier 2-3 with user.
+
+**The Inference Hierarchy (from helper agent analysis):**
+
+```mermaid
+flowchart TD
+    subgraph TIER1["Tier 1: HIGH Confidence (Agent Acts)"]
+        T1A["Strikethrough in title: ~~old title~~"]
+        T1B["'THIS LOG SUPERSEDES LOG-XXX' in body"]
+        T1C["'obsolete' / 'Do NOT follow' language"]
+        T1D["'pivot' / 'pivotal' / 'abandoned' keywords"]
+        T1E["'hit a wall' / 'critical limitation'"]
+        T1F["'Superseded Decisions' section header"]
+    end
+    
+    subgraph TIER2["Tier 2: MEDIUM Confidence (Agent Confirms)"]
+        T2A["Options evaluated → later DECISION picks one"]
+        T2B["Same TASK-ID, sequential logs"]
+        T2C["'What We Decided NOT to Do' section"]
+        T2D["Explicit 'Depends On:' field"]
+        T2E["'Before and After' diagrams"]
+    end
+    
+    subgraph TIER3["Tier 3: LOW Confidence (Agent Asks)"]
+        T3A["'refined' language (evolution vs supersession?)"]
+        T3B["'consolidated' (merge vs supersession?)"]
+        T3C["Same topic, different logs (parallel vs chain?)"]
+    end
+    
+    style TIER1 fill:#d4edda,stroke:#155724
+    style TIER2 fill:#fff3cd,stroke:#856404
+    style TIER3 fill:#f8d7da,stroke:#721c24
+```
+
+**Grep patterns for Phase 1C (from helper agent):**
+```bash
+# Tier 1 signals
+grep "THIS (LOG|DECISION) SUPERSEDES"
+grep "obsolete|Do NOT follow|DEPRECATED"
+grep "pivot|pivotal|abandoned"
+grep "hit a.*wall|critical.*limitation"
+
+# Cross-reference extraction
+grep "LOG-[0-9]+.*LOG-[0-9]+"        # Edge candidates
+grep "Depends On|depends on|as defined in"
+grep "supersedes|replaces|invalidates"
+```
+
+**Additional Tier 1 signals discovered in production WORK.md:**
+
+| Pattern | Example | Location |
+|---------|---------|----------|
+| "Superseded Decisions" section | LOG-024 Part 5 lists killed decisions | `eval/prod/WORK.md:2374-2383` |
+| Decision Record "Supersedes" field | `Supersedes: DECISION-006` in table | `eval/prod/WORK.md:2731-2741` |
+| "SUPERSEDING:" prefix in title | `[LOG-019] - [DECISION] - SUPERSEDING:` | `eval/prod/WORK.md:983` |
+
+**Source:** Helper agent analysis + grep of `eval/prod/WORK.md`
+
+---
+
+##### DECISION-018c: Tagging Format — Header + Body Block (Option C)
+
+**Question:** When the agent writes confirmed tags back to logs, what format?
+
+**Options evaluated:**
+- (A) Header only: `### [LOG-018] - ... - **SUPERSEDED BY: LOG-024**`
+- (B) Body block only: Metadata section inside log entry
+- (C) Both: Header for grep, body for details
+
+**Decision:** Option C — Both header and body block.
+
+**Rationale:**
+- **Header tag** enables fast grep scanning: `grep "SUPERSEDED BY" WORK.md`
+- **Body block** preserves full relationship details for deep reads
+
+**Example output after tagging:**
+
+```markdown
+### [LOG-018] - [DECISION] - ~~Pivot to Public Data~~ - Task: PHASE-002 - **SUPERSEDED BY: LOG-024**
+
+**Timestamp:** 2026-01-15
+**Status:** ❌ SUPERSEDED
+**Superseded By:** LOG-024 (Mirror Clone Strategy)
+**Reason:** BigQuery cross-region join limitation made PDT bridge approach unviable
+
+---
+[Original log content preserved below]
+```
+
+---
+
+##### DECISION-018d: DAG Visualization in Report — APPROVED
+
+**Question:** Should the agent's report include a mermaid diagram of the inferred DAG?
+
+**Decision:** YES — Include mermaid DAG visualization.
+
+**Rationale:**
+1. **Gestalt understanding** — User sees the whole structure at once
+2. **Catches orphans visually** — Nodes with no edges stand out
+3. **Validates inference** — User can spot "that edge doesn't make sense"
+4. **Low cost** — Mermaid is text, minimal tokens
+
+**Example visualization:**
+
+```mermaid
+flowchart TD
+    subgraph PHASE002["Phase 2: Data Architecture"]
+        LOG017["LOG-017: YAML Data Gen<br/>📋 DECISION"]
+        LOG018["LOG-018: Public Data Pivot<br/>❌ SUPERSEDED"]
+        LOG019["LOG-019: dbt-Native Strategy<br/>📋 DECISION"]
+        LOG020["LOG-020: PDT Bridge<br/>❌ SUPERSEDED"]
+        LOG021["LOG-021: PDT Implementation<br/>❌ SUPERSEDED"]
+        LOG024["LOG-024: Mirror Clone<br/>✅ ACTIVE"]
+        
+        LOG019 -->|supersedes| LOG017
+        LOG024 -->|supersedes| LOG018
+        LOG024 -->|supersedes| LOG020
+        LOG024 -->|supersedes| LOG021
+    end
+    
+    style LOG018 fill:#ffcccc,stroke:#cc0000
+    style LOG020 fill:#ffcccc,stroke:#cc0000
+    style LOG021 fill:#ffcccc,stroke:#cc0000
+    style LOG024 fill:#d4edda,stroke:#155724
+```
+
+---
+
+##### DECISION-018e: Agent Spec Location — Multi-Agent Distribution Refactor
+
+**Question:** Where should the Housekeeping Agent spec live?
+
+**User's vision:** `.opencode/agents/gsd-housekeeping.md`
+
+**The gap identified:** Current `src/gsd_lite/__main__.py` copies a single `AGENTS.md` to `.opencode/agents/gsd-lite.md`. Adding a second agent requires refactoring.
+
+**Current distribution logic (from `src/gsd_lite/__main__.py:76-79`):**
+```python
+# 5. Install Agent
+agent_src = template_src / "AGENTS.md"
+agent_dest = agents_dir / "gsd-lite.md"
+shutil.copy2(agent_src, agent_dest)
+```
+
+**Proposed refactor:**
+
+```mermaid
+flowchart LR
+    subgraph BEFORE["Current: Single Agent"]
+        A1["template/AGENTS.md"] -->|copy| A2[".opencode/agents/gsd-lite.md"]
+    end
+    
+    subgraph AFTER["Proposed: Multi-Agent"]
+        B1["template/agents/gsd-lite.md"] -->|copy| B2[".opencode/agents/gsd-lite.md"]
+        B3["template/agents/gsd-housekeeping.md"] -->|copy| B4[".opencode/agents/gsd-housekeeping.md"]
+    end
+    
+    style BEFORE fill:#f8d7da,stroke:#721c24
+    style AFTER fill:#d4edda,stroke:#155724
+```
+
+**Implementation plan:**
+
+1. **Create `src/gsd_lite/template/agents/` directory**
+2. **Move `AGENTS.md` → `agents/gsd-lite.md`** (content unchanged)
+3. **Create `agents/gsd-housekeeping.md`** (new agent spec)
+4. **Refactor `__main__.py` agent installation:**
+
+```python
+# BEFORE (lines 76-79):
+agent_src = template_src / "AGENTS.md"
+agent_dest = agents_dir / "gsd-lite.md"
+shutil.copy2(agent_src, agent_dest)
+
+# AFTER:
+agents_src = template_src / "agents"
+if agents_src.exists():
+    for agent_file in agents_src.glob("*.md"):
+        shutil.copy2(agent_file, agents_dir / agent_file.name)
+    console.print(f"[green]✔ Installed Agents:[/green] {agents_dir} ({len(list(agents_src.glob('*.md')))} files)")
+```
+
+**Decision:** Proceed with multi-agent refactor. This enables seamless distribution of both:
+- `gsd-lite.md` — Core GSD-Lite protocol agent
+- `gsd-housekeeping.md` — Housekeeping Agent for coherence detection
+
+---
+
+#### Part 3: The Complete Phase 1 Algorithm
+
+Based on all decisions, here's the full inference + interview flow:
+
+```mermaid
+sequenceDiagram
+    participant U as User
+    participant A as Housekeeping Agent
+    participant T as analyze_context.py
+    participant W as WORK.md
+    
+    U->>A: "Run housekeeping"
+    
+    Note over A,T: STEP 1: Tool generates structure
+    A->>T: Run token analysis
+    T->>A: Return section map + tokens + line numbers
+    
+    Note over A: STEP 2: Parse explicit markers
+    A->>A: Extract strikethrough titles
+    A->>A: Extract SUPERSEDED in headers
+    A->>A: Extract Decision Record tables
+    
+    Note over A,W: STEP 3: Grep for Tier 1 signals
+    A->>W: grep "THIS LOG SUPERSEDES"
+    A->>W: grep "obsolete|Do NOT follow"
+    A->>W: grep "pivot|abandoned"
+    A->>W: grep cross-references
+    
+    Note over A: STEP 4: Build DRAFT DAG
+    A->>A: Create nodes (all LOG/DECISION)
+    A->>A: Create edges with confidence levels
+    
+    Note over A,U: STEP 5: Present + Interview
+    A->>U: Show mermaid DAG + relationship table
+    A->>U: "I found 12 relationships.<br/>6 HIGH confidence, 4 MEDIUM, 2 LOW."
+    
+    loop For each relationship
+        A->>U: "LOG-024 supersedes LOG-018/20/21.<br/>Confidence: HIGH. Confirm?"
+        U->>A: "Confirmed" / "Correct to X" / "Reject"
+    end
+    
+    Note over A,W: STEP 6: Write confirmed tags
+    A->>W: Add SUPERSEDED BY to headers
+    A->>W: Add metadata blocks to bodies
+    
+    A->>U: "Tags written. Ready for Phase 2 (archival)?"
+```
+
+---
+
+#### Part 4: Open Implementation Tasks
+
+| Task | Description | Priority |
+|------|-------------|----------|
+| TASK-HA-001 | Create `template/agents/` directory structure | HIGH |
+| TASK-HA-002 | Move `AGENTS.md` → `agents/gsd-lite.md` | HIGH |
+| TASK-HA-003 | Refactor `__main__.py` for multi-agent distribution | HIGH |
+| TASK-HA-004 | Draft `agents/gsd-housekeeping.md` spec | HIGH |
+| TASK-HA-005 | Add `analyze_context.py` as package dependency or bundled tool | MEDIUM |
+| TASK-HA-006 | Test Phase 1 on `eval/prod/WORK.md` (has mixed tagged/untagged entries) | MEDIUM |
+
+---
+
+#### Part 5: Cross-References and Citations
+
+| Reference | Location | Purpose |
+|-----------|----------|---------|
+| LOG-017 | `gsd-lite/WORK.md:2545-2948` | Parent vision document for Housekeeping Agent |
+| Production WORK.md | `eval/prod/WORK.md` | Real-world example with 56 logs, 64k tokens |
+| Token analysis output | `eval/prod/WORK_context_analysis.md` | Proof of tool capability |
+| Current installer logic | `src/gsd_lite/__main__.py:76-79` | Code to refactor for multi-agent |
+| Template directory | `src/gsd_lite/template/` | Current structure (single AGENTS.md) |
+| Helper agent analysis | User message (this session) | Tier 1-3 inference pattern discovery |
+
+---
+
+#### Part 6: Decision Records Summary
+
+| ID | Title | Status |
+|----|-------|--------|
+| DECISION-018a | Tool integration is REQUIRED | ✅ APPROVED |
+| DECISION-018b | Three-tier semantic inference hierarchy | ✅ APPROVED |
+| DECISION-018c | Header + Body tagging format (Option C) | ✅ APPROVED |
+| DECISION-018d | DAG visualization in report | ✅ APPROVED |
+| DECISION-018e | Multi-agent distribution refactor | ✅ APPROVED |
+
+---
+
+📦 STATELESS HANDOFF
+
+**Layer 1 — Local Context:**
+→ Last action: LOG-018 (DECISION: Housekeeping Agent design decisions captured)
+→ Dependency chain: LOG-018 ← LOG-017 (Vision) ← LOG-016 (Stateless-First)
+→ Next action: Execute TASK-HA-001 through TASK-HA-004 (multi-agent refactor + spec draft)
+
+**Layer 2 — Global Context:**
+→ Architecture: GSD-Lite uses `template/` for distributed artifacts
+→ Patterns: Single AGENTS.md → Multi-agent `agents/` directory
+→ Tool: `analyze_context.py` required dependency for housekeeping
+
+**Fork paths:**
+- Execute multi-agent refactor → TASK-HA-001 through TASK-HA-003
+- Draft housekeeping agent spec → TASK-HA-004
+- Test on production → Run Phase 1 on `eval/prod/WORK.md`
+- Discuss further → Refine inference patterns or tagging format
+
+---
+
+### [LOG-019] - [EXEC] - Implemented Multi-Agent Architecture & Housekeeping Spec - Task: TASK-HA-004
+**Timestamp:** 2026-02-07 16:30
+**Status:** COMPLETE
+**Tasks:** TASK-HA-001, TASK-HA-002, TASK-HA-003, TASK-HA-004
+
+**Context:**
+Refactored the core installer to support distributed agent definitions, enabling the addition of specialized agents like the Housekeeping Agent.
+
+**Changes:**
+1. **Directory Structure (TASK-HA-001):** Created `src/gsd_lite/template/agents/` to house multiple agent definitions.
+2. **Migration (TASK-HA-002):** Moved the monolithic `AGENTS.md` to `template/agents/gsd-lite.md`.
+3. **Installer Refactor (TASK-HA-003):** Updated `src/gsd_lite/__main__.py` to iterate through the `agents/` directory and install all `.md` files found, ensuring scalability.
+4. **Housekeeping Spec (TASK-HA-004):** Drafted `template/agents/gsd-housekeeping.md` based on the approved design (LOG-018), implementing the "Context Gardener" persona.
+
+**Verification:**
+- `ls` confirmed directory creation.
+- `read` confirmed file migration and new content.
+- `__main__.py` logic reviewed and updated to handle multiple agents.
+
+**Next:** Review the Housekeeping Agent spec and implement `analyze_context.py` (TASK-HA-005).
+
+---
+
+### [LOG-020] - [DISCOVERY] - The Invisible Documentation Problem: HTML Comments Skip Grep-First Onboarding - Task: PROTOCOL-DOCS
+
+**Timestamp:** 2026-02-07
+**Status:** DISCOVERY → DECISION
+**Depends On:** LOG-019 (Housekeeping spec review triggered this discovery), LOG-015 (Context Map tooling), LOOP-002 (Few-shot example visibility)
+**Decision IDs:** DECISION-020a (Consolidate docs to agent instruction), DECISION-020b (10k token budget as CI pillar)
+
+---
+
+#### Part 1: The Discovery — What Agents Actually Read vs. What Exists
+
+##### The Trigger
+
+While reviewing the Housekeeping Agent spec (LOG-019), we asked: "Does the Context Gardener understand WORK.md structure?" This led to a debugger-style analysis of what agents actually read during onboarding.
+
+##### The Finding: Grep-First Skips Documentation
+
+GSD-Lite templates contain rich documentation in HTML comments at the top of each file. **But agents following grep-first protocol never see them.**
+
+```mermaid
+flowchart TD
+    subgraph AGENT_PATH["🤖 Agent Onboarding Path"]
+        A1["Load gsd-lite.md<br/>(system prompt)"]
+        A2["Read PROJECT.md<br/>(full file)"]
+        A3["Read ARCHITECTURE.md<br/>(full file)"]
+        A4["grep '^## ' WORK.md<br/>(headers only)"]
+        A5["Read Current Understanding<br/>(lines 34-105)"]
+        A6["grep '^### \\[LOG-'<br/>(log headers)"]
+        A7["Surgical read of<br/>specific logs"]
+    end
+    
+    subgraph SKIPPED["❌ What Gets Skipped"]
+        S1["WORK.md lines 3-30<br/>Lifecycle, purpose, grep patterns"]
+        S2["WORK.md lines 36-56<br/>Current Understanding structure"]
+        S3["INBOX.md lines 3-35<br/>Loop format, entry structure"]
+        S4["HISTORY.md lines 3-10<br/>Archive purpose"]
+        S5["All EXAMPLE-NNN entries<br/>(don't match LOG-NNN pattern)"]
+    end
+    
+    A4 -->|"Skips HTML comments"| S1
+    A4 -->|"Skips HTML comments"| S2
+    A6 -->|"Pattern mismatch"| S5
+    
+    style SKIPPED fill:#f8d7da,stroke:#721c24
+    style AGENT_PATH fill:#d4edda,stroke:#155724
+```
+
+##### Evidence: The HTML Comment Inventory
+
+| File | Lines | Content | Tokens | Citation |
+|------|-------|---------|--------|----------|
+| `WORK.md` | 3-30 | Lifecycle, purpose, grep patterns, file reading strategy | ~350 | `src/gsd_lite/template/WORK.md:3-30` |
+| `WORK.md` | 36-56 | Current Understanding structure (fields, guidelines) | ~250 | `src/gsd_lite/template/WORK.md:36-56` |
+| `WORK.md` | 97+, 145+ | Key Events Index / Atomic Log descriptions | ~200 | `src/gsd_lite/template/WORK.md:97,145` |
+| `INBOX.md` | 3-35 | Loop format, entry structure, WHY this format | ~400 | `src/gsd_lite/template/INBOX.md:3-35` |
+| `HISTORY.md` | 3-10 | Minimal archive purpose | ~50 | `src/gsd_lite/template/HISTORY.md:3-10` |
+| **Total** | — | — | **~1,250** | — |
+
+##### What the Agent Instruction Contains vs. Lacks
+
+**✅ gsd-lite.md DOES contain** (citation: `context_map.md`):
+- Universal Onboarding sequence (lines 33-53, ~310 tokens)
+- File Reading Strategy (lines 123-174, ~539 tokens)
+- File Guide quick reference (lines 175-185, ~124 tokens)
+- Questioning Philosophy (lines 325-489, ~1,400 tokens)
+
+**❌ gsd-lite.md does NOT contain:**
+- What WORK.md sections mean and how they work
+- What INBOX.md loop format is and why
+- What HISTORY.md is for
+- How Current Understanding fields should be structured
+- What log entry bodies should contain (journalism format)
+
+---
+
+#### Part 2: The Token Budget Analysis — We Have Headroom
+
+##### Current State (from `context_map.md`)
+
+| Component | Tokens | Source |
+|-----------|--------|--------|
+| gsd-lite.md agent instruction | 4,913 | `context_map.md` (generated 2026-02-07) |
+| Documentation to migrate | ~1,250 | HTML comment inventory above |
+| **Projected total** | **~6,163** | — |
+| **Budget headroom** | **10,000** | User-defined first-turn limit |
+| **Remaining buffer** | **~3,837** | Available for future growth |
+
+```mermaid
+pie title Agent Instruction Token Budget (10k headroom)
+    "Current gsd-lite.md" : 4913
+    "Docs to migrate" : 1250
+    "Remaining buffer" : 3837
+```
+
+##### Why 10k Matters
+
+The user clarified the constraint: **first-turn headroom is 10k tokens** for system instructions + context before agent makes tool calls and starts responding. This is when the agent loads:
+1. Agent instruction (gsd-lite.md)
+2. System prompt overhead
+3. Initial user message
+
+Staying under 10k ensures the agent has context capacity for actual work.
+
+---
+
+#### Part 3: The Decision — Consolidate Documentation to Agent Instruction
+
+##### DECISION-020a: Migrate File Documentation to gsd-lite.md
+
+**What:** Move the essential documentation from HTML comments into the agent instruction as an "Artifact Format Reference" section.
+
+**Why:**
+1. **Guaranteed visibility** — Agent instruction is ALWAYS loaded. HTML comments are NEVER loaded with grep-first protocol.
+2. **Single source of truth** — No drift between instruction and template comments.
+3. **Within budget** — 6,163 tokens is well under 10k headroom.
+
+**Trade-off accepted:** HTML comments become human-only documentation (for IDE/GitHub preview). Agent instruction becomes the authority.
+
+**Proposed structure:**
+
+```markdown
+## Artifact Format Reference
+
+### WORK.md Structure
+- **Section 1: Current Understanding** — 30-second handoff for fresh agents
+  - Fields: current_mode, active_task, parked_tasks, vision, decisions, blockers, next_action
+  - Write in concrete facts, not jargon ("as discussed" = useless to fresh agent)
+  
+- **Section 2: Key Events Index** — Curated foundation decisions (human-maintained)
+
+- **Section 3: Atomic Session Log** — Chronological log entries
+  - Format: `### [LOG-NNN] - [TYPE] - Summary - Task: TASK-ID`
+  - Types: VISION, DECISION, EXEC, DISCOVERY, PLAN
+  - Body: Journalism-style with timestamp, context, evidence, code snippets, rationale
+
+### INBOX.md Structure
+- Entry format: `### [LOOP-NNN] - Summary - Status: Open|Resolved`
+- Fields: Created, Source, Origin, Context, Details, Resolution
+- WHY this format: Headers enable grep triage; context preserves the "why"
+
+### HISTORY.md Structure
+- Minimal: One line per completed phase
+- Links to external artifacts (PRs, docs)
+```
+
+**Status:** Pending implementation (TASK-PROTOCOL-DOCS-001)
+
+---
+
+#### Part 4: The CI Leverage — Token Budget as Deterministic Pillar
+
+##### DECISION-020b: 10k Token Limit as CI Gate
+
+**The insight:** The 10k token budget is a **deterministic, measurable constraint**. Unlike philosophical adherence (which requires LLM-as-judge), token count is programmatically verifiable.
+
+**Proposed CI check:**
+
+```python
+# Pseudo-code for CI gate
+def check_agent_instruction_budget():
+    """Fail CI if agent instruction exceeds 10k tokens."""
+    content = read_file("src/gsd_lite/template/agents/gsd-lite.md")
+    token_count = count_tokens(content)  # Use tiktoken or similar
+    
+    assert token_count <= 10_000, f"Agent instruction {token_count} tokens exceeds 10k budget"
+    
+    # Report headroom for visibility
+    print(f"Token budget: {token_count}/10,000 ({10_000 - token_count} remaining)")
+```
+
+**Integration with LOOP-001 (Intern Test):**
+
+| Test Type | What It Checks | Method |
+|-----------|----------------|--------|
+| **Deterministic (new)** | Token budget, file structure, grep patterns | Programmatic checks |
+| **Behavioral (LOOP-001)** | Philosophy adherence, questioning style | LLM-as-judge |
+
+The token budget check is a **quick gate** — fails fast before expensive LLM evaluation.
+
+```mermaid
+flowchart LR
+    subgraph CI_PIPELINE["🔄 Proposed CI Pipeline"]
+        D1["Deterministic Checks<br/>(fast, cheap)"]
+        D2["Token budget ≤ 10k"]
+        D3["Required sections exist"]
+        D4["Grep patterns valid"]
+        
+        B1["Behavioral Checks<br/>(slow, expensive)"]
+        B2["Intern Test scenarios"]
+        B3["LLM-as-judge evaluation"]
+    end
+    
+    D1 --> D2
+    D1 --> D3
+    D1 --> D4
+    
+    D2 -->|"Pass"| B1
+    D3 -->|"Pass"| B1
+    D4 -->|"Pass"| B1
+    
+    B1 --> B2
+    B2 --> B3
+    
+    D2 -->|"Fail"| REJECT["❌ Reject PR"]
+    
+    style D1 fill:#d4edda,stroke:#155724
+    style B1 fill:#fff3cd,stroke:#856404
+    style REJECT fill:#f8d7da,stroke:#721c24
+```
+
+**What else can we leverage from deterministic checks?**
+
+| Check | What It Validates | Implementation |
+|-------|-------------------|----------------|
+| Token budget | Agent instruction fits first-turn window | `tiktoken` count |
+| Section presence | Required sections exist in templates | grep for headers |
+| ID format | LOG-NNN, LOOP-NNN, TASK-NNN patterns valid | regex validation |
+| Cross-reference integrity | "Depends On" references exist | grep + validate |
+| Supersession tags | SUPERSEDED BY references valid logs | grep + validate |
+
+---
+
+#### Part 5: Immediate Actions Taken This Session
+
+| Action | File | Lines Changed | Status |
+|--------|------|---------------|--------|
+| Added PROJECT.md to Gardener onboarding | `src/gsd_lite/template/agents/gsd-housekeeping.md` | Session Start section | ✅ Done |
+| Enriched tag format with journalism quality | `src/gsd_lite/template/agents/gsd-housekeeping.md` | Phase 1E section | ✅ Done |
+| Added "Understanding WORK.md Structure" section | `src/gsd_lite/template/agents/gsd-housekeeping.md` | New section after Session Start | ✅ Done |
+
+---
+
+#### Part 6: Open Tasks (Next Actions)
+
+| Task ID | Description | Priority | Depends On |
+|---------|-------------|----------|------------|
+| TASK-PROTOCOL-DOCS-001 | Migrate artifact documentation to gsd-lite.md | High | This decision |
+| TASK-CI-TOKEN-001 | Implement token budget CI check | Medium | TASK-PROTOCOL-DOCS-001 |
+| TASK-CI-STRUCTURE-001 | Implement deterministic structure checks | Medium | — |
+
+---
+
+#### Backlinks
+
+- **LOOP-001** (Philosophical CI / Intern Test) — This discovery adds deterministic checks as a complement to behavioral testing
+- **LOOP-002** (Few-Shot Example Visibility) — Same root cause: valuable documentation invisible to grep-first agents
+- **LOG-015** (Context Map Tool) — The `context_map.md` output enabled the token budget analysis
+- **LOG-018** (Housekeeping Architecture) — The Gardener spec review triggered this discovery
+- **LOG-019** (Multi-Agent Implementation) — Immediate predecessor; spec updates applied
+
+---
+
+📦 STATELESS HANDOFF
+
+**Layer 1 — Local Context:**
+→ Last action: LOG-020 (Invisible Documentation discovery + decisions)
+→ Dependency chain: LOG-020 ← LOG-019 ← LOG-018 ← LOG-017
+→ Next action: Implement TASK-PROTOCOL-DOCS-001 (migrate docs to gsd-lite.md)
+
+**Layer 2 — Global Context:**
+→ Architecture: Multi-agent structure in `src/gsd_lite/template/agents/`
+→ Patterns: Grep-first file reading, 10k token first-turn budget
+→ Token state: gsd-lite.md at 4,913 tokens, headroom to 10k
+
+**Fork paths:**
+- Execute doc migration → TASK-PROTOCOL-DOCS-001
+- Implement CI checks → TASK-CI-TOKEN-001
+- Discuss further → Refine deterministic check list
+- Review other agents → Apply same onboarding pattern to future agents
+
+---
+
+### [LOG-021] - [DECISION] - Unified Housekeeping Agent: Collapsing Two Phases into One Stateless Spec - Task: HOUSEKEEPING-AGENT
+
+**Timestamp:** 2026-02-07
+**Status:** ✅ IMPLEMENTED
+**Decision ID:** DECISION-021
+**Depends On:** LOG-018 (Two-Phase Architecture), LOG-020 (Invisible Documentation), LOG-017 (Housekeeping Vision)
+**Supersedes:** The separate `workflows/housekeeping.md` file (user will delete)
+
+---
+
+#### Part 1: The Problem — A Gap in Stateless-First Architecture
+
+##### 1.1 What the User Discovered
+
+During reconciliation of the Housekeeping Agent vision (LOG-017) against the current implementation, the user identified a critical architectural gap:
+
+> "Right now Phase 1 is embedded as system instruction for an agent. What is our vision for which agent would do Phase 2?"
+
+**The gap visualized:**
+
+```mermaid
+flowchart TD
+    subgraph PHASE1["Phase 1: Inference + Tagging"]
+        P1A["Agent Spec: agents/gsd-housekeeping.md"]
+        P1B["Embedded as system instruction"]
+        P1C["✅ Stateless: Fresh agent can run from spec alone"]
+    end
+    
+    subgraph PHASE2_BEFORE["Phase 2: Archival (BEFORE)"]
+        P2A["Workflow File: workflows/housekeeping.md"]
+        P2B["NOT an agent spec — requires GSD-Lite routing"]
+        P2C["❓ Gap: Fresh agent doesn't know this file exists"]
+    end
+    
+    subgraph HANDOFF["The Broken Handoff"]
+        H1["Phase 1 ends with:<br/>'Run housekeeping.md workflow'"]
+        H2["Fresh agent asks:<br/>'What's a workflow? Where is it?'"]
+    end
+    
+    P1A --> P1B --> P1C
+    P2A --> P2B --> P2C
+    P1C --> H1 --> H2
+    
+    style P1C fill:#d4edda,stroke:#155724
+    style P2C fill:#f8d7da,stroke:#721c24
+    style H2 fill:#f8d7da,stroke:#721c24
+```
+
+**Citation:** User's exact words from this session:
+> "Our philosophy is stateless by design so one core pillar to reconcile here is, after Phase 1 would the artifact and Phase 2 instruction be enough that we can start a new agent 0 context and let it do the workflow Phase 2?"
+
+##### 1.2 The Four Options Considered
+
+| Option | Description | Stateless Score | Tradeoffs |
+|--------|-------------|-----------------|-----------|
+| **(A) Extend Context Gardener** | Add Phase 2 to `agents/gsd-housekeeping.md` | ⭐⭐⭐⭐⭐ | Larger instruction; one agent does everything |
+| **(B) Use GSD-Lite agent** | Route to housekeeping workflow via protocol | ⭐⭐⭐⭐ | Requires GSD-Lite onboarding first |
+| **(C) Create Phase 2 agent spec** | New `agents/gsd-archiver.md` | ⭐⭐⭐⭐⭐ | Agent proliferation; cleaner separation |
+| **(D) Blank 0-context agent** | Vanilla Claude + artifacts + paste workflow | ⭐⭐⭐ | Tests "artifacts are enough"; no specialized onboarding |
+
+##### 1.3 Why Option A Won
+
+**User's directive:**
+> "Yes please go for extending the housekeeping agent spec, and then I'll delete the workflow no prob."
+
+**Rationale:**
+1. **True stateless** — A single agent spec handles the full lifecycle. No handoff ambiguity.
+2. **User simplicity** — "Run housekeeping agent" → done (not "run gardener, then run archiver")
+3. **Token budget** — Phase 2 operations are mechanical (~500 tokens to add). Total spec is ~2500 tokens, well under 10k.
+4. **Natural flow** — Phase 1 ends with tags written → Phase 2 begins immediately (same session, same context)
+
+---
+
+#### Part 2: What Changed — The Extended Agent Spec
+
+##### 2.1 Before vs. After
+
+| Aspect | Before (Phase 1 Only) | After (Full Lifecycle) |
+|--------|----------------------|------------------------|
+| **File** | `agents/gsd-housekeeping.md` | Same file, extended |
+| **Purpose** | Infer, interview, tag | Infer, interview, tag, **archive, extract PRs** |
+| **Scope** | Phase 1 only | Phase 1 + Phase 2 |
+| **Handoff** | "Run housekeeping.md workflow" | Internal continuation |
+| **Lines** | ~350 | ~550 |
+
+**Citation:** `src/gsd_lite/template/agents/gsd-housekeeping.md` (full file rewritten this session)
+
+##### 2.2 New Sections Added
+
+| Section | Purpose | Token Estimate |
+|---------|---------|----------------|
+| **Phase 2A: Archive Superseded Logs** | Consume `SUPERSEDED BY:` tags from Phase 1, move to HISTORY.md | ~150 |
+| **Phase 2B: PR Extraction** | Filter by Task ID, generate PR description with code snippets | ~200 |
+| **Phase 2C: Archive Completed Tasks** | Move completed task entries to HISTORY.md | ~150 |
+| **Phase 2D: Index Maintenance** | Update Key Events Index after archival | ~50 |
+| **Common Scenarios** | Full lifecycle, PR then archive, direct archive, Phase 1 only | ~150 |
+
+##### 2.3 Key Code Patterns (Synthesized Examples)
+
+**Phase 2A trigger (archive superseded):**
+
+```markdown
+User: "archive superseded logs"
+
+Agent:
+  1. grep "SUPERSEDED BY:" WORK.md  # Find Phase 1 tags
+  2. Present list with tokens to be freed
+  3. After confirmation:
+     - Move entries to HISTORY.md
+     - Update Key Events Index
+     - Update Current Understanding
+```
+
+**HISTORY.md format for superseded logs:**
+
+```markdown
+## Superseded Logs (Archived 2026-02-07)
+
+### LOG-003 - Auth Options Analysis
+- **Superseded By:** LOG-007 (JWT Decision)
+- **Original Task:** AUTH-IMPL
+- **Summary:** Explored JWT vs Session vs OAuth. JWT chosen for statelessness.
+- **Why Archived:** Options analysis complete; LOG-007 is authoritative.
+```
+
+**Full lifecycle flow:**
+
+```mermaid
+sequenceDiagram
+    participant U as User
+    participant A as Housekeeping Agent
+    participant W as WORK.md
+    participant H as HISTORY.md
+    
+    Note over A: Phase 1 (Inference + Tagging)
+    U->>A: "run housekeeping"
+    A->>W: grep log headers
+    A->>A: Infer supersession (Tier 1/2/3)
+    A->>U: Present draft DAG
+    U->>A: Confirm relationships
+    A->>W: Write SUPERSEDED BY: tags
+    A->>U: "Phase 1 complete. Continue to Phase 2?"
+    
+    Note over A: Phase 2 (Archival)
+    U->>A: "yes, archive them"
+    A->>W: grep SUPERSEDED BY:
+    A->>H: Move superseded entries
+    A->>W: Update Key Events Index
+    A->>U: "Archived 3 logs, freed 2,450 tokens"
+```
+
+---
+
+#### Part 3: The Stateless Test — Can a Fresh Agent Pick This Up?
+
+##### 3.1 What a Fresh Agent Needs
+
+| Requirement | How It's Met |
+|-------------|--------------|
+| Know Phase 2 exists | Embedded in same agent spec |
+| Know how to trigger Phase 2 | Documented triggers: "archive superseded", "write PR for X", etc. |
+| Know the operations | Phase 2A-2D fully documented with examples |
+| Know the formats | HISTORY.md format, PR format included |
+| Know the safety rules | Confirmation required for all destructive actions |
+
+##### 3.2 The Handoff Packet (Now Internal)
+
+**Before (broken):**
+```markdown
+📦 CONTEXT GARDENER HANDOFF
+**Next:** Run `housekeeping.md` workflow to archive tagged entries
+```
+
+**After (stateless):**
+```markdown
+📦 HOUSEKEEPING HANDOFF
+
+**Phase 1 (Tagging):**
+→ Tagged: N logs marked SUPERSEDED
+→ Untagged: M logs confirmed as still-valid
+
+**Phase 2 (Archival):**
+→ Archived: X logs to HISTORY.md
+→ Tokens freed: Y
+→ PRs extracted: [list if any]
+```
+
+A fresh agent loading this handoff + the agent spec has everything needed to continue.
+
+---
+
+#### Part 4: Impact on Existing Artifacts
+
+##### 4.1 What Gets Deleted
+
+| Artifact | Status | Reason |
+|----------|--------|--------|
+| `workflows/housekeeping.md` | 🗑️ **User will delete** | Functionality merged into agent spec |
+
+##### 4.2 What Remains Valid
+
+| Artifact | Status | Notes |
+|----------|--------|-------|
+| `agents/gsd-housekeeping.md` | ✅ Extended | Now handles full lifecycle |
+| `workflows/discuss.md` | ✅ Unchanged | Different workflow, unaffected |
+| `workflows/execution.md` | ✅ Unchanged | Different workflow, unaffected |
+| `workflows/checkpoint.md` | ✅ Unchanged | Different workflow, unaffected |
+
+##### 4.3 Protocol Routing Impact
+
+The PROTOCOL.md workflow router currently says:
+
+```markdown
+| "housekeeping" | housekeeping.md | PR extraction, archive completed tasks |
+```
+
+**After this change:** This route should point to the agent spec instead, OR the router should clarify that "housekeeping" loads the housekeeping agent, not a workflow.
+
+**Recommendation:** Update PROTOCOL.md to reflect:
+- `agents/` = Standalone agent specs (load as system instruction)
+- `workflows/` = Instructions for the GSD-Lite agent to follow
+
+---
+
+#### Part 5: Backlinks & Dependencies
+
+| Log | Relationship | Summary |
+|-----|--------------|---------|
+| **LOG-017** | Vision | Proposed the Housekeeping Agent concept with lifecycle patterns |
+| **LOG-018** | Architecture | Defined Two-Phase architecture (inference → archival) |
+| **LOG-020** | Constraint | HTML comments invisible to grep-first; docs must be in agent instruction |
+| **LOG-016** | Philosophy | Stateless-first architecture: every turn generates handoff |
+
+**The dependency chain:**
+
+```mermaid
+flowchart LR
+    L16["LOG-016<br/>Stateless-First"]
+    L17["LOG-017<br/>Housekeeping Vision"]
+    L18["LOG-018<br/>Two-Phase Architecture"]
+    L20["LOG-020<br/>Invisible Documentation"]
+    L21["LOG-021<br/>Unified Agent (this log)"]
+    
+    L16 --> L17
+    L17 --> L18
+    L18 --> L21
+    L20 --> L21
+    
+    style L21 fill:#d4edda,stroke:#155724
+```
+
+---
+
+#### Part 6: Concrete Artifact Diff
+
+**File changed:** `src/gsd_lite/template/agents/gsd-housekeeping.md`
+
+| Section | Change Type | Description |
+|---------|-------------|-------------|
+| YAML frontmatter | Modified | Updated description to "Full housekeeping lifecycle" |
+| Purpose statement | Modified | Now includes archive and PR extraction |
+| System header | Modified | Changed from "Phase 1: Inference + Interview" to "Full Housekeeping Lifecycle" |
+| Phase 1 sections | Unchanged | All inference/tagging logic preserved |
+| **Phase 2A-2D** | **Added** | Archive superseded, PR extraction, archive tasks, index maintenance |
+| **Common Scenarios** | **Added** | Full lifecycle, PR then archive, direct archive, Phase 1 only |
+| **Safety section** | **Added** | Confirmation requirements for all destructive actions |
+| Handoff format | Modified | Now includes both Phase 1 and Phase 2 summaries |
+
+---
+
+📦 STATELESS HANDOFF
+
+**Layer 1 — Local Context:**
+→ Last action: LOG-021 (Unified Housekeeping Agent — this log)
+→ Dependency chain: LOG-021 ← LOG-020 ← LOG-018 ← LOG-017 ← LOG-016
+→ Next action: User deletes `workflows/housekeeping.md` (manual)
+
+**Layer 2 — Global Context:**
+→ Architecture: `agents/gsd-housekeeping.md` now handles full housekeeping lifecycle
+→ Patterns: Stateless-first; one agent spec = complete workflow capability
+→ Token state: Agent spec ~2500 tokens, well under 10k budget
+
+**Fork paths:**
+- Delete workflow → User removes `workflows/housekeeping.md`
+- Update PROTOCOL.md → Reflect agent vs workflow distinction
+- Test the agent → Run housekeeping on a real WORK.md
+- Continue doc migration → TASK-PROTOCOL-DOCS-001
+
+---
+
+### [LOG-022] - [DECISION] - Removing Legacy Housekeeping References: Ensuring Agent Separation of Concerns - Task: HOUSEKEEPING-CLEANUP
+
+**Timestamp:** 2026-02-07
+**Status:** ✅ IMPLEMENTED
+**Decision ID:** DECISION-022
+**Depends On:** LOG-021 (Unified Housekeeping Agent)
+**Supersedes:** Legacy references to `workflows/housekeeping.md`
+
+---
+
+#### Part 1: The Problem — Agent Confusion
+
+##### 1.1 The Context
+In LOG-021, we consolidated the housekeeping workflow into a standalone `gsd-housekeeping` agent. The original `workflows/housekeeping.md` file was deleted.
+
+##### 1.2 The Residue
+However, references to "housekeeping workflow" remained in `PROTOCOL.md`, `agents/gsd-lite.md`, `HISTORY.md`, and `workflows/progress.md`.
+
+##### 1.3 The Risk
+These references posed two risks:
+1.  **Routing Confusion:** The `gsd-lite` agent might try to "route" to a non-existent workflow file instead of instructing the user to switch agents.
+2.  **Scope Creep:** Instructions like "When archiving a completed task..." in `HISTORY.md` could lead the `gsd-lite` agent to believe *it* should perform archiving, violating the separation of concerns.
+
+---
+
+#### Part 2: The Decision — Strict Separation
+
+**We decided to:**
+1.  **Remove all routing references:** The `gsd-lite` agent does not route to housekeeping. Housekeeping is a user-initiated "meta-task" performed by a separate agent.
+2.  **Scrub "housekeeping" from `gsd-lite` artifacts:** The main agent doesn't need to know the housekeeping agent exists.
+3.  **Refine `HISTORY.md` instructions:** Clarified that archiving is done `(via Housekeeping Agent)`, signaling to the main agent that this is an external process.
+
+---
+
+#### Part 3: Concrete Changes
+
+| File | Change | Reason |
+|:-----|:-------|:-------|
+| `PROTOCOL.md` | Removed housekeeping from router table | `gsd-lite` doesn't route there |
+| `agents/gsd-lite.md` | Removed housekeeping from tool definitions | It's not a tool, it's an agent |
+| `workflows/progress.md` | Removed housekeeping from "Next Up" | It's not a workflow state |
+| `HISTORY.md` | Changed "via housekeeping workflow" to "via Housekeeping Agent" | Updates the mental model |
+
+---
+
+📦 STATELESS HANDOFF
+
+**Layer 1 — Local Context:**
+→ Last action: LOG-022 (this log) - Cleanup complete
+→ Dependency chain: LOG-022 ← LOG-021 ← LOG-020
+→ Next action: Return to TASK-PROTOCOL-DOCS-001 (Migrate artifact documentation)
+
+**Layer 2 — Global Context:**
+→ Architecture: Dual-agent model confirmed (`gsd-lite` vs `gsd-housekeeping`)
+→ Patterns: Agents don't know about each other; user manages the switch
+→ State: Residue references cleaned; artifacts are consistent with LOG-021
+
+**Fork paths:**
+- Resume docs migration → TASK-PROTOCOL-DOCS-001
+- Test housekeeping agent → Run `gsd-housekeeping` on a sample

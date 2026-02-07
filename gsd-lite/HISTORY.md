@@ -19,7 +19,7 @@ IDs are globally unique and never reused.
 
 ## How to Use
 
-When archiving a completed task (via housekeeping workflow):
+When archiving a completed task (via housekeeping agent):
 1. Add one-line entry above with PHASE-NNN or Task ID
 2. Link to external artifact (PR, doc, etc.)
 3. Archived log entries moved from WORK.md to this file

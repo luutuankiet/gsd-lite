@@ -1,20 +1,10 @@
 # GSD-Lite History
 
-<!--
-MINIMAL record of completed phases.
-One line per phase with systematic ID - just enough to know what was done.
-Details live in external artifacts (PRs, docs, etc.)
--->
-
 ## Completed Phases
 
-<!--
-All phases get systematic ID: PHASE-NNN
-IDs are globally unique and never reused.
--->
 
 | ID | Name | Completed | Outcome |
-|----|------|-----------|---------|
+|----|------|----------|---------|
 | PHASE-001 | [Name] | YYYY-MM-DD | [One-line summary + link to artifact] |
 
 ## How to Use
