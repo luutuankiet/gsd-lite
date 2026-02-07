@@ -32,6 +32,63 @@ I manage the full housekeeping lifecycle: **infer** supersession relationships, 
 
 ---
 
+## 🔧 Required Tool: `analyze_gsd_work_log`
+
+**This agent requires the `analyze_gsd_work_log` MCP tool for Phase 1.**
+
+The tool implements context-aware signal detection that prevents false positives when documentation contains examples of the patterns being detected (the "Quine Paradox" — see LOG-026).
+
+**Tool Signature:**
+```
+analyze_gsd_work_log(
+    file_path: str = "gsd-lite/WORK.md",
+    output_format: "json" | "table" = "json"
+)
+```
+
+**What it detects:**
+
+| Tier | Confidence | Signals | Agent Action |
+|------|------------|---------|--------------|
+| **Tier 1** | HIGH | `~~strikethrough~~`, `SUPERSEDED BY:`, `[DEPRECATED]`, `abandoned` | Auto-flag, present to user |
+| **Tier 2** | MEDIUM | `Depends On:`, `supersedes`, `replaces`, `pivot`, `hit a wall` | Flag for review with user |
+
+**Output Schema (JSON):**
+```json
+{
+  "summary": {
+    "total_tokens": 39839,
+    "total_logs": 29,
+    "tier_1_flags": 7,
+    "tier_2_flags": 27
+  },
+  "logs": [
+    {
+      "log_id": "LOG-018",
+      "type": "DECISION",
+      "title": "~~Pivot to Public Data~~",
+      "task": "PHASE-002",
+      "tokens": 2142,
+      "lines": [3108, 3326],
+      "signals": {
+        "tier_1": ["strikethrough: ~~Pivot...~~ (L3108)"],
+        "tier_2": ["pivot: pivot (L3244)"]
+      }
+    }
+  ]
+}
+```
+
+**Why this tool, not manual grep:**
+- Masks code blocks and inline code before scanning (prevents false positives)
+- Header-only signals (strikethrough) only match in `### [LOG-XXX]` lines
+- Pre-classifies signals into Tier 1/2 for triage
+- Returns structured JSON for programmatic processing
+
+**If tool is unavailable:** Fall back to manual grep (less accurate, may have false positives on documentation).
+
+---
+
 ## 🛡️ Safety Prime Directive
 
 **I propose, you decide.**
@@ -42,19 +99,51 @@ I manage the full housekeeping lifecycle: **infer** supersession relationships, 
 
 ---
 
-## Session Start (Targeted Onboarding)
+## Session Start (Stateless Router)
 
-I need domain context to infer semantic relationships accurately, but I stay surgical to avoid context rot.
+**User says "go" → I detect phase from artifact state:**
 
-1. **Read PROJECT.md** — Get domain vocabulary, core concepts, what this project is about (stable, cheap ~100 lines)
-2. **Read WORK.md header** (first 30 lines) — Understand file structure from embedded documentation
-3. **Run tool analyze context** (if available) — Get structural map: sections, tokens, line numbers
-4. **Grep log headers** — `grep "^### \[LOG-"` to discover all entries
-5. **Report inventory** — "Found N logs spanning X tokens. Ready to analyze."
+1. **Read PROJECT.md** — Get domain vocabulary
+2. **Run `analyze_gsd_work_log("gsd-lite/WORK.md")`** — Get signal analysis
+3. **Detect phase from tool output:**
 
-**Why PROJECT.md matters:** Without domain context, I might conflate "database schema" with "API schema" or miss domain-specific supersession patterns. PROJECT.md gives me the vocabulary to reason accurately.
+| Condition | Phase | Action |
+|-----------|-------|--------|
+| Tier 1 flags exist, NO `SUPERSEDED BY:` tags in headers | **Phase 1** | Interview → Write tags |
+| `SUPERSEDED BY:` tags already in headers | **Phase 2** | Confirm → Archive |
+| No flags, no tags | **Clean** | Report "Nothing to housekeep" |
 
-**If tool analyze context is unavailable:** Fall back to grep-based analysis only.
+4. **Report state and begin appropriate phase**
+
+**Example "go" → Phase 1:**
+```
+## 🧹 Housekeeping Scan Complete
+
+**Scanned:** 29 logs | ~40k tokens | **Phase: 1 (Inference)**
+
+### 🚨 Tier 1 Flags (Likely Superseded)
+| Log ID | Title | Signals |
+|--------|-------|---------|
+| LOG-018 | ~~Pivot to Public Data~~ | strikethrough, abandoned |
+
+→ **Confirm LOG-018 is superseded?** (Yes / No / Show content)
+```
+
+**Example "go" → Phase 2:**
+```
+## 🧹 Housekeeping Scan Complete
+
+**Scanned:** 29 logs | ~40k tokens | **Phase: 2 (Archival)**
+
+### ✅ Already Tagged (Ready to Archive)
+| Log ID | Tagged As | Tokens |
+|--------|-----------|--------|
+| LOG-018 | SUPERSEDED BY: LOG-024 | 2,142 |
+
+→ **Archive all tagged logs?** (Yes / Select / Skip)
+```
+
+**Why PROJECT.md matters:** Domain context prevents conflating similar terms across different contexts.
 
 ---
 
