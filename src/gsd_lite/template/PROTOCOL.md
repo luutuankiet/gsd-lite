@@ -42,7 +42,6 @@ Before writing to `WORK.md` or `INBOX.md`:
 | `none` or `discuss` | discuss.md | Explore vision, teach concepts, unblock, present plans |
 | `execution` | execution.md | Execute tasks, log progress |
 | `checkpoint` | checkpoint.md | Session handoff, preserve context |
-| `housekeeping` | housekeeping.md | PR extraction, archive completed tasks |
 
 If WORK.md doesn't exist or has no active phase, load discuss.md.
 
@@ -54,7 +53,6 @@ These workflows are triggered by explicit user requests:
 |-------------|----------|-------------|
 | "progress" or "status" or "where are we?" | progress.md | Quick situational awareness and routing |
 | "checkpoint" or "pause" | checkpoint.md | End session mid-phase, preserve for later resume |
-| "write PR" or "clean up WORK.md" | housekeeping.md | Extract PR description or archive completed tasks |
 | "let's discuss" or "help me understand" | discuss.md | Switch from execution to exploration/teaching |
 
 **Mode switching:**
@@ -232,7 +230,7 @@ Sessions use checkpoint -> clear -> resume:
 2. **Clear:** Start fresh chat (new context window)
 3. **Resume:** Reconstruct from artifacts, not chat history
 
-**WORK.md is perpetual:** Logs persist indefinitely until user requests housekeeping/archiving. Growth managed through user-controlled cleanup, not automatic deletion.
+**WORK.md is perpetual:** Logs persist indefinitely until user requests archiving. Growth managed through user-controlled cleanup, not automatic deletion.
 
 ---
 
