@@ -5,23 +5,20 @@
 ## 1. Current Understanding (Read First)
 
 <current_mode>
-discuss
+execution
 </current_mode>
 
 <active_task>
-Task: CI-FRAMEWORK-001 - Design CI framework with Constitutional Knowledge
-Status: CHECKPOINTED - See LOG-028 for comprehensive discovery. Six pillars defined, three-layer CI architecture proposed.
+Task: TASK-CONST-002a - Write pair-programming.yaml rubric
+Status: COMPLETE - See LOG-031. Created hybrid YAML rubric format with P2-H1 through P2-H5.
 </active_task>
 
 <parked_tasks>
 - RQ-1: Research trajectory testing without telemetry (Google ADK, Upskill)
-- RQ-2: Define Constitution format (JSON schema vs markdown rubric)
 - RQ-3: Evaluate SKILLS.md pattern — defer until current architecture matures
-- TASK-CONST-001: Distill Constitution v0.1 from agents/workflows (Step 1)
 - TASK-CI-L1-001: Implement Layer 1 structural checks (Step 4)
-- TASK-CONST-001a: Extract Pillar 1-4 from source files (Step 1)
-- TASK-CONST-001b: Write CONSTITUTION.md with examples (Step 2)
-- TASK-CONST-002a-b: Write YAML rubrics (Step 3)
+- TASK-CONST-001b: Review/polish CONSTITUTION.md (Step 2) — OPTIONAL, can skip
+- TASK-CONST-002b: Write remaining rubrics (Pillar 1, 3, 4)
 - TASK-CONST-003a-b: Write JSON golden tests (Step 4)
 </parked_tasks>
 
@@ -68,9 +65,10 @@ None - Framework design complete, ready to begin implementation.
 
 <next_action>
 Fork paths (choose one):
-1. Distill Constitution v0.1 → Extract immutable pillars from gsd-lite.md, workflows/*
-2. Research trajectory testing → Deep dive Google ADK eval + Upskill for RQ-1
-3. Implement L1 structural checks → Cheapest, catches obvious breaks first
+1. TASK-CONST-002b → Write remaining rubrics (Pillar 1, 3, 4 hardcoded behaviors)
+2. TASK-CONST-003a → Write first golden test (onboarding scenario)
+3. TASK-CI-L1-001 → Implement Layer 1 structural checks (cheapest CI gate)
+4. Research trajectory testing → Deep dive Google ADK eval for RQ-1
 </next_action>
 
 ---
@@ -5308,3 +5306,153 @@ gantt
 - Adjust plan → Discuss changes to format or scope
 - Research more → Deep dive specific rubric patterns
 - Defer → Checkpoint and resume later
+
+---
+
+### [LOG-030] - [EXEC] - Created CONSTITUTION.md v0.1 with Four Pillars Extracted from Source - Task: TASK-CONST-001a
+
+**Timestamp:** 2026-02-08
+**Status:** Complete
+**Depends On:** LOG-029 (Constitution Implementation Plan)
+**Output:** `src/gsd_lite/template/constitution/CONSTITUTION.md` (~550 lines)
+
+#### What Was Done
+
+Extracted the four pillars from source files and compiled into a machine-auditable constitution:
+
+| Pillar | Source Files | Key Sections Extracted |
+|--------|--------------|------------------------|
+| **Stateless-First** | `agents/gsd-lite.md` L356-466 | Handoff structure, two-layer format, anti-patterns |
+| **Pair Programming** | `agents/gsd-lite.md` L514-660, `references/questioning.md` | Grounding Loop, Challenge Tone Protocol, Teaching Detour |
+| **Context Engineering** | `agents/gsd-lite.md` L121-172, L33-53 | Grep-first pattern, Universal Onboarding sequence |
+| **Journalism Quality** | `gsd-lite/PROJECT.md` L81-115 | Logging Standard, log entry elements table |
+
+#### Structure of CONSTITUTION.md
+
+```
+# GSD-Lite Constitution v0.1
+├── Preamble (why this exists, priority hierarchy)
+├── Pillar 1: Stateless-First
+│   ├── The Principle (WHY)
+│   ├── Hardcoded Behaviors (S1-H1 through S1-H5)
+│   ├── Soft-coded Defaults (S1-S1 through S1-S3)
+│   ├── Two-Layer Handoff Structure
+│   ├── Canonical Format
+│   ├── Violation Examples
+│   ├── Compliance Examples
+│   └── Source Reference
+├── Pillar 2: Pair Programming Model
+│   ├── [same structure]
+│   └── Includes: Grounding Loop, Challenge Tone Protocol, Teaching Detour
+├── Pillar 3: Context Engineering
+│   ├── [same structure]
+│   └── Includes: Grep-First Pattern, Universal Onboarding Sequence
+├── Pillar 4: Journalism Quality
+│   ├── [same structure]
+│   └── Includes: Log Entry Elements, Milestone/Standard formats
+└── Appendix: Quick Reference
+    ├── Golden Rules (spans all pillars)
+    ├── Behavior ID Index
+    └── Source File Mapping
+```
+
+#### Key Design Decisions
+
+1. **Behavior IDs:** Each hardcoded/soft-coded rule gets a unique ID (e.g., `S1-H1`, `P2-H3`) for CI traceability
+2. **Violation + Compliance Examples:** Every pillar includes concrete examples of both wrong and right behavior
+3. **Source References:** Each pillar backlinks to exact source file + line numbers
+4. **Priority Hierarchy:** Explicit ordering when pillars conflict (Stateless > Pair Programming > Context > Journalism)
+
+#### Files Created
+
+| File | Size | Purpose |
+|------|------|---------|
+| `src/gsd_lite/template/constitution/CONSTITUTION.md` | ~550 lines | The four pillars with examples |
+
+#### Next Steps
+
+Ready for TASK-CONST-001b (review/polish) or skip to TASK-CONST-002a (write rubrics).
+
+---
+
+### [LOG-031] - [EXEC] - Created pair-programming.yaml Rubric with Hardcoded Behaviors (P2-H1 to P2-H5) - Task: TASK-CONST-002a
+
+**Timestamp:** 2026-02-08
+**Status:** Complete
+**Depends On:** LOG-030 (CONSTITUTION.md), LOG-028 (CI Framework Design)
+**Output:** `src/gsd_lite/template/constitution/rubrics/pair-programming.yaml` (~350 lines)
+
+#### Research Summary
+
+Evaluated three major LLM evaluation frameworks to determine cutting-edge rubric format:
+
+| Framework | Format | Key Pattern | Verdict |
+|-----------|--------|-------------|---------|
+| **Vertex AI Gen AI Eval** | Python SDK | `PointwiseMetricPromptTemplate` with criteria + rating_rubric | GCP-coupled, no native YAML |
+| **Promptfoo** | Native YAML | `llm-rubric` assertion with freeform text | True YAML-first, but unstructured |
+| **DeepEval** | Python SDK | `GEval` with `Rubric` class (explicit score ranges) | Most structured, Python-first |
+
+**Key Insight:** All frameworks converge on same core pattern: `criteria` + `rating_rubric` + `evaluation_params`. Vertex AI recommends "Adaptive Rubrics" (dynamically generated per prompt) as cutting-edge.
+
+**Decision:** Hybrid YAML format that:
+1. Is native YAML (like Promptfoo) — rubrics live in `.yaml` files
+2. Has structured scoring (like DeepEval's `Rubric`) — explicit score ranges per criterion
+3. Maps directly to CONSTITUTION.md — each behavior ID becomes a criterion
+4. Is portable — can transform to any target framework
+
+#### Structure of pair-programming.yaml
+
+```yaml
+metadata:
+  pillar: "Pair Programming Model"
+  pillar_id: "P2"
+  scope: "hardcoded"  # P2-H1 through P2-H5
+
+evaluation_params:
+  - agent_response
+  - user_input
+  - conversation_history (optional)
+  - artifacts_state (optional)
+
+criteria:
+  - id: P2-H1 (Why Before How)
+  - id: P2-H2 (No Auto-Write)
+  - id: P2-H3 (User Owns Completion)
+  - id: P2-H4 (Grounding Loop)
+  - id: P2-H5 (Challenge Vagueness)
+
+aggregation:
+  method: "minimum"  # ANY violation = fail
+```
+
+#### Each Criterion Contains
+
+| Field | Purpose | Example |
+|-------|---------|---------|
+| `id` | Traceability to CONSTITUTION.md | `P2-H1` |
+| `name` | Human-readable title | "Why Before How" |
+| `type` | `hardcoded` or `softcoded` | `hardcoded` |
+| `description` | What the rule means | Full description |
+| `evaluation_steps` | Step-by-step guide for LLM judge | 1. Check if action... 2. If yes, verify... |
+| `scoring` | Binary (0=violation, 1=pass) | Explicit criteria for each score |
+| `violation_examples` | Concrete bad behavior | Input → Response → Reason |
+| `compliance_examples` | Concrete good behavior | Input → Response → Reason |
+
+#### Files Created
+
+| File | Size | Purpose |
+|------|------|---------|
+| `src/gsd_lite/template/constitution/rubrics/` | (dir) | New rubrics directory |
+| `.../rubrics/pair-programming.yaml` | ~350 lines | Pillar 2 hardcoded behaviors |
+
+#### Design Rationale
+
+1. **Binary scoring for hardcoded:** 0 (violation) or 1 (pass) — no grey area for non-negotiables
+2. **Minimum aggregation:** If ANY hardcoded rule fails, the entire pillar fails
+3. **Rich examples:** Both violation and compliance examples with reasoning, enabling weaker models to pattern-match
+4. **Portable format:** YAML structure can be transformed to Promptfoo/DeepEval/Vertex AI
+
+#### Next Steps
+
+- TASK-CONST-002b: Write remaining rubrics (Pillar 1, 3, 4 hardcoded behaviors)
+- Future: Add softcoded behaviors (weighted average aggregation)
