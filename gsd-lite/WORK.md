@@ -1,74 +1,28 @@
 # GSD-Lite Work Log
 
-<!--
-PERPETUAL SESSION WORK LOG - captures all work during project execution.
-Tracks vision, planning, execution, decisions, and blockers across multiple tasks.
-
-LIFECYCLE:
-- Created: When project starts
-- Updated: Throughout project execution
-- Housekeeping: User-controlled archiving of completed tasks to HISTORY.md
-- Perpetual: Logs persist until user requests archiving
-
-PURPOSE:
-- Session continuity: Fresh agents resume by reading Current Understanding (30-second context)
-- Detailed history: Atomic log provides HOW we got here with full evidence
-- Non-linear access: Grep patterns enable quick discovery (headers, log IDs, types, tasks)
-- PR extraction: Filter by task to generate PR descriptions from execution logs
-
-GREP PATTERNS FOR DISCOVERY:
-- Headers: grep "^## " WORK.md — discover 3-part structure
-- All logs with summaries: grep "^### \[LOG-" WORK.md — scan project evolution from headers
-- Log by ID: grep "\[LOG-015\]" WORK.md — find specific entry
-- Log by type: grep "\[DECISION\]" WORK.md — find all decisions
-- Log by task: grep "Task: MODEL-A" WORK.md — filter by task
-
-FILE READING STRATEGY:
-1. Discover structure: grep "^## " to find section boundaries
-2. Surgical read: Read from start_line using read_to_next_pattern or calculate end_line
-3. See PROTOCOL.md "File Reading Strategy" section for detailed patterns
--->
-
 ---
 
 ## 1. Current Understanding (Read First)
 
-<!--
-HANDOFF SECTION - Read this first when resuming work.
-Updated at checkpoint time or when significant state changes.
-Target: Fresh agent can understand current state in 30 seconds.
-
-Structure:
-- current_mode: What workflow are we in? (moodboard, execution, checkpoint, etc.)
-- active_task: What task is being worked on NOW
-- parked_tasks: What tasks are on hold (waiting for decisions, dependencies, etc.)
-- vision: What user wants - the intent, feel, references, success criteria
-- decisions: Key decisions with rationale - not just WHAT but WHY
-- blockers: Open questions, stuck items, waiting on user, ambiguities
-- next_action: Specific first action when resuming this session
-
-Use concrete facts, not jargon. Avoid "as discussed" or "per original vision" - fresh agent has zero context.
-
-IMPORTANT: Below are EXAMPLE entries showing format - replace with your actual session content.
--->
-
 <current_mode>
-execution (decisions made, ready to implement)
+discuss
 </current_mode>
 
 <active_task>
-Task: LOOP-003 - Design CI framework for structural regression prevention
-Status: IN DISCUSSION - Discovered via LOG-022. Need to define deterministic checks.
+Task: CI-FRAMEWORK-001 - Design CI framework with Constitutional Knowledge
+Status: CHECKPOINTED - See LOG-028 for comprehensive discovery. Six pillars defined, three-layer CI architecture proposed.
 </active_task>
 
 <parked_tasks>
-- TASK-PROTOCOL-DOCS-002: Add executable templates to gsd-lite.md (COMPLETED LOG-023)
-- TASK-PROTOCOL-DOCS-001: Migrate artifact documentation to gsd-lite.md (COMPLETED LOG-021)
-- TASK-HA-001 through TASK-HA-004: All COMPLETED (LOG-019)
-- TASK-CI-TOKEN-001: Implement token budget CI check (pending)
-- TASK-CI-STRUCTURE-001: Implement deterministic structure checks (pending)
-- PROTOCOL-STATELESS-001: Implement Stateless-First section in PROTOCOL.md (pending)
-- DIST-002: Unified Installer (COMPLETED)
+- RQ-1: Research trajectory testing without telemetry (Google ADK, Upskill)
+- RQ-2: Define Constitution format (JSON schema vs markdown rubric)
+- RQ-3: Evaluate SKILLS.md pattern — defer until current architecture matures
+- TASK-CONST-001: Distill Constitution v0.1 from agents/workflows (Step 1)
+- TASK-CI-L1-001: Implement Layer 1 structural checks (Step 4)
+- TASK-CONST-001a: Extract Pillar 1-4 from source files (Step 1)
+- TASK-CONST-001b: Write CONSTITUTION.md with examples (Step 2)
+- TASK-CONST-002a-b: Write YAML rubrics (Step 3)
+- TASK-CONST-003a-b: Write JSON golden tests (Step 4)
 </parked_tasks>
 
 <vision>
@@ -100,102 +54,42 @@ DECISION-020a: Consolidate artifact documentation to agent instruction (LOG-020)
 
 DECISION-020b: 10k token limit as CI gate (LOG-020)
 - Rationale: Token count is deterministic and measurable. Use as fast gate before expensive LLM behavioral tests. Complements LOOP-001 (Intern Test).
+
+DECISION-028a: Constitution-first approach for CI (LOG-028)
+- Rationale: Distill immutable pillars into machine-auditable document. All other artifacts can evolve as long as they don't violate the Constitution. Decouples philosophy (stable) from implementation (evolving).
+
+DECISION-028b: Three-layer CI architecture (LOG-028)
+- Rationale: Order checks by cost — L1 structural (free), L2 constitutional (~50k tokens), L3 behavioral (~500k-1M tokens). Catch obvious breaks fast, reserve expensive LLM calls for philosophy/behavior testing.
 </decisions>
 
 <blockers>
-None - Decisions clear, ready to execute.
+None - Framework design complete, ready to begin implementation.
 </blockers>
 
 <next_action>
-Implement TASK-CI-TOKEN-001: Add deterministic 10k token budget check to CI
+Fork paths (choose one):
+1. Distill Constitution v0.1 → Extract immutable pillars from gsd-lite.md, workflows/*
+2. Research trajectory testing → Deep dive Google ADK eval + Upskill for RQ-1
+3. Implement L1 structural checks → Cheapest, catches obvious breaks first
 </next_action>
 
 ---
 
 ## 2. Key Events Index (Project Foundation)
 
-<!--
-PROJECT FOUNDATION - Canonical source of truth for Layer 2 of stateless handoff packets.
-
-PURPOSE:
-- Agents MUST pull global context from here when generating handoff packets
-- Enables fresh agents to understand project-wide decisions without reading all logs
-- Human-curated: agent proposes additions, human approves
-
-STRUCTURE BY CATEGORY:
-- Architecture Decisions: System-level choices (data ownership, model structure)
-- Pattern Decisions: Reusable patterns (dashboard config, filter cascading)
-- Data Flow Decisions: How data moves through the system
-
-INCLUSION CRITERIA:
-✅ Decision affects multiple tasks/phases
-✅ Decision establishes a reusable pattern
-✅ Decision changes data flow or ownership
-✅ Decision is frequently referenced by other logs
-
-EXCLUSION CRITERIA:
-❌ Task-specific implementation detail
-❌ Superseded decision (context captured in successor)
-❌ Process decision, not product decision
-
-MAINTENANCE:
-- When adding new DECISION logs, check if project-wide impact warrants index entry
-- Agent may propose: "Add LOG-XXX to Key Events Index? Reason: [impact]"
-- User approves before agent updates this section
-
-FORMAT: Category headers (###), then bullet list of LOG-XXX: Title — 10-word summary
-
-IMPORTANT: Below are EXAMPLE entries showing format - replace with your actual index content.
--->
 
 | Log ID | Type | Task | Summary |
 |--------|------|------|---------|
 | LOG-012 | DISCOVERY | DIST-002 | Reverse-engineered get-shit-done-cc installer patterns |
 | LOG-013 | DECISION | DIST-002 | Unified install model: same output, different location |
 | LOG-016 | DECISION | PROTOCOL-STATELESS | Stateless-First Architecture: Every turn generates handoff packet |
-| **LOG-017** | **VISION** | **HOUSEKEEPING** | **⭐ Housekeeping Agent: Automated Coherence Detection for Dense Worklogs** |
+| LOG-017 | VISION | HOUSEKEEPING | Housekeeping Agent: Automated Coherence Detection for Dense Worklogs |
+| LOG-020 | DISCOVERY | PROTOCOL-DOCS | 10k token budget as CI gate; HTML comments invisible to grep-first |
+| **LOG-028** | **DECISION** | **CI-FRAMEWORK** | **⭐ Constitutional Knowledge + Three-Layer CI (Structural → Constitutional → Behavioral)** |
 
 
 ## 3. Atomic Session Log (Chronological)
 
-<!--
-TYPE-TAGGED ATOMIC ENTRIES - All session work captured here.
-Each entry is self-contained with code snippets where applicable.
-
-Entry types (6 types):
-- [VISION] - User vision/preferences, vision evolution, reference points
-- [DECISION] - Decision made (tech, scope, approach) with rationale
-- [DISCOVERY] - Evidence, findings, data (ALWAYS with code snippets)
-- [PLAN] - Planning work: task breakdown, risk identification, approach
-- [BLOCKER] - Open questions, stuck items, waiting states
-- [EXEC] - Execution work: files modified, commands run (ALWAYS with code snippets)
-
-Entry format:
-### [LOG-NNN] - [TYPE] - {{one line summary}} - Task: TASK-ID
-**Timestamp:** [YYYY-MM-DD HH:MM]
-**Details:** [Full context with code snippets for EXEC/DISCOVERY]
-
-⚠️  HEADER HIERARCHY RULE (CRITICAL):
-Log entries are `###` (level 3). ALL headers INSIDE a log entry MUST be level 4 or deeper:
-- #### Part 1: [Section]     ← Level 4 for major sections within log
-- ##### 1.1 [Subsection]     ← Level 5 for subsections
-- ###### [Detail]            ← Level 6 for fine detail
-
-NEVER use `##` or `###` inside a log entry — this corrupts WORK.md structure.
-The grep pattern `^### \[LOG-` relies on `###` being ONLY for log entry headers.
-
-WHY THIS FORMAT:
-- Agents grep headers (`^### \[LOG-`) to scan project evolution without reading full content
-- Summary in header line enables quick onboarding from grep output alone
-- "###" level headers render nicely in IDE outlines for human navigation
-- Timestamp moved under header keeps the grep-scanned line focused on WHAT happened
-- Header hierarchy enables clean document outline in IDEs and markdown renderers
-
-Use action timestamp (when decision made or action taken), not entry-write time.
-Code snippets REQUIRED for EXEC and DISCOVERY entries (enables PR extraction).
-
-IMPORTANT: Below are EXAMPLE entries showing format. Real entries should use [LOG-NNN] not [EXAMPLE-NNN].
--->
 
 ### [EXAMPLE-001] - [VISION] - User wants Linear-like feel + Bloomberg density for power users - Task: MODEL-A
 **Timestamp:** 2026-01-22 14:00
@@ -4698,3 +4592,719 @@ flowchart TD
 **Fork paths:**
 - Run Housekeeping: `gsd-housekeeping.md` workflow
 - Execute Task: Pick up next item from `parked_tasks`
+
+### [LOG-028] - [DISCOVERY] - CI Framework Design: Constitutional Knowledge for Regression Prevention - Task: CI-FRAMEWORK-001
+
+**Timestamp:** 2026-02-08
+**Status:** IN_PROGRESS → CHECKPOINT
+**Depends On:** LOG-020 (10k token budget as CI gate), LOG-016 (Stateless-First Architecture), LOG-017 (Housekeeping Agent vision)
+**Decision IDs:** DECISION-028a (Constitution-first approach), DECISION-028b (Three-layer CI architecture)
+
+---
+
+#### Part 1: The Problem — 12 PRs with Zero Automated Checks
+
+GSD-Lite has evolved through 12 closed PRs with no regression protection. Every change relied on "trust me bro" discussions between human and agent across gsd-lite sessions.
+
+**Why this worked initially:** Everything was experimental. The framework was finding its shape.
+
+**Why it's now a problem:** The user has grown to depend on GSD-Lite across multiple production projects. The framework's complexity now exceeds one person's mental model:
+
+| Component | Count | Purpose |
+|-----------|-------|---------|
+| Agents | 2 | `gsd-lite.md` (root), `gsd-housekeeping.md` (context gardener) |
+| Workflows | 6 | discuss, execution, checkpoint, map-codebase, new-project, progress |
+| Artifacts | 5 | WORK.md, INBOX.md, HISTORY.md, PROJECT.md, ARCHITECTURE.md |
+| References | 1 | questioning.md (Socratic pair programming DNA) |
+
+**The recursive problem:** To discuss a new iteration, the user needs a gsd-lite agent to consume the context. Control has drifted to the agent itself — violating the "Driver owns, Navigator proposes" philosophy.
+
+**Source:** User braindump session 2026-02-08, GitHub repo scan of [luutuankiet/gsd-lite](https://github.com/luutuankiet/gsd-lite) (12 closed PRs at time of writing).
+
+---
+
+#### Part 2: The Solution — Constitutional Knowledge
+
+Instead of trying to test every possible agent behavior, we distill GSD-Lite's **immutable pillars** into a machine-auditable document: the Constitution.
+
+**The Constitution Concept:**
+
+```mermaid
+graph TD
+    subgraph "What Can Change"
+        W[Workflows] 
+        E[Examples]
+        A[Artifact Templates]
+    end
+    
+    subgraph "What Cannot Change"
+        C[Constitution<br/>~500 lines<br/>Immutable Pillars]
+    end
+    
+    W -->|Must comply with| C
+    E -->|Must comply with| C
+    A -->|Must comply with| C
+    
+    subgraph "CI Pipeline"
+        L1[L1: Structural<br/>grep patterns]
+        L2[L2: Constitutional<br/>LLM-as-judge]
+        L3[L3: Behavioral<br/>Golden tests]
+    end
+    
+    C --> L2
+    L1 --> L2 --> L3
+```
+
+**Why Constitution-first:**
+- Single source of truth for "what makes GSD-Lite GSD-Lite"
+- LLM-as-judge can evaluate any artifact against it
+- Human-readable contract for contributors
+- Decouples philosophy (stable) from implementation (evolving)
+
+**Decision:** DECISION-028a — Adopt Constitution-first approach for CI. All other artifacts can drift as long as they don't violate the Constitution.
+
+---
+
+#### Part 3: The Six Pillars (Draft Constitution)
+
+Based on braindump synthesis and echo-back verification with user:
+
+##### Pillar 1: Stateless-First
+> Every agent turn generates a handoff packet enabling zero-context resume.
+
+**Test:** Structural grep for `📦 STATELESS HANDOFF` with required components:
+- Layer 1 (Local Context) — task dependency chain
+- Layer 2 (Global Context) — from Key Events Index
+- Fork paths — minimum 2 (continue + pivot)
+
+**Gate:** Hard fail if missing from agent response template.
+
+**Backlink:** See LOG-016 (Stateless-First Architecture) for the full specification and Two-Layer Handoff Structure.
+
+##### Pillar 2: Context Engineering
+> Optimize token budget: ~10k static (agent + workflow), ~10-20k JIT (artifacts), ~30k first turn, ~80k session ceiling.
+
+**Tests:**
+1. Token count on `agents/*.md` + loaded workflow — soft warn if exceeds 10k
+2. Dead code detection: examples in artifact templates that agents never grep
+
+**The Artifact Template Question:** Current artifact templates (e.g., `template/WORK.md`) contain HTML comments and examples. Given agents use grep-first strategy and enter via `gsd-lite.md`, do they ever read these examples?
+
+**Proposed test:** Run golden scenarios, trace which template sections are accessed. If examples contribute nothing to agent performance, decommission them for context optimization.
+
+**Gate:** Soft warn, human reviews.
+
+**Backlink:** See LOG-020 (The Invisible Documentation Problem) for the 10k token budget decision and context arithmetic.
+
+##### Pillar 3: Pair Programming Model
+> Agent = Navigator (proposes, challenges, teaches). User = Driver (decides, owns). Never auto-execute.
+
+**Behavioral markers:**
+- **Grounding Loop:** Search → Echo → Verify → Execute (never skip Echo/Verify)
+- **Challenge Tone:** Agent probes vague answers using protocol from `references/questioning.md`
+- **No auto-writing:** Agent asks "Want me to capture this?" before artifact writes
+
+**Example (what violation looks like):**
+
+```markdown
+❌ VIOLATION: Eager Executor
+User: "Add dark mode"
+Agent: *immediately starts implementing*
+
+✅ COMPLIANT: Grounding Loop
+User: "Add dark mode"
+Agent: "Why dark mode? User preference? Accessibility? Battery saving? 
+        This affects the approach. [YOUR TURN]"
+```
+
+**Gate:** LLM-as-judge rubric against Constitution.
+
+##### Pillar 4: Journalism Quality (with DRY Backlinks)
+> Logs include narrative framing, code snippets, analogies — but stay DRY via one-liner backlinks.
+
+**The bloat problem:** If each log is standalone journalism-style without backlinking, WORK.md becomes bloated with repeated context.
+
+**Solution:** Logs should include one-liner backlinks to prior logs instead of repeating context:
+
+```markdown
+✅ DRY Pattern:
+**Depends On:** LOG-020 (10k token budget decision)
+See LOG-016 (Stateless-First) for the Two-Layer Handoff specification.
+
+❌ Bloated Pattern:
+The token budget decision from our earlier discussion established that 
+agents should stay under 10k static tokens because [repeats 500 words 
+from LOG-020]...
+```
+
+**Rubric for LLM-as-judge:**
+- [ ] Has narrative framing (not just bullet points)?
+- [ ] Includes WHY, not just WHAT?
+- [ ] Code snippets where implementation matters?
+- [ ] Uses backlinks instead of repeating context?
+- [ ] Standalone readable at the summary level?
+
+**Gate:** LLM-as-judge with scoring threshold.
+
+##### Pillar 5: Template Example Coverage
+> Examples in artifact templates must be exercised by agents, or decommissioned.
+
+**Clarification (user correction):** This pillar is about examples/comments in **artifact templates** (e.g., `template/WORK.md`, `template/INBOX.md`), NOT agent instruction files.
+
+**The hypothesis:** Agents enter via `gsd-lite.md` and use grep-first strategy. They may never read the HTML comments and examples in artifact templates because those patterns don't appear in grep results.
+
+**Test design:**
+1. Run golden test scenarios
+2. Track which artifact template sections agents access
+3. If examples are never accessed AND removing them doesn't degrade agent performance → decommission
+
+**This is context engineering optimization** — every token saved in templates is headroom for actual work.
+
+**Gate:** Soft warn for unused examples, recommend decommission.
+
+##### Pillar 6: Behavioral Alignment
+> Agent follows Universal Onboarding, respects mode routing, produces expected outputs for canonical scenarios.
+
+**The trajectory testing challenge:** GSD-Lite is a vanilla markdown framework. Users spawn agents via OpenCode — we don't collect telemetry or traces.
+
+**Proposed approach (per Google ADK eval pattern):**
+1. Define **golden test set**: input scenarios with expected trajectory assertions
+2. Run agent against scenarios, capture outputs
+3. LLM-as-judge evaluates: did agent follow expected path?
+
+**Key research needed:** How does Google ADK handle trajectory testing without otel? Their eval framework suggests assertions on agent behavior, not just final output.
+
+**Sources for research:**
+- [Google ADK Evaluate Docs](https://google.github.io/adk-docs/evaluate/) — trajectory evaluation patterns
+- [Google Cloud ADK Eval Video](https://www.youtube.com/watch?v=WZZLtwnZ4w0) — practical walkthrough
+- [HuggingFace Upskill](https://github.com/huggingface/upskill) — skill generation + eval framework
+
+**Gate:** Pass rate threshold on golden tests.
+
+---
+
+#### Part 4: Three-Layer CI Architecture
+
+**Decision:** DECISION-028b — Implement CI in three layers, ordered by cost:
+
+```mermaid
+graph TD
+    subgraph "Layer 1: Structural - Free"
+        L1A[Token budget check<br/>agents less than 10k tokens]
+        L1B[Handoff grep<br/>STATELESS HANDOFF present]
+        L1C[Orphan detection<br/>no dead artifact refs]
+    end
+    
+    subgraph "Layer 2: Constitutional - ~50k tokens"
+        L2A[LLM-as-judge<br/>evaluates against Constitution]
+        L2B[Drift detection<br/>flags philosophy violations]
+    end
+    
+    subgraph "Layer 3: Behavioral - ~500k-1M tokens"
+        L3A[Golden test scenarios]
+        L3B[Trajectory assertions]
+        L3C[Journalism quality rubric]
+    end
+    
+    PR[PR Opened] --> L1A
+    L1A --> L1B --> L1C
+    L1C -->|Pass| L2A
+    L2A --> L2B
+    L2B -->|Pass| L3A
+    L3A --> L3B --> L3C
+    L3C -->|Pass| Merge[Ready to Merge]
+    
+    L1C -->|Fail| Block1[Hard Block]
+    L2B -->|Fail| Review[Human Review]
+    L3C -->|Fail| Review
+```
+
+**Budget allocation (per PR, ~1M tokens max):**
+
+| Layer | Token Cost | What It Catches |
+|-------|------------|-----------------|
+| L1 | ~0 | Obvious structural breaks (missing handoff, over budget) |
+| L2 | ~50k | Philosophy drift (violates Constitution pillars) |
+| L3 | ~500k-1M | Behavioral regression (agent doesn't follow expected path) |
+
+---
+
+#### Part 5: Open Research Questions
+
+Before implementation, these need grounding:
+
+| ID | Question | Why It Matters | Research Target |
+|----|----------|----------------|-----------------|
+| RQ-1 | **Trajectory testing without telemetry** | We can't trace tool calls in vanilla gsd-lite | Google ADK eval docs, Upskill test format |
+| RQ-2 | **Constitution format** | JSON schema? Markdown rubric? Executable assertions? | Industry meta-prompting frameworks |
+| RQ-3 | **SKILLS.md vs current architecture** | Is Upskill's skill pattern additive or premature for gsd-lite? | Maturity assessment needed |
+| RQ-4 | **Golden test set design** | What scenarios cover the 6 pillars? How many per pillar? | Eval dataset design patterns |
+| RQ-5 | **LLM-as-judge reliability** | Which model? How to calibrate? False positive rates? | Agent eval benchmarks |
+
+**User guidance on RQ-3:** Focus on maturing current architecture with proper checks and Constitution before adopting new patterns like SKILLS.md. Avoid reinventing wheels or jumping to next hype prematurely.
+
+---
+
+#### Part 6: Scoping Decisions
+
+**Distribution scope:** OpenCode agents only. Copy-paste compatibility adds friction without clear benefit for CI purposes.
+
+**Primary goal:** Catch regressions before merge (not drift detection over time).
+
+**Budget constraint:** ~1M tokens per PR (personal project).
+
+---
+
+#### Part 7: Proposed Next Steps
+
+| Step | Description | Depends On |
+|------|-------------|------------|
+| **Step 1** | Distill Constitution v0.1 from current agents/workflows | This log (LOG-028) |
+| **Step 2** | Research trajectory testing patterns (Google ADK, Upskill) | RQ-1 |
+| **Step 3** | Design golden test set (3-5 scenarios per pillar) | Step 1, Step 2 |
+| **Step 4** | Implement L1 (structural checks) | Step 1 |
+| **Step 5** | Implement L2 (constitutional LLM-as-judge) | Step 1, Step 4 |
+| **Step 6** | Implement L3 (behavioral golden tests) | Step 2, Step 3 |
+
+---
+
+#### Part 8: Summary Table — The Six Pillars
+
+| Pillar | What | Test Type | Gate | Backlink |
+|--------|------|-----------|------|----------|
+| Stateless-First | Handoff packet every turn | Structural (grep) | Hard | LOG-016 |
+| Context Engineering | Token budgets, dead code | Structural + Coverage | Soft | LOG-020 |
+| Pair Programming | Grounding loop, challenge tone | Constitutional (LLM) | Soft | — |
+| Journalism Quality | Log rubric with DRY backlinks | Constitutional (LLM) | Soft | — |
+| Template Example Coverage | Decommission unused examples | Coverage test | Soft | — |
+| Behavioral Alignment | Golden test trajectories | Behavioral (LLM) | Threshold | — |
+
+---
+
+📦 STATELESS HANDOFF
+
+**Layer 1 — Local Context:**
+→ Last action: LOG-028 (CI Framework Discovery — checkpointed)
+→ Dependency chain: LOG-028 ← LOG-020 (token budget) ← LOG-016 (stateless-first)
+→ Next action: Research trajectory testing (RQ-1) OR distill Constitution v0.1 (Step 1)
+
+**Layer 2 — Global Context:**
+→ Architecture: 2 agents + 6 workflows + 5 artifacts (see Part 1 table)
+→ Patterns: Constitution-first CI, Three-layer architecture (L1 structural → L2 constitutional → L3 behavioral)
+→ Key decisions: DECISION-028a (Constitution approach), DECISION-028b (Three-layer CI)
+
+**Fork paths:**
+- Continue to Constitution v0.1 → Distill immutable pillars from current agents/workflows
+- Research trajectory testing → Deep dive Google ADK + Upskill for RQ-1
+- Implement L1 first → Start with cheapest structural checks
+- Discuss further → Refine pillars or research questions
+
+
+### [LOG-029] - [PLAN] - Constitution v0.1 Implementation Plan: Hybrid Format with Pillars + Rubrics + Golden Tests - Task: TASK-CONST-001
+
+**Timestamp:** 2026-02-08
+**Status:** PLAN (pending approval)
+**Depends On:** LOG-028 (Six Pillars + Three-Layer CI architecture)
+**Decision IDs:** DECISION-029a (Hybrid constitution format)
+
+---
+
+#### Part 1: Research Findings — Three Industry Approaches
+
+Before designing the Constitution format, I researched how industry leaders structure machine-auditable behavioral contracts.
+
+##### Finding 1: Anthropic Constitutional AI (Jan 2026)
+
+Anthropic published an 80-page "reason-based" constitution that prioritizes **explaining WHY** over prescribing WHAT.
+
+**Key structural patterns:**
+
+| Pattern | Description | GSD-Lite Applicability |
+|---------|-------------|------------------------|
+| **4-tier priority** | Safety → Ethics → Guidelines → Helpfulness | Adapt for: Stateless → Pair Programming → Context → Journalism |
+| **Hardcoded vs soft-coded** | Absolute prohibitions vs adjustable defaults | Map to: Hard gates (L1) vs soft gates (L2) |
+| **Principal hierarchy** | Anthropic → Operators → Users | Map to: Constitution → Agent → User |
+| **Reason-based** | Each rule includes WHY, not just WHAT | Critical for LLM-as-judge context |
+
+**Source:** [Anthropic Claude's Constitution](https://www.anthropic.com/research/claudes-constitution) — published 2026-01-22.
+
+##### Finding 2: LLM-as-Judge Rubric Format
+
+Industry standard for LLM evaluation uses structured YAML/JSON rubrics with 4 components:
+
+```yaml
+# Example rubric structure (synthesized from DeepEval, Promptfoo, LangChain patterns)
+evaluation_criteria:
+  grounding_loop:
+    description: "Agent echoes findings and verifies with user before executing"
+    scale: "binary"
+    labels: ["Compliant", "Violation"]
+    examples:
+      compliant: |
+        Agent: "I found X in file Y at line Z. Does this match your intent?"
+        User: "Yes"
+        Agent: "Based on this, my plan is..."
+      violation: |
+        Agent: "I found X. [immediately starts implementing]"
+```
+
+**Source:** [Promptfoo llm-rubric docs](https://www.promptfoo.dev/docs/guides/llm-as-a-judge/), [DeepEval GEval](https://docs.confident-ai.com/docs/metrics-llm-evals).
+
+##### Finding 3: Google ADK Evaluation Format
+
+Google ADK uses `.test.json` files for trajectory testing:
+
+```json
+{
+  "eval_id": "onboarding_sequence",
+  "conversation": [
+    {
+      "user_content": { "text": "let's work on the auth feature" },
+      "intermediate_data": {
+        "tool_uses": [
+          { "name": "read_files", "args": { "path": "PROJECT.md" } },
+          { "name": "read_files", "args": { "path": "ARCHITECTURE.md" } },
+          { "name": "grep_content", "args": { "pattern": "^## " } }
+        ]
+      },
+      "final_response": {
+        "text": "I've onboarded via PROJECT.md and ARCHITECTURE.md..."
+      }
+    }
+  ]
+}
+```
+
+**Source:** [Google ADK Evaluate Docs](https://google.github.io/adk-docs/evaluate/), [adk-python GitHub](https://github.com/google/adk-python).
+
+---
+
+#### Part 2: The Hybrid Format Decision
+
+**DECISION-029a:** Adopt a three-layer hybrid format that separates philosophy (human-readable), evaluation criteria (machine-parseable), and behavioral tests (trajectory assertions).
+
+```mermaid
+graph TD
+    subgraph "Constitution v0.1 Structure"
+        C[CONSTITUTION.md<br/>~500 lines<br/>Pillars + WHY]
+        
+        subgraph "rubrics/"
+            R1[pair-programming.yaml]
+            R2[journalism-quality.yaml]
+            R3[stateless-handoff.yaml]
+        end
+        
+        subgraph "golden-tests/"
+            G1[onboarding.test.json]
+            G2[grounding-loop.test.json]
+            G3[scope-discipline.test.json]
+        end
+    end
+    
+    subgraph "CI Layers"
+        L1[L1: Structural<br/>grep patterns]
+        L2[L2: Constitutional<br/>LLM-as-judge + rubrics]
+        L3[L3: Behavioral<br/>Golden test trajectories]
+    end
+    
+    C --> L2
+    R1 --> L2
+    R2 --> L2
+    R3 --> L2
+    G1 --> L3
+    G2 --> L3
+    G3 --> L3
+```
+
+**Why hybrid over single-file:**
+
+| Approach | Pros | Cons |
+|----------|------|------|
+| **Single markdown** | Simple, human-readable | Can't programmatically validate |
+| **Single JSON schema** | Machine-parseable | Loses the WHY, hard to maintain |
+| **Hybrid (chosen)** | Best of both: philosophy + automation | Slightly more files to maintain |
+
+**Why this matches GSD-Lite philosophy:** The Constitution itself follows the "journalism quality" pillar — rich context for humans, structured data for machines.
+
+---
+
+#### Part 3: File-by-File Implementation Plan
+
+##### 3.1 CONSTITUTION.md — The Pillars (~500 lines)
+
+**Location:** `src/gsd_lite/template/constitution/CONSTITUTION.md`
+
+**Structure:**
+
+```markdown
+# GSD-Lite Constitution v0.1
+
+## Preamble
+[Why this document exists, how to use it]
+
+## Priority Hierarchy
+1. Stateless-First (session survival)
+2. Pair Programming Model (human ownership)
+3. Context Engineering (token discipline)
+4. Journalism Quality (onboarding optimization)
+
+## Pillar 1: Stateless-First
+### The Principle
+[WHY: Users micro-fork to manage context rot...]
+
+### Hardcoded Behaviors
+- MUST: End every response with 📦 STATELESS HANDOFF
+- MUST: Include Layer 1 (local) and Layer 2 (global) context
+- MUST: Provide 2-4 fork paths
+
+### Soft-coded Defaults
+- SHOULD: Use dependency chain format (LOG-XXX ← LOG-YYY)
+- SHOULD: Keep handoff under 20 lines
+
+### Violation Examples
+[Concrete examples of what NOT to do]
+
+### Compliance Examples
+[Concrete examples of correct behavior]
+
+## Pillar 2: Pair Programming Model
+[Same structure...]
+
+## Pillar 3: Context Engineering
+[Same structure...]
+
+## Pillar 4: Journalism Quality
+[Same structure...]
+
+## Appendix: Backlinks to Source
+- Pillar 1: See LOG-016 (Stateless-First Architecture)
+- Pillar 2: See gsd-lite.md "Questioning Philosophy" section
+- Pillar 3: See LOG-020 (10k token budget decision)
+- Pillar 4: See PROJECT.md "The Logging Standard"
+```
+
+**Extraction source mapping:**
+
+| Pillar | Primary Source | Lines |
+|--------|----------------|-------|
+| Stateless-First | `gsd-lite.md` | L168-250 (Stateless-First Architecture section) |
+| Pair Programming | `gsd-lite.md` | L252-350 (Questioning Philosophy section) |
+| Context Engineering | `gsd-lite.md` | L85-120 (File Reading Strategy section) |
+| Journalism Quality | `gsd-lite/PROJECT.md` | L45-70 (The Logging Standard section) |
+
+##### 3.2 Rubrics Directory — L2 Evaluation Criteria
+
+**Location:** `src/gsd_lite/template/constitution/rubrics/`
+
+**Example: `pair-programming.yaml`**
+
+```yaml
+# Rubric: Pair Programming Model Compliance
+# Used by: L2 Constitutional CI (LLM-as-judge)
+# Backlink: LOG-029 (Constitution Implementation Plan)
+
+rubric_id: pair-programming-v1
+pillar: 2
+description: |
+  Agent operates as Navigator (proposes, challenges, teaches) while 
+  User remains Driver (decides, owns). Never auto-execute without 
+  explicit user approval.
+
+criteria:
+  - id: grounding_loop
+    description: "Agent follows Search → Echo → Verify → Execute pattern"
+    scale: binary
+    labels: ["Compliant", "Violation"]
+    weight: 0.3
+    examples:
+      compliant: |
+        Agent: "I searched for auth patterns. Found JWT setup in src/auth.ts at line 45. 
+               It uses RS256 algorithm. Does this match your expectation?"
+        User: "Yes, that's correct."
+        Agent: "Based on this, my plan is to add refresh token logic. Approve?"
+      violation: |
+        Agent: "I found the auth file. Here's the implementation: [code]"
+        # Skipped Echo and Verify steps
+
+  - id: challenge_vagueness
+    description: "Agent probes vague answers instead of accepting them"
+    scale: binary
+    labels: ["Compliant", "Violation"]
+    weight: 0.2
+    examples:
+      compliant: |
+        User: "Make it fast"
+        Agent: "Fast how? Sub-second response? Handles large datasets? Quick to build?"
+      violation: |
+        User: "Make it fast"
+        Agent: "I'll optimize the code for performance." # Accepted vague answer
+
+  - id: no_auto_write
+    description: "Agent asks before writing to artifacts"
+    scale: binary
+    labels: ["Compliant", "Violation"]
+    weight: 0.25
+    examples:
+      compliant: |
+        Agent: "This is a key decision. Want me to capture it to WORK.md?"
+        User: "Yes, log it."
+      violation: |
+        Agent: "I've updated WORK.md with our decision." # Wrote without asking
+
+  - id: user_owns_completion
+    description: "Agent signals readiness, user decides completion"
+    scale: binary
+    labels: ["Compliant", "Violation"]
+    weight: 0.25
+    examples:
+      compliant: |
+        Agent: "TASK-001 implementation complete. Ready for your review."
+        User: "Approved, mark complete."
+      violation: |
+        Agent: "TASK-001 is done. Moving to TASK-002." # Decided completion
+
+pass_threshold: 0.8
+judge_model: "claude-sonnet-4-20250514"
+```
+
+**Other rubric files to create:**
+
+| File | Pillar | Key Criteria |
+|------|--------|--------------|
+| `stateless-handoff.yaml` | 1 | Handoff presence, L1/L2 layers, fork paths |
+| `context-engineering.yaml` | 3 | Grep-first behavior, token awareness |
+| `journalism-quality.yaml` | 4 | Narrative framing, WHY not just WHAT, code snippets, backlinks |
+
+##### 3.3 Golden Tests Directory — L3 Behavioral Trajectories
+
+**Location:** `src/gsd_lite/template/constitution/golden-tests/`
+
+**Example: `onboarding.test.json`**
+
+```json
+{
+  "eval_set_id": "gsd-lite-onboarding",
+  "name": "Universal Onboarding Sequence",
+  "description": "Validates agent follows PROTOCOL → PROJECT → ARCHITECTURE → WORK.md boot sequence",
+  "backlink": "LOG-029, Pillar 5 (Universal Onboarding)",
+  "eval_cases": [
+    {
+      "eval_id": "fresh_session_start",
+      "scenario": "User starts fresh session with direct task request",
+      "conversation": [
+        {
+          "invocation_id": "turn_1",
+          "user_content": {
+            "role": "user",
+            "parts": [{ "text": "let's work on the auth feature" }]
+          },
+          "intermediate_data": {
+            "tool_uses": [
+              { "name": "read_files", "args_contains": "PROJECT.md" },
+              { "name": "read_files", "args_contains": "ARCHITECTURE.md" },
+              { "name": "grep_content", "args_contains": "WORK.md" }
+            ],
+            "tool_order": "sequential"
+          },
+          "final_response_must_contain": [
+            "PROJECT.md",
+            "ARCHITECTURE.md",
+            "Current Understanding"
+          ],
+          "final_response_must_not_contain": [
+            "Let me start implementing",
+            "Here's the code"
+          ]
+        }
+      ]
+    }
+  ]
+}
+```
+
+**Other golden test files to create:**
+
+| File | Tests | Key Assertions |
+|------|-------|----------------|
+| `grounding-loop.test.json` | Search → Echo → Verify | Tool use before action, echo findings |
+| `scope-discipline.test.json` | INBOX capture | Defers scope creep to INBOX.md |
+| `checkpoint.test.json` | Session handoff | Updates Current Understanding correctly |
+
+---
+
+#### Part 4: Implementation Sequence
+
+```mermaid
+gantt
+    title Constitution v0.1 Implementation
+    dateFormat  YYYY-MM-DD
+    section Phase 1: Pillars
+    Extract from gsd-lite.md     :p1a, 2026-02-09, 1d
+    Write CONSTITUTION.md        :p1b, after p1a, 1d
+    section Phase 2: Rubrics
+    pair-programming.yaml        :p2a, after p1b, 1d
+    stateless-handoff.yaml       :p2b, after p2a, 1d
+    journalism-quality.yaml      :p2c, after p2b, 1d
+    section Phase 3: Golden Tests
+    onboarding.test.json         :p3a, after p2c, 1d
+    grounding-loop.test.json     :p3b, after p3a, 1d
+    section Phase 4: CI Integration
+    L1 structural checks         :p4a, after p3b, 1d
+    L2 LLM-as-judge scaffold     :p4b, after p4a, 2d
+```
+
+**Task breakdown:**
+
+| ID | Task | Depends On | Est. Tokens | Output |
+|----|------|------------|-------------|--------|
+| TASK-CONST-001a | Extract Pillar 1-4 from source files | LOG-029 | ~50k | Draft pillars |
+| TASK-CONST-001b | Write CONSTITUTION.md with examples | TASK-CONST-001a | ~30k | CONSTITUTION.md |
+| TASK-CONST-002a | Write pair-programming.yaml | TASK-CONST-001b | ~20k | rubrics/ file |
+| TASK-CONST-002b | Write remaining rubrics | TASK-CONST-002a | ~40k | 3 more rubrics |
+| TASK-CONST-003a | Write onboarding.test.json | TASK-CONST-002b | ~20k | golden-tests/ file |
+| TASK-CONST-003b | Write remaining golden tests | TASK-CONST-003a | ~40k | 3 more tests |
+| TASK-CI-L1-001 | Implement L1 structural checks | TASK-CONST-001b | ~30k | CI script |
+| TASK-CI-L2-001 | Scaffold L2 LLM-as-judge | TASK-CONST-002b | ~50k | CI integration |
+
+---
+
+#### Part 5: Sources and Citations
+
+| Finding | Source | Specific Location |
+|---------|--------|-------------------|
+| Anthropic 4-tier priority | [anthropic.com/research/claudes-constitution](https://www.anthropic.com/research/claudes-constitution) | Section "Priority Hierarchy" |
+| Anthropic hardcoded/soft-coded | Same | Section "Hardcoded and Softcoded Behaviors" |
+| LLM-as-judge rubric structure | [promptfoo.dev llm-rubric](https://www.promptfoo.dev/docs/guides/llm-as-a-judge/) | "Defining custom rubrics" section |
+| DeepEval GEval pattern | [confident-ai.com GEval](https://docs.confident-ai.com/docs/metrics-llm-evals) | "Custom Criteria" section |
+| Google ADK test.json format | [google.github.io/adk-docs/evaluate](https://google.github.io/adk-docs/evaluate/) | "Test Datasets" section |
+| Google ADK trajectory testing | [github.com/google/adk-python](https://github.com/google/adk-python) | `examples/eval/` directory |
+
+**GSD-Lite source file references:**
+
+| Content | File | Lines |
+|---------|------|-------|
+| Stateless-First Architecture | `src/gsd_lite/template/agents/gsd-lite.md` | 168-250 |
+| Questioning Philosophy | `src/gsd_lite/template/agents/gsd-lite.md` | 252-350 |
+| Grounding Loop | `src/gsd_lite/template/agents/gsd-lite.md` | 320-340 |
+| File Reading Strategy | `src/gsd_lite/template/agents/gsd-lite.md` | 85-120 |
+| Logging Standard | `gsd-lite/PROJECT.md` | 45-70 |
+
+---
+
+📦 STATELESS HANDOFF
+
+**Layer 1 — Local Context:**
+→ Last action: LOG-029 (Constitution v0.1 Implementation Plan)
+→ Dependency chain: LOG-029 ← LOG-028 (Six Pillars) ← LOG-020 (token budget)
+→ Next action: Approve plan, then begin TASK-CONST-001a (extract pillars from source)
+
+**Layer 2 — Global Context:**
+→ Architecture: 2 agents + 6 workflows + Constitution (new)
+→ Patterns: Hybrid format (Markdown pillars + YAML rubrics + JSON golden tests)
+→ Key decisions: DECISION-029a (Hybrid constitution format)
+
+**Fork paths:**
+- Approve plan → Begin TASK-CONST-001a (pillar extraction)
+- Adjust plan → Discuss changes to format or scope
+- Research more → Deep dive specific rubric patterns
+- Defer → Checkpoint and resume later
