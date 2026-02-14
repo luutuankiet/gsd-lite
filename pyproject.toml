@@ -7,7 +7,10 @@ requires-python = ">=3.9"
 dependencies = [
     "typer>=0.9.0",
     "rich>=13.0.0",
+    "sqlmodel>=0.0.22",
+    "pyyaml>=6.0",
 ]
+
 
 [project.scripts]
 gsd-lite = "gsd_lite.__main__:app"

@@ -9,17 +9,17 @@ execution
 </current_mode>
 
 <active_task>
-Task: TASK-CONST-002a - Write pair-programming.yaml rubric
-Status: COMPLETE - See LOG-031. Created hybrid YAML rubric format with P2-H1 through P2-H5.
+Task: TASK-EVAL-002 - Constitutional Evaluation Pipeline
+Status: SQLITE MIGRATION COMPLETE - See LOG-045
+Key insight: ELT Pipeline (ingest → transform → consume) updated for OpenCode's new SQLite architecture. Transform fixed to preserve full context for Vertex.
+Next: TASK-EVAL-002d — Implement Layer 2 Vertex AI integration in `eval_consume.py` (requires `google-cloud-aiplatform`)
 </active_task>
 
 <parked_tasks>
-- RQ-1: Research trajectory testing without telemetry (Google ADK, Upskill)
+- TASK-EVAL-001: Build OpenCode session parser — SUPERSEDED by SQLite parser (LOG-045)
+- TASK-CONST-002b: Write remaining rubrics (Pillar 1, 3, 4) — needed for full evaluation
+- TASK-CI-L1-001: Implement Layer 1 structural checks — integrated into TASK-EVAL-002c
 - RQ-3: Evaluate SKILLS.md pattern — defer until current architecture matures
-- TASK-CI-L1-001: Implement Layer 1 structural checks (Step 4)
-- TASK-CONST-001b: Review/polish CONSTITUTION.md (Step 2) — OPTIONAL, can skip
-- TASK-CONST-002b: Write remaining rubrics (Pillar 1, 3, 4)
-- TASK-CONST-003a-b: Write JSON golden tests (Step 4)
 </parked_tasks>
 
 <vision>
@@ -57,6 +57,42 @@ DECISION-028a: Constitution-first approach for CI (LOG-028)
 
 DECISION-028b: Three-layer CI architecture (LOG-028)
 - Rationale: Order checks by cost — L1 structural (free), L2 constitutional (~50k tokens), L3 behavioral (~500k-1M tokens). Catch obvious breaks fast, reserve expensive LLM calls for philosophy/behavior testing.
+
+DECISION-032a: Use OpenCode native JSON for eval data (LOG-032)
+- Rationale: OpenCode already persists all session data to disk as JSON. Parse existing files instead of building custom instrumentation.
+
+DECISION-032b: ~~Vertex AI Gen AI Eval as primary judge~~ (LOG-032) — **SUPERSEDED BY DECISION-042b**
+- Rationale: Original decision based on "Bring Your Own Data" model. Superseded because Vertex AI trajectory metrics require reference_trajectory (golden path), but GSD-Lite Constitution defines behavioral patterns, not expected sequences.
+
+DECISION-042a: Session as evaluation unit (LOG-042)
+- Rationale: GSD-Lite is stateless by design. Each session is independent. Handoff (S1-H1) and onboarding (C3-H2) are session-scoped behaviors.
+
+DECISION-042b: ~~Promptfoo with llm-rubric as primary evaluation platform~~ (LOG-042) — **SUPERSEDED BY DECISION-043a**
+- Rationale: Original decision favored Promptfoo for YAML-native rubrics. Superseded because Vertex AI rubric-based metrics offer adaptive rubrics + custom guidelines parameter, and user is Google Cloud partner seeking hands-on experience.
+
+DECISION-043a: Vertex AI rubric-based metrics for Layer 2 evaluation (LOG-043)
+- Rationale: Vertex's `GENERAL_QUALITY` with `guidelines` parameter can evaluate Constitution behaviors. Adaptive rubrics dynamically generate pass/fail tests per prompt. Agent-specific metrics (`TOOL_USE_QUALITY`) align with GSD-Lite's tool-heavy workflow.
+
+DECISION-043b: Hybrid architecture — Programmatic L1 + Vertex L2 (LOG-043)
+- Rationale: Deterministic checks (handoff presence, grep-before-read sequence) are free and fast in Python. Qualitative checks (reasoning quality, challenge tone) benefit from Vertex's adaptive rubric intelligence.
+
+DECISION-043c: Constitution as guidelines parameter (LOG-043)
+- Rationale: Inject distilled Constitution (P2-H*, S1-H*, J4-H*) directly into Vertex's `guidelines` parameter. No rubric format translation needed.
+
+DECISION-042c: Hybrid orchestration — Option C (LOG-042)
+- Rationale: Batch extract to individual files, evaluate each session independently, aggregate into summary. Enables surgical debugging + CI gates + re-runnable evals.
+
+DECISION-042d: Turn-structured output schema (LOG-042)
+- Rationale: Current flat schema (concatenated prompts/responses) can't support turn-level evaluation. New schema adds turns[] array with per-turn tools for LLM-as-judge correlation.
+
+DECISION-033a: Fingerprint sessions via fs-mcp tool call paths (LOG-033)
+- Rationale: When user spawns OpenCode from home dir but connects to different fs-mcp servers per session, project identity is invisible to OpenCode metadata. Extract absolute paths from tool outputs to fingerprint which project a session touched.
+
+DECISION-045a: Migrate eval_ingest.py to sqlmodel (SQLite) (LOG-045)
+- Rationale: OpenCode migrated from JSON files to SQLite. `pathlib.glob` logic is dead. `sqlmodel` provides typesafe ORM for the new `opencode.db` schema.
+
+DECISION-045b: Update eval_transform.py to preserve full context (LOG-045)
+- Rationale: Truncating responses to the last paragraph destroyed context for Vertex rubric evaluation. Rubric metrics like `GENERAL_QUALITY` need the full reasoning chain to be effective.
 </decisions>
 
 <blockers>
@@ -65,10 +101,10 @@ None - Framework design complete, ready to begin implementation.
 
 <next_action>
 Fork paths (choose one):
-1. TASK-CONST-002b → Write remaining rubrics (Pillar 1, 3, 4 hardcoded behaviors)
-2. TASK-CONST-003a → Write first golden test (onboarding scenario)
-3. TASK-CI-L1-001 → Implement Layer 1 structural checks (cheapest CI gate)
-4. Research trajectory testing → Deep dive Google ADK eval for RQ-1
+1. TASK-EVAL-002d → Implement Layer 2 Vertex AI integration (requires Google Cloud auth)
+2. TASK-EVAL-002a → Refactor ingest for `turns[]` schema (turn-level evaluation)
+3. TASK-EVAL-002e → Create CI workflow (GitHub Actions) using `eval_consume.py --ci`
+4. Manual spike → Run eval_consume.py on more sessions to tune L1 thresholds
 </next_action>
 
 ---
@@ -87,584 +123,6 @@ Fork paths (choose one):
 
 
 ## 3. Atomic Session Log (Chronological)
-
-
-### [EXAMPLE-001] - [VISION] - User wants Linear-like feel + Bloomberg density for power users - Task: MODEL-A
-**Timestamp:** 2026-01-22 14:00
-**Details:**
-- Context: Discussed UI patterns during moodboard session
-- Reference: Clean layout (Linear) but with information density (Bloomberg terminal)
-- Implication: Interface should not patronize advanced users with excessive whitespace
-
----
-
-### [EXAMPLE-002] - [PLAN] - Broke card layout into 3 sub-tasks - Task: MODEL-A
-**Timestamp:** 2026-01-22 14:10
-**Details:**
-- SUBTASK-001: Base card component with props interface
-- SUBTASK-002: Engagement metrics display (likes, comments, shares)
-- SUBTASK-003: Layout grid with responsive breakpoints
-- Risk: Responsive behavior may need user verification on mobile
-
-### [EXAMPLE-003] - [DECISION] - Use card-based layout, not timeline view - Task: MODEL-A
-**Timestamp:** 2026-01-22 14:15
-**Details:**
-- Rationale: Cards support varying content length (post + engagement + metadata); timeline more rigid
-- Alternative considered: Timeline view (simpler implementation, less flexible for content types)
-- Impact: Unblocks component design; affects SUBTASK-001 (card props interface)
-
-### [EXAMPLE-004] - [EXEC] - Created base card component with TypeScript interface - Task: MODEL-A
-**Timestamp:** 2026-01-22 14:30
-**Details:**
-Files created: `src/components/Card.tsx`
-
-```typescript
-// src/components/Card.tsx
-interface CardProps {
-  id: string;
-  title: string;
-  content: string;
-  author: {
-    name: string;
-    avatar?: string;
-  };
-  engagement: {
-    likes: number;
-    comments: number;
-    shares: number;
-  };
-  createdAt: Date;
-}
-
-export function Card({ title, content, author, engagement, createdAt }: CardProps) {
-  // Implementation follows Linear's clean aesthetic with Bloomberg-level density
-  return (
-    <article className="card">
-      {/* Component implementation */}
-    </article>
-  );
-}
-```
-
-### [EXAMPLE-005] - [DISCOVERY] - Found engagement pattern in Linear reference app - Task: MODEL-A
-**Timestamp:** 2026-01-22 15:00
-**Details:**
-Evidence from reference analysis:
-
-```plaintext
-Linear uses a "reactions bar" pattern:
-- Fixed position at bottom of card
-- Icons only (no counts) in collapsed state
-- Hover reveals counts + "Add reaction" option
-- Max 5 reactions visible, "+N more" overflow
-```
-
-Implication: Our engagement metrics should support collapsed/expanded states.
-
-### [EXAMPLE-006] - [EXEC] - Implemented engagement metrics component - Task: MODEL-A
-**Timestamp:** 2026-01-22 15:15
-**Details:**
-Files modified: `src/components/EngagementBar.tsx`
-
-```typescript
-// src/components/EngagementBar.tsx
-interface EngagementBarProps {
-  likes: number;
-  comments: number;
-  shares: number;
-  collapsed?: boolean;
-}
-
-export function EngagementBar({ likes, comments, shares, collapsed = true }: EngagementBarProps) {
-  const [isExpanded, setIsExpanded] = useState(!collapsed);
-  
-  return (
-    <div 
-      className="engagement-bar"
-      onMouseEnter={() => setIsExpanded(true)}
-      onMouseLeave={() => setIsExpanded(collapsed)}
-    >
-      {isExpanded ? (
-        <ExpandedMetrics likes={likes} comments={comments} shares={shares} />
-      ) : (
-        <CollapsedIcons />
-      )}
-    </div>
-  );
-}
-```
-
-### [EXAMPLE-007] - [BLOCKER] - Mobile breakpoint unclear - 768px or 640px? - Task: MODEL-A
-**Timestamp:** 2026-01-22 15:30
-**Details:**
-- Context: Implementing responsive grid, need to know tablet/mobile split point
-- Options: 768px (iPad portrait), 640px (larger phones)
-- Waiting on: User preference for mobile-first vs tablet-first
-- Impact: Blocks SUBTASK-003 (responsive grid)
-
-### [EXAMPLE-008] - [DECISION] - Use 768px breakpoint, standard tablet/mobile split - Task: MODEL-A
-**Timestamp:** 2026-01-22 16:00
-**Details:**
-- Decision: Use 768px as primary breakpoint (standard tablet width)
-- Rationale: Matches Tailwind defaults, most design systems use this convention
-- Secondary breakpoint: 1024px for desktop
-- Resolves: BLOCKER from LOG-007
-
-### [EXAMPLE-009] - [EXEC] - Implemented responsive grid with 768px breakpoint - Task: MODEL-A
-**Timestamp:** 2026-01-22 16:15
-**Details:**
-Files modified: `src/styles/grid.css`
-
-```css
-/* src/styles/grid.css */
-.card-grid {
-  display: grid;
-  gap: 1rem;
-  
-  /* Mobile: single column */
-  grid-template-columns: 1fr;
-}
-
-@media (min-width: 768px) {
-  .card-grid {
-    /* Tablet: 2 columns */
-    grid-template-columns: repeat(2, 1fr);
-  }
-}
-
-@media (min-width: 1024px) {
-  .card-grid {
-    /* Desktop: 3 columns with Bloomberg-level density */
-    grid-template-columns: repeat(3, 1fr);
-    gap: 0.75rem;
-  }
-}
-```
-
-### [EXAMPLE-010] - [VISION] - Authentication must support refresh token rotation - Task: AUTH-IMPL
-**Timestamp:** 2026-01-23 09:00
-**Details:**
-- Context: Security requirements for enterprise deployment
-- Requirement: Refresh tokens must rotate on each use (prevents replay attacks)
-- Implication: Token storage needs to track issued/revoked states
-
-### [EXAMPLE-011] - [PLAN] - JWT auth broken into 3 tasks - Task: AUTH-IMPL
-**Timestamp:** 2026-01-23 09:15
-**Details:**
-- TASK-001: Token generation (JWT + refresh token)
-- TASK-002: Login endpoint with bcrypt hashing
-- TASK-003: Middleware for protected routes
-- Dependency: TASK-003 requires TASK-001 complete
-
-### [EXAMPLE-012] - [EXEC] - Installed jose library and created token generation - Task: AUTH-IMPL
-**Timestamp:** 2026-01-23 10:00
-**Details:**
-Command run: `npm install jose`
-
-```typescript
-// src/lib/auth/tokens.ts
-import { SignJWT, jwtVerify } from 'jose';
-
-const JWT_SECRET = new TextEncoder().encode(process.env.JWT_SECRET);
-
-export async function generateAccessToken(userId: string): Promise<string> {
-  return new SignJWT({ sub: userId })
-    .setProtectedHeader({ alg: 'HS256' })
-    .setExpirationTime('15m')
-    .sign(JWT_SECRET);
-}
-
-export async function generateRefreshToken(userId: string): Promise<string> {
-  return new SignJWT({ sub: userId, type: 'refresh' })
-    .setProtectedHeader({ alg: 'HS256' })
-    .setExpirationTime('7d')
-    .sign(JWT_SECRET);
-}
-```
-
-### [EXAMPLE-013] - [DISCOVERY] - bcrypt cost factor 12 optimal for performance - Task: AUTH-IMPL
-**Timestamp:** 2026-01-23 10:30
-**Details:**
-Evidence from benchmarking:
-
-```plaintext
-bcrypt cost factor benchmarks (Node.js 18, M1 Mac):
-- Cost 10: ~65ms per hash
-- Cost 11: ~130ms per hash
-- Cost 12: ~260ms per hash (sweet spot)
-- Cost 13: ~520ms per hash (too slow for login)
-
-OWASP recommendation: minimum cost 10, prefer 12 for new systems.
-Source: https://cheatsheetseries.owasp.org/cheatsheets/Password_Storage_Cheat_Sheet.html
-```
-
-Decision: Use cost factor 12 as default.
-
-### [EXAMPLE-014] - [EXEC] - Created login endpoint with bcrypt hashing - Task: AUTH-IMPL
-**Timestamp:** 2026-01-23 11:00
-**Details:**
-Files created: `src/app/api/auth/login/route.ts`
-
-```typescript
-// src/app/api/auth/login/route.ts
-import bcrypt from 'bcrypt';
-import { generateAccessToken, generateRefreshToken } from '@/lib/auth/tokens';
-
-const BCRYPT_COST = 12;
-
-export async function POST(request: Request) {
-  const { email, password } = await request.json();
-  
-  const user = await getUserByEmail(email);
-  if (!user || !await bcrypt.compare(password, user.passwordHash)) {
-    return Response.json({ error: 'Invalid credentials' }, { status: 401 });
-  }
-  
-  const accessToken = await generateAccessToken(user.id);
-  const refreshToken = await generateRefreshToken(user.id);
-  
-  return Response.json({ accessToken, refreshToken });
-}
-```
-
-### [EXAMPLE-015] - [BLOCKER] - Password reset flow unclear - same JWT or separate token? - Task: AUTH-IMPL
-**Timestamp:** 2026-01-23 11:30
-**Details:**
-- Question: Should password reset use main JWT or a separate short-lived token?
-- Security concern: Main JWT has 15min expiry; reset links typically need 1-24 hours
-- Options: (A) Same JWT with longer expiry, (B) Separate reset token
-- Waiting on: Security review / user preference
-
-### [EXAMPLE-016] - [DECISION] - Use separate reset token, not main JWT - Task: AUTH-IMPL
-**Timestamp:** 2026-01-23 14:00
-**Details:**
-- Decision: Separate reset token with 1-hour expiry
-- Rationale: 
-  - Isolates reset flow from main auth (different security boundary)
-  - Short expiry reduces window for link interception
-  - Can revoke reset tokens independently of user sessions
-- Resolves: BLOCKER from LOG-015
-
-### [EXAMPLE-017] - [EXEC] - Added password reset token generation - Task: AUTH-IMPL
-**Timestamp:** 2026-01-23 14:30
-**Details:**
-Files modified: `src/lib/auth/tokens.ts`
-
-```typescript
-// Added to src/lib/auth/tokens.ts
-export async function generateResetToken(userId: string): Promise<string> {
-  return new SignJWT({ sub: userId, type: 'reset' })
-    .setProtectedHeader({ alg: 'HS256' })
-    .setExpirationTime('1h')  // Short expiry per DECISION-016
-    .sign(JWT_SECRET);
-}
-
-export async function verifyResetToken(token: string): Promise<{ userId: string } | null> {
-  try {
-    const { payload } = await jwtVerify(token, JWT_SECRET);
-    if (payload.type !== 'reset') return null;
-    return { userId: payload.sub as string };
-  } catch {
-    return null;
-  }
-}
-```
-
----
-<!-- END OF EXAMPLE ENTRIES -->
-
-<!-- ACTUAL SESSION LOGS START BELOW - Replace examples above as you use the template -->
-
----
-
-### [LOG-001] - [DISCOVERY] - Vision Archaeology: Unearthing GSD-Lite's True Purpose from Artifacts and PRs - Task: BOOTSTRAP-001
-**Timestamp:** 2026-02-03 14:30
-**Details:**
-This session performed "vision archaeology" — reconstructing the true purpose of GSD-Lite by examining its evolution through planning artifacts, merged PRs, and a production deployment. What emerged was not a "session handoff framework" but something deeper: a **pair programming protocol** that ensures engineers own and comprehend every decision, even when agents do the heavy lifting.
-
-**The Investigation: Three Sources of Truth**
-
-We examined three artifact layers to understand what GSD-Lite had become:
-
-1. **Original PROJECT.md** (`.planning/PROJECT.md`)
-   - Started as "Data Engineering Copilot Patterns" — a documentation project
-   - Core value: "Maintain ownership of the reasoning process"
-   - This was the seed, but the plant had grown beyond it
-
-2. **Merged PRs** (7 PRs from GitHub)
-   - PR #10: Echo-back onboarding — agents must prove understanding before executing
-   - PR #8: Summary in headers — logs are grep-scannable
-   - PR #4: Workflow decomposition — 929-line monolith → 5 focused files
-   - PR #2: INIT_PROMPT — 120 lines vs 300+ docs for activation
-   - Pattern: Every PR optimized for **agent comprehension** and **token efficiency**
-
-3. **Production Deployment** (Meltano pipeline, `/workspaces/.../estrid-meltano-el`)
-   - 26 rich log entries demonstrating the pattern in action
-   - LOG-017 "Time Traveler Bug" — journalism narrative with analogy
-   - LOG-025 "Blank String Philosophy" — decision with "Silent Nod" metaphor
-   - PR_DATA_339.md — PR description generated from WORK.md logs
-
-**The Revelation: Fork & Resume as Core Mechanic**
-
-The production deployment revealed a workflow not explicitly documented:
-
-```
-SESSION 1 (tokens: 0 → 60k)
-├── Pair program with agent
-├── Hit finding → "Log this with journalism narrative"
-├── Agent writes rich log entry
-├── Tokens rising toward 80k
-└── FORK: Kill session, keep artifacts
-
-SESSION 2 (tokens: 0 → fresh)
-├── "Read LOG-017, continue from there"
-├── Agent onboards from curated artifact
-├── Continue pair programming
-└── FORK again when needed
-```
-
-
-#### Decision Record
-
-| Attribute | Value |
-|-----------|-------|
-| **Decision ID** | DECISION-014 |
-| **Title** | Stateless-First Architecture |
-| **Status** | APPROVED |
-| **Supersedes** | None (new capability) |
-| **Rationale** | Embrace micro-forking as core philosophy. Every turn generates handoff. User owns context management. |
-| **Trade-offs** | 10-12 lines per turn overhead, but sessions are only 5-8 turns anyway. |
-| **Next Action** | Implement PROTOCOL-STATELESS-001 through 003 |
-- [DECISION] - Decision made (tech, scope, approach) with rationale
-- [DISCOVERY] - Evidence, findings, data (ALWAYS with code snippets)
-- [PLAN] - Planning work: task breakdown, risk identification, approach
-- [BLOCKER] - Open questions, stuck items, waiting states
-- [EXEC] - Execution work: files modified, commands run (ALWAYS with code snippets)
-
-Entry format:
-### [LOG-NNN] - [TYPE] - {{one line summary}} - Task: TASK-ID
-**Timestamp:** [YYYY-MM-DD HH:MM]
-**Details:** [Full context with code snippets for EXEC/DISCOVERY]
-
-WHY THIS FORMAT:
-- Agents grep headers (`^### \[LOG-`) to scan project evolution without reading full content
-- Summary in header line enables quick onboarding from grep output alone
-- "###" level headers render nicely in IDE outlines for human navigation
-- Timestamp moved under header keeps the grep-scanned line focused on WHAT happened
-
-Use action timestamp (when decision made or action taken), not entry-write time.
-Code snippets REQUIRED for EXEC and DISCOVERY entries (enables PR extraction).
-
-IMPORTANT: Below are EXAMPLE entries showing format. Real entries should use [LOG-NNN] not [EXAMPLE-NNN].
--->
-
-### [EXAMPLE-001] - [VISION] - User wants Linear-like feel + Bloomberg density for power users - Task: MODEL-A
-**Timestamp:** 2026-01-22 14:00
-**Details:**
-- Context: Discussed UI patterns during moodboard session
-- Reference: Clean layout (Linear) but with information density (Bloomberg terminal)
-- Implication: Interface should not patronize advanced users with excessive whitespace
-
-### [EXAMPLE-002] - [PLAN] - Broke card layout into 3 sub-tasks - Task: MODEL-A
-**Timestamp:** 2026-01-22 14:10
-**Details:**
-- SUBTASK-001: Base card component with props interface
-- SUBTASK-002: Engagement metrics display (likes, comments, shares)
-- SUBTASK-003: Layout grid with responsive breakpoints
-- Risk: Responsive behavior may need user verification on mobile
-
-### [EXAMPLE-003] - [DECISION] - Use card-based layout, not timeline view - Task: MODEL-A
-**Timestamp:** 2026-01-22 14:15
-**Details:**
-- Rationale: Cards support varying content length (post + engagement + metadata); timeline more rigid
-- Alternative considered: Timeline view (simpler implementation, less flexible for content types)
-- Impact: Unblocks component design; affects SUBTASK-001 (card props interface)
-
-### [EXAMPLE-004] - [EXEC] - Created base card component with TypeScript interface - Task: MODEL-A
-**Timestamp:** 2026-01-22 14:30
-**Details:**
-- Files modified: src/components/Card.tsx (created), src/types/post.ts (created)
-- Code snippet:
-```typescript
-interface PostCardProps {
-  post: {
-    id: string;
-    content: string;
-    author: string;
-    timestamp: Date;
-    engagement: {
-      likes: number;
-      comments: number;
-      shares: number;
-    };
-  };
-}
-```
-- Status: SUBTASK-001 complete, proceeding to SUBTASK-002
-
-### [EXAMPLE-005] - [DISCOVERY] - Found engagement pattern in Linear reference app - Task: MODEL-A
-**Timestamp:** 2026-01-22 15:00
-**Details:**
-- Observation: Linear shows engagement inline, not in dropdown/modal
-- Evidence from inspection:
-```html
-<div class="engagement-bar">
-  <span class="metric">👍 12</span>
-  <span class="metric">💬 5</span>
-  <span class="metric">🔄 3</span>
-</div>
-```
-- Impact: Informs SUBTASK-002 design (inline engagement, emoji + count)
-
-### [EXAMPLE-006] - [EXEC] - Implemented engagement metrics component - Task: MODEL-A
-**Timestamp:** 2026-01-22 15:30
-**Details:**
-- Files modified: src/components/EngagementBar.tsx (created)
-- Code snippet:
-```typescript
-export function EngagementBar({ likes, comments, shares }: EngagementProps) {
-  return (
-    <div className="engagement-bar">
-      <Metric icon="👍" count={likes} />
-      <Metric icon="💬" count={comments} />
-      <Metric icon="🔄" count={shares} />
-    </div>
-  );
-}
-```
-- Status: SUBTASK-002 complete, proceeding to SUBTASK-003
-
-### [EXAMPLE-007] - [BLOCKER] - Mobile breakpoint unclear - 768px or 640px? - Task: MODEL-A
-**Timestamp:** 2026-01-22 16:00
-**Details:**
-- Issue: User hasn't specified mobile breakpoint preference
-- Context: Linear uses 768px, Bloomberg uses custom breakpoints
-- Waiting on: User decision on responsive strategy
-- Impact: Blocks SUBTASK-003 (layout grid) until clarified
-
-### [EXAMPLE-008] - [DECISION] - Use 768px breakpoint, standard tablet/mobile split - Task: MODEL-A
-**Timestamp:** 2026-01-22 16:15
-**Details:**
-- Rationale: 768px is industry standard, matches Linear reference
-- User preference: "Keep it simple, use standard breakpoints"
-- Impact: Unblocks SUBTASK-003
-
-### [EXAMPLE-009] - [EXEC] - Implemented responsive grid with 768px breakpoint - Task: MODEL-A
-**Timestamp:** 2026-01-22 16:45
-**Details:**
-- Files modified: src/components/CardGrid.tsx (created), src/styles/grid.css (created)
-- Code snippet:
-```css
-.card-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-  gap: 1rem;
-}
-
-@media (max-width: 768px) {
-  .card-grid {
-    grid-template-columns: 1fr;
-  }
-}
-```
-- Status: SUBTASK-003 complete, Task: MODEL-A ready for verification
-
-### [EXAMPLE-010] - [VISION] - Authentication must support refresh token rotation - Task: AUTH-IMPL
-**Timestamp:** 2026-01-23 10:00
-**Details:**
-- Security requirement from user: "Don't want long-lived tokens floating around"
-- Reference: OAuth 2.0 refresh token rotation best practice
-- Success criteria: Access token 15min, refresh token rotates on use
-
-### [EXAMPLE-011] - [PLAN] - JWT auth broken into 3 tasks - Task: AUTH-IMPL
-**Timestamp:** 2026-01-23 10:20
-**Details:**
-- TASK-001: Library setup (jose v0.5.0) + token generation
-- TASK-002: Login endpoint with bcrypt password hashing
-- TASK-003: Token validation middleware + refresh rotation
-- Risk: Token expiry strategy may need user decision
-
-### [EXAMPLE-012] - [EXEC] - Installed jose library and created token generation - Task: AUTH-IMPL
-**Timestamp:** 2026-01-23 10:30
-**Details:**
-- Files modified: src/auth/token.ts (created), package.json (jose added)
-- Code snippet:
-```typescript
-export async function generateAccessToken(userId: string): Promise<string> {
-  const secret = new TextEncoder().encode(process.env.JWT_SECRET);
-  return await new SignJWT({ userId })
-    .setProtectedHeader({ alg: 'HS256' })
-    .setExpirationTime('15m')
-    .sign(secret);
-}
-```
-- Status: TASK-001 complete
-
-### [EXAMPLE-013] - [DISCOVERY] - bcrypt cost factor 12 optimal for performance - Task: AUTH-IMPL
-**Timestamp:** 2026-01-23 11:00
-**Details:**
-- Benchmark: Cost 10 = 50ms, Cost 12 = 150ms, Cost 14 = 600ms
-- Code used for testing:
-```typescript
-import bcrypt from 'bcrypt';
-for (const cost of [10, 12, 14]) {
-  const start = Date.now();
-  await bcrypt.hash('password', cost);
-  console.log(`Cost ${cost}: ${Date.now() - start}ms`);
-}
-```
-- Decision: Use cost 12 (150ms acceptable for login latency)
-
-### [EXAMPLE-014] - [EXEC] - Created login endpoint with bcrypt hashing - Task: AUTH-IMPL
-**Timestamp:** 2026-01-23 11:30
-**Details:**
-- Files modified: src/api/auth/login.ts (created)
-- Code snippet:
-```typescript
-export async function loginHandler(req: Request, res: Response) {
-  const { email, password } = req.body;
-  const user = await db.findUserByEmail(email);
-  const valid = await bcrypt.compare(password, user.passwordHash);
-  if (!valid) throw new AuthError('Invalid credentials');
-  const accessToken = await generateAccessToken(user.id);
-  res.json({ accessToken });
-}
-```
-- Status: TASK-002 complete, proceeding to TASK-003
-
-### [EXAMPLE-015] - [BLOCKER] - Password reset flow unclear - same JWT or separate token? - Task: AUTH-IMPL
-**Timestamp:** 2026-01-23 12:00
-**Details:**
-- Issue: Security model for password reset not specified
-- Question: Reuse main JWT or generate separate reset token?
-- Waiting on: User decision on security approach
-- Impact: Blocks finalization of auth module architecture
-
-### [EXAMPLE-016] - [DECISION] - Use separate reset token, not main JWT - Task: AUTH-IMPL
-**Timestamp:** 2026-01-23 12:15
-**Details:**
-- Rationale: Separate token provides better security isolation
-- User preference: "Don't reuse auth token for password reset - keep them separate"
-- Expiry: 1 hour for reset token (short-lived for security)
-- Impact: Need to add generateResetToken() to auth module
-
-### [EXAMPLE-017] - [EXEC] - Added password reset token generation - Task: AUTH-IMPL
-**Timestamp:** 2026-01-23 12:45
-**Details:**
-- Files modified: src/auth/token.ts (updated), src/api/auth/reset.ts (created)
-- Code snippet:
-```typescript
-export async function generateResetToken(userId: string): Promise<string> {
-  const secret = new TextEncoder().encode(process.env.JWT_SECRET);
-  return await new SignJWT({ userId, type: 'reset' })
-    .setProtectedHeader({ alg: 'HS256' })
-    .setExpirationTime('1h')
-    .sign(secret);
-}
-```
-- Status: Password reset complete, Task: AUTH-IMPL ready for verification
-
-
 
 ### [LOG-001] - [DISCOVERY] - Vision Archaeology: Unearthing GSD-Lite's True Purpose from Artifacts and PRs - Task: BOOTSTRAP-001
 **Timestamp:** 2026-02-03 14:30
@@ -5456,3 +4914,3477 @@ aggregation:
 
 - TASK-CONST-002b: Write remaining rubrics (Pillar 1, 3, 4 hardcoded behaviors)
 - Future: Add softcoded behaviors (weighted average aggregation)
+
+---
+
+### [LOG-032] - [DISCOVERY] - The OpenCode Goldmine: Native Session JSON Solves the Trajectory Testing Problem - Task: CI-EVAL-001
+
+**Timestamp:** 2026-02-08
+**Status:** DISCOVERY (Storage location SUPERSEDED by LOG-045)
+**Depends On:** LOG-028 (CI Framework Design — defines 3-layer architecture), LOG-029 (Constitution Implementation Plan), LOG-031 (pair-programming.yaml rubric)
+**Decision IDs:** DECISION-032a (Use OpenCode native JSON for eval data), DECISION-032b (Vertex AI Gen AI Eval as primary judge)
+
+> **UPDATE (LOG-045):** The storage location documented in this log (`~/.local/share/opencode/storage/session`) is obsolete. OpenCode migrated to SQLite (`opencode.db`). See LOG-045 for the new schema.
+
+---
+
+#### Part 1: The Problem — "How Do We Test Agent Behavior Without Telemetry?"
+
+##### 1.1 The Trajectory Testing Challenge (from LOG-028)
+
+LOG-028 identified a critical gap: GSD-Lite is a vanilla markdown framework. Users spawn agents via OpenCode — we don't collect telemetry or traces. How do we evaluate:
+- Did the agent follow the Grounding Loop (Search → Echo → Verify)?
+- Did the agent ask WHY before executing?
+- Did the agent respect the Universal Onboarding sequence?
+
+**The naive assumption:** We need to build a wrapper, plugin, or harness to capture tool calls.
+
+**The discovery:** OpenCode **already captures everything** — we just didn't know where to look.
+
+##### 1.2 Research Journey: Framework Evaluation
+
+We evaluated four major agent evaluation frameworks to understand how they capture trajectories:
+
+| Framework | How It Captures Trajectories | GSD-Lite Compatibility |
+|-----------|------------------------------|------------------------|
+| **Google ADK** | Agent must be ADK-native Python; uses `AgentEvaluator` class | ❌ GSD-Lite is markdown instructions |
+| **DeepEval** | Uses `@observe` decorators on Python functions | ❌ No Python to decorate |
+| **Promptfoo** | Custom provider functions or manual YAML | ⚠️ Requires custom harness |
+| **Vertex AI Gen AI Eval** | **Bring Your Own Data** — just provide prompts + responses + trajectories | ✅ Works with ANY data source! |
+
+**Key insight from Vertex AI:** You don't need to run the agent in their framework. You bring pre-captured data, and they evaluate it.
+
+**Citation:** [Vertex AI Gen AI Evaluation Overview](https://cloud.google.com/vertex-ai/generative-ai/docs/models/evaluation-overview) — "Agent evaluation: Evaluate the performance of an agent using agent-specific metrics, such as agent traces and response quality."
+
+---
+
+#### Part 2: The Discovery — OpenCode Native JSON Storage
+
+##### 2.1 Where OpenCode Stores Session Data
+
+OpenCode persists all session data to disk as JSON files:
+
+```
+~/.local/share/opencode/storage/
+├── project/{projectID}.json           # Project metadata
+├── session/{projectID}/{sessionID}.json  # Session metadata
+├── message/{sessionID}/{messageID}.json  # Individual messages
+└── part/{messageID}/{partID}.json        # Message parts (tool calls, text, reasoning)
+```
+
+**Citation:** 
+- Repository: `anomalyco/opencode` (commit `80c1c59ed34cd19119bbb53f40e5214cae35ad29`)
+- File: `packages/opencode/src/storage/storage.ts` lines 1-180
+- URL: https://github.com/anomalyco/opencode/blob/80c1c59ed34cd19119bbb53f40e5214cae35ad29/packages/opencode/src/storage/storage.ts
+
+##### 2.2 The ToolPart Schema — Exactly What Trajectory Eval Needs
+
+The critical discovery is in `packages/opencode/src/session/message-v2.ts`. OpenCode defines a `ToolPart` type that captures:
+
+```typescript
+// Source: packages/opencode/src/session/message-v2.ts
+// Lines 140-185 (approximate, from commit 80c1c59ed34cd19119bbb53f40e5214cae35ad29)
+
+export const ToolPart = PartBase.extend({
+  type: z.literal("tool"),
+  callID: z.string(),
+  tool: z.string(),                    // ← Tool name: "read_files", "grep_content", etc.
+  state: ToolState,                    // ← Execution state with full details
+  metadata: z.record(z.string(), z.any()).optional(),
+})
+
+export const ToolStateCompleted = z.object({
+  status: z.literal("completed"),
+  input: z.record(z.string(), z.any()),   // ← Tool arguments!
+  output: z.string(),                      // ← Tool response!
+  title: z.string(),
+  metadata: z.record(z.string(), z.any()),
+  time: z.object({
+    start: z.number(),
+    end: z.number(),
+    compacted: z.number().optional(),
+  }),
+  attachments: FilePart.array().optional(),
+})
+```
+
+**What this means:** Every MCP tool call is persisted with:
+- `tool`: The tool name (e.g., "mcp_tools_fs_read_files")
+- `input`: The exact arguments passed
+- `output`: The tool's response
+- `time.start` / `time.end`: Execution timing
+
+**This is EXACTLY what trajectory evaluation frameworks expect.**
+
+**Citation:**
+- File: `packages/opencode/src/session/message-v2.ts`
+- URL: https://github.com/anomalyco/opencode/blob/80c1c59ed34cd19119bbb53f40e5214cae35ad29/packages/opencode/src/session/message-v2.ts
+- Lines: 140-185 (ToolPart definition), 95-135 (ToolState variants)
+
+##### 2.3 Example: What a Real Session JSON Looks Like
+
+Based on the schema, a parsed OpenCode session would yield data like:
+
+```json
+{
+  "session_id": "01JKXYZ...",
+  "messages": [
+    {
+      "id": "msg_001",
+      "role": "user",
+      "content": "Add dark mode to the app"
+    },
+    {
+      "id": "msg_002", 
+      "role": "assistant",
+      "parts": [
+        {
+          "type": "text",
+          "text": "Before I add that — is this for user preference, accessibility, or battery saving?"
+        }
+      ]
+    },
+    {
+      "id": "msg_003",
+      "role": "user", 
+      "content": "User preference. Let's check what theme system exists."
+    },
+    {
+      "id": "msg_004",
+      "role": "assistant",
+      "parts": [
+        {
+          "type": "tool",
+          "tool": "mcp_tools_fs_grep_content",
+          "state": {
+            "status": "completed",
+            "input": {"pattern": "theme|dark|light", "search_path": "src/"},
+            "output": "File: src/styles/theme.ts, Line: 5...",
+            "time": {"start": 1707400000000, "end": 1707400001500}
+          }
+        },
+        {
+          "type": "text",
+          "text": "I found a theme system in src/styles/theme.ts. It currently has light mode only..."
+        }
+      ]
+    }
+  ]
+}
+```
+
+**This transforms directly to Vertex AI eval format:**
+
+```python
+eval_dataset = [{
+    "prompt": "Add dark mode to the app",
+    "response": "Before I add that — is this for user preference...",
+    "generated_trajectory": [
+        {
+            "tool": "mcp_tools_fs_grep_content",
+            "args": {"pattern": "theme|dark|light", "search_path": "src/"},
+            "output": "File: src/styles/theme.ts, Line: 5..."
+        }
+    ]
+}]
+```
+
+---
+
+#### Part 3: The Architecture — No New Code in OpenCode
+
+##### 3.1 High-Level Flow
+
+```mermaid
+flowchart LR
+    subgraph "Your Workflow (Unchanged)"
+        A[OpenCode + GSD-Lite] --> B["Sessions saved to<br/>~/.local/share/opencode/"]
+    end
+    
+    subgraph "Evaluation Pipeline (New)"
+        B --> C["Parser Script<br/>(Python)"]
+        C --> D["Eval Dataset<br/>(JSON)"]
+        D --> E["Vertex AI Gen AI Eval<br/>OR Local LLM Judge"]
+        E --> F["Pass/Fail Report"]
+    end
+    
+    subgraph "CI Integration"
+        F --> G["GitHub Actions<br/>Block PR on Fail"]
+    end
+```
+
+##### 3.2 Detailed Component Architecture
+
+```mermaid
+flowchart TB
+    subgraph "Data Source (OpenCode Native)"
+        OC1["~/.local/share/opencode/storage/session/"]
+        OC2["~/.local/share/opencode/storage/message/"]
+        OC3["~/.local/share/opencode/storage/part/"]
+    end
+    
+    subgraph "Parser (tests/constitution/parser.py)"
+        P1["read_session(session_id)"]
+        P2["extract_messages(session_id)"]
+        P3["extract_tool_calls(message_id)"]
+        P4["transform_to_eval_format()"]
+    end
+    
+    subgraph "Evaluation Backends"
+        E1["Vertex AI Gen AI Eval<br/>(Adaptive Rubrics)"]
+        E2["Local LLM Judge<br/>(pair-programming.yaml)"]
+    end
+    
+    subgraph "Output"
+        O1["Eval Report (JSON)"]
+        O2["CI Pass/Fail Signal"]
+    end
+    
+    OC1 --> P1
+    OC2 --> P2
+    OC3 --> P3
+    P1 --> P4
+    P2 --> P4
+    P3 --> P4
+    P4 --> E1
+    P4 --> E2
+    E1 --> O1
+    E2 --> O1
+    O1 --> O2
+```
+
+##### 3.3 The Three Layers Revisited (from LOG-028)
+
+LOG-028 defined a three-layer CI architecture. Here's how it maps to implementation:
+
+| Layer | What It Tests | Implementation | Data Source |
+|-------|---------------|----------------|-------------|
+| **L1: Structural** | Token budget, required sections | Python script with grep | `src/gsd_lite/template/agents/gsd-lite.md` |
+| **L2: Constitutional** | Response quality against rubrics | LLM-as-judge with `pair-programming.yaml` | OpenCode session JSON → parser |
+| **L3: Behavioral** | Trajectory matches expected patterns | Trajectory precision/recall metrics | OpenCode session JSON → parser |
+
+**Key insight:** L2 and L3 share the same data source (OpenCode JSON), just different evaluation metrics.
+
+---
+
+#### Part 4: Framework Research Summary
+
+##### 4.1 Google ADK Evaluation
+
+**What it does:** Full trajectory capture for ADK-native agents. Supports `tool_trajectory_avg_score`, `response_match_score`.
+
+**Why it doesn't fit:** Requires agent to be built with ADK Python SDK. GSD-Lite is markdown instructions loaded by OpenCode.
+
+**Citation:** 
+- URL: https://google.github.io/adk-docs/evaluate/
+- Key quote: "ADK's tool trajectory evaluation requires an exact match for the tool call order and each tool argument."
+
+##### 4.2 DeepEval
+
+**What it does:** Python-first evaluation with `@observe` decorators to capture trajectories.
+
+**Metrics available:**
+- `ToolCorrectnessMetric` — Did agent call right tools?
+- `ArgumentCorrectnessMetric` — Were arguments correct?
+- `TaskCompletionMetric` — Did agent complete the task?
+
+**Why it doesn't fit:** Requires decorating Python functions. GSD-Lite agents are spawned by OpenCode, not our code.
+
+**Citation:**
+- URL: https://docs.confident-ai.com/docs/metrics-llm-evals
+- Repository: https://github.com/confident-ai/deepeval
+
+##### 4.3 Promptfoo
+
+**What it does:** YAML-first evaluation with `llm-rubric` assertions.
+
+**Example config:**
+```yaml
+tests:
+  - vars:
+      question: "Add dark mode"
+    assert:
+      - type: llm-rubric
+        value: "Agent must ask WHY before implementing"
+        threshold: 0.8
+```
+
+**Why it's a backup option:** Works without trajectory capture, but limited to response-only evaluation.
+
+**Citation:**
+- URL: https://www.promptfoo.dev/docs/guides/llm-as-a-judge/ (404 at time of research, used grounding search)
+
+##### 4.4 Vertex AI Gen AI Evaluation (WINNER)
+
+**What it does:** Enterprise-grade evaluation with "Adaptive Rubrics" — dynamically generates pass/fail tests per prompt.
+
+**Key feature — Bring Your Own Data:**
+```python
+from vertexai import Client
+
+client = Client(project=PROJECT_ID, location=LOCATION)
+
+# You provide the data — Vertex AI evaluates it
+eval_dataset = client.evals.run_inference(model="gemini-2.5-flash", src=prompts_df)
+eval_result = client.evals.evaluate(dataset=eval_dataset)
+```
+
+**Why it wins:**
+1. **No harness required** — bring pre-captured data
+2. **Adaptive rubrics** — generates relevant tests per prompt
+3. **Trajectory support** — can evaluate tool call sequences
+4. **Enterprise-grade** — production-ready, scalable
+
+**DECISION-032b:** Use Vertex AI Gen AI Eval as primary evaluation backend.
+
+**Citation:**
+- URL: https://cloud.google.com/vertex-ai/generative-ai/docs/models/evaluation-overview
+- SDK: `google-cloud-aiplatform[evaluation]`
+
+---
+
+#### Part 5: Why This Preserves the GSD-Lite DX
+
+The user raised a critical concern: GSD-Lite's power comes from its lightweight, stateless nature with OpenCode.
+
+| What Makes GSD-Lite Powerful | How This Preserves It |
+|------------------------------|----------------------|
+| `/new` and `/fork` commands | Unchanged — sessions remain ephemeral |
+| Context control via forking | Unchanged — you decide when to fork |
+| Artifacts survive sessions | Unchanged — WORK.md is your memory |
+| No vendor lock-in | Unchanged — markdown works anywhere |
+| **NEW:** Evaluation capability | Sessions you already ran become eval data |
+
+**The insight:** We're not adding instrumentation TO OpenCode. We're reading data OpenCode ALREADY saves.
+
+---
+
+#### Part 6: Implementation Plan
+
+##### 6.1 Phase 1: Parser Script (tests/constitution/parser.py)
+
+```python
+# Conceptual implementation
+import json
+from pathlib import Path
+from typing import List, Dict, Any
+
+OPENCODE_STORAGE = Path.home() / ".local/share/opencode/storage"
+
+def parse_session(session_id: str, project_id: str = "global") -> Dict[str, Any]:
+    """Parse an OpenCode session into evaluation format."""
+    
+    # Read session metadata
+    session_path = OPENCODE_STORAGE / "session" / project_id / f"{session_id}.json"
+    session = json.loads(session_path.read_text())
+    
+    # Read all messages for this session
+    messages = []
+    message_dir = OPENCODE_STORAGE / "message" / session_id
+    for msg_file in sorted(message_dir.glob("*.json")):
+        msg = json.loads(msg_file.read_text())
+        
+        # Read parts (tool calls, text, etc.)
+        parts = []
+        part_dir = OPENCODE_STORAGE / "part" / msg["id"]
+        if part_dir.exists():
+            for part_file in sorted(part_dir.glob("*.json")):
+                parts.append(json.loads(part_file.read_text()))
+        
+        messages.append({"info": msg, "parts": parts})
+    
+    return {"session": session, "messages": messages}
+
+def to_eval_format(parsed_session: Dict) -> List[Dict]:
+    """Transform parsed session to Vertex AI eval format."""
+    eval_cases = []
+    
+    for i, msg in enumerate(parsed_session["messages"]):
+        if msg["info"]["role"] == "user":
+            # Find the assistant response that follows
+            if i + 1 < len(parsed_session["messages"]):
+                assistant_msg = parsed_session["messages"][i + 1]
+                if assistant_msg["info"]["role"] == "assistant":
+                    # Extract tool calls
+                    trajectory = [
+                        {
+                            "tool": part["tool"],
+                            "args": part["state"]["input"],
+                            "output": part["state"].get("output", "")
+                        }
+                        for part in assistant_msg["parts"]
+                        if part["type"] == "tool" and part["state"]["status"] == "completed"
+                    ]
+                    
+                    # Extract text response
+                    response_text = " ".join([
+                        part["text"] 
+                        for part in assistant_msg["parts"] 
+                        if part["type"] == "text"
+                    ])
+                    
+                    eval_cases.append({
+                        "prompt": extract_user_text(msg),
+                        "response": response_text,
+                        "generated_trajectory": trajectory
+                    })
+    
+    return eval_cases
+```
+
+##### 6.2 Phase 2: L1 Structural Checks
+
+```python
+# tests/constitution/l1_structural.py
+import subprocess
+from pathlib import Path
+
+def check_token_budget(agent_file: Path, max_tokens: int = 10000) -> bool:
+    """L1 check: Agent instruction under token budget."""
+    import tiktoken
+    enc = tiktoken.encoding_for_model("gpt-4")
+    content = agent_file.read_text()
+    tokens = len(enc.encode(content))
+    return tokens <= max_tokens
+
+def check_handoff_template(agent_file: Path) -> bool:
+    """L1 check: Handoff template present."""
+    content = agent_file.read_text()
+    return "📦 STATELESS HANDOFF" in content
+
+def check_universal_onboarding(agent_file: Path) -> bool:
+    """L1 check: Universal Onboarding section exists."""
+    content = agent_file.read_text()
+    return "Universal Onboarding" in content
+```
+
+##### 6.3 Phase 3: L2/L3 Evaluation with Vertex AI
+
+```python
+# tests/constitution/l2_l3_eval.py
+from vertexai import Client
+from vertexai import types
+import pandas as pd
+
+def run_evaluation(eval_dataset: list, rubric_path: str = None):
+    """Run L2 (constitutional) and L3 (behavioral) evaluation."""
+    
+    client = Client(project=PROJECT_ID, location="us-central1")
+    
+    # Convert to DataFrame
+    df = pd.DataFrame(eval_dataset)
+    
+    # Run inference (optional — skip if data already has responses)
+    # eval_data = client.evals.run_inference(model="gemini-2.5-flash", src=df)
+    
+    # Define metrics
+    if rubric_path:
+        # Use custom rubric from pair-programming.yaml
+        metrics = [types.CustomMetric.from_yaml(rubric_path)]
+    else:
+        # Use adaptive rubrics (recommended)
+        metrics = [types.RubricMetric.GENERAL_QUALITY]
+    
+    # Run evaluation
+    result = client.evals.evaluate(dataset=df, metrics=metrics)
+    
+    return result
+```
+
+##### 6.4 Task Breakdown
+
+| Task ID | Description | Depends On | Est. Effort |
+|---------|-------------|------------|-------------|
+| TASK-EVAL-001 | Build OpenCode session parser | LOG-032 | 2h |
+| TASK-EVAL-002 | Implement L1 structural checks | LOG-032 | 1h |
+| TASK-EVAL-003 | Integrate Vertex AI eval SDK | LOG-032, TASK-EVAL-001 | 3h |
+| TASK-EVAL-004 | Create sample golden session | TASK-EVAL-001 | 1h |
+| TASK-EVAL-005 | Run end-to-end spike on one session | TASK-EVAL-001 to 004 | 2h |
+| TASK-EVAL-006 | Document in CI workflow | TASK-EVAL-005 | 1h |
+
+---
+
+#### Part 7: Decisions Made
+
+##### DECISION-032a: Use OpenCode Native JSON as Evaluation Data Source
+
+**Context:** We need trajectory data (tool calls, responses) to evaluate agent behavior.
+
+**Decision:** Parse existing OpenCode session JSON files from `~/.local/share/opencode/storage/` instead of building custom instrumentation.
+
+**Rationale:**
+1. Data already exists — no new code in OpenCode required
+2. Preserves user's DX — no changes to /new, /fork workflow
+3. Sessions are scattered but parseable — glob patterns find them
+4. Schema is well-defined in TypeScript — see `message-v2.ts`
+
+**Consequences:**
+- Parser must handle OpenCode's storage structure
+- Evaluation happens asynchronously (not real-time during session)
+- Must identify which sessions to evaluate (by project, by time range)
+
+##### DECISION-032b: Vertex AI Gen AI Eval as Primary Evaluation Backend
+
+**Context:** Multiple frameworks exist (ADK, DeepEval, Promptfoo, Vertex AI). Need to pick one.
+
+**Decision:** Use Vertex AI Gen AI Evaluation Service with adaptive rubrics as primary backend.
+
+**Rationale:**
+1. "Bring Your Own Data" model — works with pre-captured data
+2. Adaptive rubrics — generates relevant tests per prompt (cutting-edge)
+3. Supports trajectory evaluation — can assess tool call sequences
+4. Enterprise-grade — production-ready, documented, supported
+5. Fallback to custom rubrics — can use our `pair-programming.yaml` if needed
+
+**Consequences:**
+- Requires GCP project with Vertex AI API enabled
+- Incurs cost (~$0.001-0.01 per evaluation, estimate)
+- Can add Promptfoo as local/free fallback later
+
+---
+
+#### Part 8: Key Files and Citations
+
+| Item | Path / URL | Purpose |
+|------|------------|---------|
+| OpenCode Storage Code | `anomalyco/opencode/packages/opencode/src/storage/storage.ts` | Defines where sessions are stored |
+| OpenCode Message Schema | `anomalyco/opencode/packages/opencode/src/session/message-v2.ts` | Defines ToolPart, TextPart, etc. |
+| OpenCode Commit | `80c1c59ed34cd19119bbb53f40e5214cae35ad29` | Commit hash for citations |
+| Vertex AI Eval Docs | https://cloud.google.com/vertex-ai/generative-ai/docs/models/evaluation-overview | Official documentation |
+| Google ADK Eval Docs | https://google.github.io/adk-docs/evaluate/ | Trajectory evaluation reference |
+| DeepEval Docs | https://docs.confident-ai.com/docs/metrics-llm-evals | Agent metrics reference |
+| GSD-Lite Rubric | `src/gsd_lite/template/constitution/rubrics/pair-programming.yaml` | P2-H1 to P2-H5 criteria |
+| CI Framework Design | LOG-028 in this file | Three-layer architecture definition |
+| Constitution Plan | LOG-029 in this file | Hybrid format specification |
+
+---
+
+#### Part 9: Backlinks and Related Logs
+
+| Log | Summary | Relevance |
+|-----|---------|-----------|
+| **LOG-028** | CI Framework Design: Constitutional Knowledge for Regression Prevention | Defines the three-layer architecture (L1 structural, L2 constitutional, L3 behavioral) that this discovery implements |
+| **LOG-029** | Constitution v0.1 Implementation Plan | Specifies the hybrid format (CONSTITUTION.md + rubrics + golden tests) that evaluation will use |
+| **LOG-031** | Created pair-programming.yaml Rubric | The rubric that L2 evaluation will use to judge agent responses |
+| **LOG-016** | Stateless-First Architecture | Defines the handoff packet format that L1 structural checks will verify |
+| **LOG-020** | The Invisible Documentation Problem | Establishes the 10k token budget that L1 will enforce |
+
+---
+
+📦 STATELESS HANDOFF
+
+**Layer 1 — Local Context:**
+→ Last action: LOG-032 (OpenCode Goldmine Discovery — evaluation architecture defined)
+→ Dependency chain: LOG-032 ← LOG-031 (rubric) ← LOG-029 (plan) ← LOG-028 (framework)
+→ Next action: TASK-EVAL-001 — Build OpenCode session parser
+
+**Layer 2 — Global Context:**
+→ Architecture: OpenCode JSON → Parser → Vertex AI Eval → Pass/Fail
+→ Patterns: Bring-Your-Own-Data evaluation, no instrumentation needed
+→ Data Flow: `~/.local/share/opencode/storage/` → `tests/constitution/parser.py` → eval
+
+**Fork paths:**
+- Implement parser → TASK-EVAL-001 (read OpenCode JSON, transform to eval format)
+- Run manual spike → Parse one of your sessions, run Vertex AI eval on it
+- Write L1 checks first → Cheapest layer, no LLM needed
+- Discuss evaluation criteria → Refine what "pass" means for each rubric
+
+---
+
+### [LOG-033] - [DISCOVERY] - Session Isolation via fs-mcp Path Fingerprinting: Solving the "One OpenCode, Many Projects" Problem - Task: CI-EVAL-001
+
+**Timestamp:** 2026-02-08
+**Status:** DISCOVERY (design decision made, ready for implementation)
+**Depends On:** LOG-032 (OpenCode Goldmine Discovery — defines session JSON structure)
+**Decision IDs:** DECISION-033a (Fingerprint sessions via fs-mcp tool call paths)
+
+---
+
+#### Part 1: The Problem — "How Do We Isolate Sessions by Project?"
+
+##### 1.1 The Workflow That Breaks OpenCode's Project Model
+
+LOG-032 assumed OpenCode's `projectID` field would identify which codebase a session touched. This assumption breaks for a common power-user workflow:
+
+**The User's Actual Workflow:**
+```
+# User spawns OpenCode from home directory (single "project")
+cd ~
+opencode
+
+# But connects to DIFFERENT fs-mcp servers per session
+# Each fs-mcp points to a different codebase's gsd-lite/ directory
+```
+
+**The Result:**
+```
+~/.local/share/opencode/storage/session/global/
+├── session_ABC.json   # Today: eval testing on gsd_lite project
+├── session_DEF.json   # Yesterday: prod work on data-pipeline project  
+├── session_GHI.json   # Last week: work on meltano-etl project
+└── ...                # All sessions share same projectID!
+```
+
+**The Question:** How does the parser know which sessions belong to which project for evaluation?
+
+##### 1.2 Why OpenCode's Native Fields Don't Help
+
+| Field | What It Contains | Why It Doesn't Isolate |
+|-------|------------------|------------------------|
+| `Session.Info.projectID` | Git root commit SHA or "global" | User spawns from `~`, so all sessions = "global" |
+| `Session.Info.directory` | CWD when OpenCode started | Always `~` in this workflow |
+| `AssistantMessage.path.root` | Worktree root | Always `~` (where OpenCode was spawned) |
+
+**The project identity is invisible to OpenCode's session metadata.** It only shows up buried in tool call data.
+
+---
+
+#### Part 2: The Discovery — fs-mcp Guarantees Persistent Paths
+
+##### 2.1 fs-mcp Architecture
+
+The user built `fs-mcp` (https://github.com/luutuankiet/fs-mcp), a custom MCP server for filesystem operations. Crucially:
+
+1. **Required positional argument:** Directories are passed at server startup
+   ```bash
+   # Example: fs-mcp pointed at gsd_lite codebase
+   uvx fs-mcp /Users/luutuankiet/dev/gsd_lite
+   ```
+
+2. **Stored in `ALLOWED_DIRS`:** The server validates all paths against these directories
+
+3. **Absolute paths in outputs:** Tool outputs contain full paths, not relative ones
+
+**Citation:**
+- Repository: `luutuankiet/fs-mcp` (commit `2fa64b765b9c14503f6e3239f57dceb9d0050cdc`)
+- File: `src/fs_mcp/__main__.py` — `dirs = args.dirs or [str(Path.cwd())]`
+- File: `src/fs_mcp/server.py` — `USER_ACCESSIBLE_DIRS` and `validate_path()` enforce boundaries
+
+##### 2.2 The Fingerprint Lives in Tool Call Outputs
+
+When an agent uses fs-mcp tools, the paths reveal the project:
+
+```json
+// Example: grep_content tool call output
+{
+  "type": "tool",
+  "tool": "mcp_tools_fs_grep_content",
+  "state": {
+    "status": "completed",
+    "input": {"pattern": "^## ", "search_path": "gsd-lite/WORK.md"},
+    "output": "File: /Users/luutuankiet/dev/gsd_lite/gsd-lite/WORK.md, Line: 5..."
+  }
+}
+```
+
+**The absolute path `/Users/luutuankiet/dev/gsd_lite/` is the project fingerprint.**
+
+##### 2.3 Bonus: `list_allowed_directories` Tool
+
+fs-mcp exposes a tool that directly returns the configured directories:
+
+```python
+@mcp.tool()
+def list_allowed_directories() -> str:
+    """List the directories this server is allowed to access."""
+    return "\n".join(str(d) for d in USER_ACCESSIBLE_DIRS)
+```
+
+If an agent calls this tool during a session, the output explicitly states the project root. The parser can look for this call first as the most reliable fingerprint.
+
+---
+
+#### Part 3: The Solution — Path Fingerprinting Algorithm
+
+##### 3.1 Fingerprinting Strategy (Priority Order)
+
+```python
+def extract_project_root(session_parts: list[dict]) -> str:
+    """Extract project root from tool call outputs, with fallback chain."""
+    
+    # Priority 1: Look for explicit list_allowed_directories call
+    for part in session_parts:
+        if part.get("tool") == "mcp_tools_fs_list_allowed_directories":
+            if part.get("state", {}).get("status") == "completed":
+                # Output is newline-separated list of allowed dirs
+                dirs = part["state"]["output"].strip().split("\n")
+                if dirs:
+                    return dirs[0]  # Primary allowed directory
+    
+    # Priority 2: Extract from grep_content outputs (most common tool)
+    for part in session_parts:
+        if part.get("tool") == "mcp_tools_fs_grep_content":
+            if part.get("state", {}).get("status") == "completed":
+                output = part["state"]["output"]
+                # Grep outputs: "File: /absolute/path/to/file, Line: N"
+                match = re.search(r"File: (/[^,]+)", output)
+                if match:
+                    path = match.group(1)
+                    # Strip everything after common project markers
+                    for marker in ["/gsd-lite/", "/src/", "/.git/"]:
+                        if marker in path:
+                            return path.split(marker)[0]
+                    # Fallback: return parent of the file
+                    return str(Path(path).parent)
+    
+    # Priority 3: Extract from read_files outputs
+    for part in session_parts:
+        if part.get("tool") == "mcp_tools_fs_read_files":
+            if part.get("state", {}).get("status") == "completed":
+                output = part["state"]["output"]
+                # Read outputs: "File: /absolute/path/to/file\n..."
+                match = re.search(r"File: (/[^\n]+)", output)
+                if match:
+                    path = match.group(1)
+                    return str(Path(path).parent.parent)  # Go up from file to project
+    
+    return "unknown"
+```
+
+##### 3.2 Why This Is Reliable (Not Heuristic)
+
+| Concern | Why It's Not a Problem |
+|---------|------------------------|
+| "Tool output format might change" | fs-mcp is user-owned; format is guaranteed stable |
+| "Paths might be relative" | `validate_path()` resolves to absolute before output |
+| "What if no tools are called?" | GSD-Lite mandates grep-first workflow; tools WILL be called |
+| "What about non-fs-mcp tools?" | Only fs-mcp tools touch files; they're the fingerprint source |
+
+##### 3.3 Parser Integration
+
+```python
+# tests/constitution/parser.py (updated from LOG-032)
+
+def parse_session(session_id: str) -> dict:
+    """Parse an OpenCode session with project fingerprinting."""
+    
+    # ... existing parsing logic from LOG-032 ...
+    
+    # Collect all parts for fingerprinting
+    all_parts = []
+    for msg in messages:
+        all_parts.extend(msg["parts"])
+    
+    # Extract project root
+    project_root = extract_project_root(all_parts)
+    
+    return {
+        "session_id": session_id,
+        "project_root": project_root,  # NEW: Fingerprinted project
+        "messages": messages,
+        "eval_cases": to_eval_format(messages)
+    }
+
+
+def filter_sessions_by_project(sessions: list[dict], project_root: str) -> list[dict]:
+    """Filter parsed sessions to only those matching a project root."""
+    return [s for s in sessions if s["project_root"] == project_root]
+```
+
+##### 3.4 CLI Interface for Evaluation
+
+```bash
+# Parse all sessions, filter to gsd_lite project
+python -m tests.constitution.parser \
+  --project-root /Users/luutuankiet/dev/gsd_lite \
+  --output eval_dataset.json
+
+# Or parse specific sessions by ID
+python -m tests.constitution.parser \
+  --session-ids "01JKXYZ123,01JKXYZ456" \
+  --output eval_dataset.json
+```
+
+---
+
+#### Part 4: Consequences for TASK-EVAL-001
+
+##### 4.1 Updated Parser Requirements
+
+The parser (TASK-EVAL-001) now needs:
+1. **Project fingerprinting** — Extract project root from tool call outputs
+2. **Filtering capability** — Select sessions by project root
+3. **Fallback handling** — Mark sessions as "unknown" if no fs-mcp calls found
+
+##### 4.2 Updated Task Breakdown
+
+| Task ID | Description | Update |
+|---------|-------------|--------|
+| TASK-EVAL-001 | Build OpenCode session parser | ADD: `extract_project_root()` function |
+| TASK-EVAL-001a | NEW: Add project fingerprinting | Implement priority chain from this log |
+| TASK-EVAL-001b | NEW: Add CLI filtering | `--project-root` and `--session-ids` flags |
+
+---
+
+#### Part 5: Decision Made
+
+##### DECISION-033a: Fingerprint Sessions via fs-mcp Tool Call Paths
+
+**Context:** OpenCode sessions from a single spawn point (home directory) cannot be distinguished by native metadata when the user switches projects via different fs-mcp connections.
+
+**Decision:** Parse tool call outputs from fs-mcp to extract absolute paths. The first path prefix identifies the project.
+
+**Rationale:**
+1. **fs-mcp is user-owned** — Path format is guaranteed stable, not subject to upstream changes
+2. **Absolute paths are enforced** — `validate_path()` resolves all paths before output
+3. **GSD-Lite mandates tool usage** — Grep-first workflow ensures tools ARE called
+4. **Zero workflow change** — User doesn't need to tag sessions or change habits
+
+**Consequences:**
+- Parser must scan tool call outputs, not just session metadata
+- Projects without fs-mcp tools will fingerprint as "unknown"
+- Fingerprinting adds ~O(n) scan over parts, minimal overhead
+
+---
+
+#### Part 6: Key Files and Citations
+
+| Item | Path / URL | Purpose |
+|------|------------|---------|
+| fs-mcp Repository | https://github.com/luutuankiet/fs-mcp | User's custom MCP server |
+| fs-mcp Entry Point | `src/fs_mcp/__main__.py` | Shows dirs as positional args |
+| fs-mcp Server Logic | `src/fs_mcp/server.py` | `ALLOWED_DIRS`, `validate_path()`, `list_allowed_directories()` |
+| OpenCode Session Schema | `packages/opencode/src/session/index.ts` | `Session.Info` structure |
+| OpenCode Message Schema | `packages/opencode/src/session/message-v2.ts` | `ToolPart`, `ToolStateCompleted` |
+| LOG-032 | This file, above | Original parser design to update |
+
+---
+
+### [LOG-034] - [DECISION] - OpenCode Session Parsing Architecture & Fingerprinting Strategy
+
+**Status:** Completed
+**Date:** 2026-02-14
+**Task:** TASK-EVAL-001a (Session Parsing)
+**Dependencies:**
+- LOG-033: Initial discovery of path fingerprinting idea.
+- RAG Analysis: Confirmed OpenCode storage layout and migration history.
+
+#### 1. The "Global-Only" Architecture Decision
+
+We have established that **OpenCode sessions initiated from `$HOME` are always scoped to "global"**. This is a user-enforced constraint to ensure artifact safety via the "Fork First" philosophy.
+
+**The Constraints:**
+1.  **Launch Context:** OpenCode is launched in `~` (Home Directory).
+2.  **Project Identity:** OpenCode sees the project ID as `"global"`.
+3.  **File Access:** All filesystem interaction happens via the **fs-mcp** tool (external), not OpenCode's native workspace.
+4.  **Data Persistence:** Native OpenCode reverts files on chat forks/undo. `fs-mcp` (external) does not. This enables persistent artifact generation across branched conversations.
+
+**The Implication:**
+We cannot rely on OpenCode's `projectID` to distinguish between different semantic projects (e.g., "dbt-project" vs "gsd-lite"). All sessions land in the same bucket: `~/.local/share/opencode/storage/session/global/`.
+
+#### 2. The Fingerprinting Solution
+
+To distinguish projects, we must parse the **content** of the tool calls.
+
+**Logic:**
+1.  **Iterate** all sessions in `storage/session/global/`.
+2.  **Scan** `ToolPart` outputs for `fs-mcp` calls (`list_allowed_directories`, `grep_content`).
+3.  **Extract** absolute paths from these outputs (e.g., `/Users/me/dev/gsd_lite/WORK.md`).
+4.  **Derive** the "Semantic Root" (Common Ancestor) of these paths.
+5.  **Group** sessions by Semantic Root + Time Window.
+
+#### 3. Authoritative Data Structure
+
+Based on RAG analysis of OpenCode source code (packages/opencode/src/storage/storage.ts) and on-disk verification:
+
+**Storage Root:** `~/.local/share/opencode/storage`
+
+| Artifact | Path Pattern | Cardinality | Description |
+|----------|--------------|-------------|-------------|
+| **Session** | `session/global/<sessionID>.json` | 1 per session | Metadata (created timestamp). `projectID` is hardcoded "global". |
+| **Message** | `message/<sessionID>/<messageID>.json` | N per session | Links Session to Parts. Defines role (user/model). |
+| **Part** | `part/<messageID>/<partID>.json` | N per message | Content atom. Can be `text` or `tool`. |
+
+**Critical Edge Cases:**
+-   **Compaction:** If `part.state.time.compacted` is `true`, `state.output` is replaced with `[Old tool result content cleared]`. **Action:** Skip these parts for fingerprinting.
+-   **Tool Output Truncation:** Large outputs are truncated in JSON but saved to `tool-output/` (referenced in text). **Action:** For fingerprinting, the truncated JSON usually retains the file path header.
+
+#### 4. Schema Diagrams (Mermaid)
+
+**Entity Relationship Diagram (Physical Layout)**
+
+```mermaid
+erDiagram
+    %% The Storage Root
+    STORAGE_ROOT {
+        string path "~/.local/share/opencode/storage"
+    }
+
+    %% Session (Global Scope)
+    SESSION {
+        string id "ses_..."
+        string projectID "global (hardcoded)"
+        string path "session/global/ses_....json"
+        timestamp created
+    }
+
+    %% Message
+    MESSAGE {
+        string id "msg_..."
+        string sessionID "ses_..."
+        string path "message/ses_.../msg_....json"
+        string role "user|model"
+    }
+
+    %% Part (Generic)
+    PART {
+        string id "prt_..."
+        string messageID "msg_..."
+        string path "part/msg_.../prt_....json"
+        string type "text|tool"
+        string state_status "completed|error"
+        string state_output "content"
+    }
+
+    %% Relationships
+    STORAGE_ROOT ||--|{ SESSION : "contains"
+    SESSION ||--|{ MESSAGE : "contains (via dir)"
+    MESSAGE ||--|{ PART : "contains (via dir)"
+```
+
+**Class Diagram (Field-Level Schema)**
+
+```mermaid
+classDiagram
+    note "OpenCode Session Artifacts (Global Scope)"
+
+    class Session {
+        string id "ses_..."
+        string path "~/.local/share/opencode/storage/session/global/ses_....json"
+        string projectID "global"
+        timestamp created "Session start time"
+        
+        +get_messages() List~Message~
+    }
+
+    class Message {
+        string id "msg_..."
+        string sessionID "ses_..."
+        string path "message/ses_.../msg_....json"
+        string role "user | model"
+        
+        +get_parts() List~Part~
+    }
+
+    class ToolPart {
+        string tool "fs-mcp_list_allowed_directories | fs-mcp_grep_content"
+        object state "State container"
+        
+        state.status "completed"
+        state.output "Payload (Stdout / File Path)"
+        state.time.compacted "bool (skip if true)"
+    }
+
+    %% Relationships
+    Session "1" *-- "many" Message : contains
+    Message "1" *-- "many" ToolPart : contains
+```
+
+#### 5. Detailed Schema Definitions
+
+| Entity | Field | Type | Description / Notes |
+|--------|-------|------|---------------------|
+| **Session** | `id` | `string` | Unique Session ID (matches filename `ses_...`). Used to join with Messages. |
+| **Session** | `projectID` | `string` | **Always "global"** in our architecture. Hardcoded in OpenCode for `~` launch. |
+| **Session** | `created` | `timestamp` | Session start time (ms epoch). Source of truth for temporal filtering. |
+| **Message** | `id` | `string` | Unique Message ID (matches filename `msg_...`). Used to join with Parts. |
+| **Message** | `sessionID` | `string` | Foreign Key to Session. Matches parent directory `ses_...`. |
+| **Message** | `role` | `enum` | `user` (User/Tool Result) or `model` (Agent/Tool Call). |
+| **Part** | `type` | `enum` | `tool` is our target. `text` is chat content. |
+| **Part** | `tool` | `string` | Tool name (e.g., `fs-mcp_list_allowed_directories`). **Key Fingerprint Source.** |
+| **Part** | `state.status` | `enum` | Must be `completed`. Skip `running` or `error` for fingerprinting. |
+| **Part** | `state.output` | `string` | **The Payload.** Contains file paths or command output. |
+| **Part** | `state.time.compacted`| `boolean` | **CRITICAL:** If `true`, output is cleared. Must skip parsing. |
+
+#### 6. Validation & Citations
+
+-   **Storage Migration:** Confirmed via `packages/opencode/src/storage/storage.ts` that data moved to flat `storage/` layout.
+-   **Session Structure:** Validated via `ls -R` on `~/.local/share/opencode/storage`.
+-   **Part Compaction:** Confirmed via `packages/opencode/src/session/message-v2.ts` (L567) that compacted outputs are cleared.
+-   **Tool Alias Fragmentation:** Validated that tool names vary wildly (e.g., `remote-fs-mcp_...`, `tools_fs_...`). **Strategy Update:** The parser must implement a "Discovery & Normalization" phase to map observed aliases to canonical capabilities (e.g., `fs.read`, `fs.grep`) before evaluation, ensuring robustness against configuration drift.
+
+### [LOG-035] - [DECISION] - Configuration-Driven Tool Mapping for Evaluation Robustness
+
+**Status:** Completed
+**Date:** 2026-02-14
+**Task:** TASK-EVAL-001a (Parser Strategy)
+**Dependencies:**
+- LOG-034: OpenCode Session Parsing Architecture (identified alias fragmentation risk)
+- LOG-033: Path Fingerprinting (relies on tool outputs)
+
+#### 1. The "Unknown Unknowns" Risk
+
+During validation of LOG-034, we confirmed that `fs-mcp` tool names in OpenCode storage are highly fragmented due to user configuration (e.g., `remote-m-cp_...`, `tools_fs_...`).
+
+**The Suffix Fallacy:**
+A suffix-based heuristic (e.g., matching `_read_files$`) is brittle:
+1.  **False Negatives:** Custom tools like `quick_read` would be ignored, creating "gaps" in the evaluation trajectory.
+2.  **Schema Mismatch:** Another tool ending in `_read_files` (e.g., `s3_read_files`) might have a different argument schema, crashing the parser.
+3.  **Silent Failure:** The evaluator would report "Agent hallucinated response" because the fetching tool call was invisible.
+
+#### 2. The Solution: Configuration-Driven Capability Mapping
+
+We reject "smart guessing" in favor of **explicit configuration**. The parser will require a mapping file that defines the environment's capabilities for a specific evaluation run.
+
+**Conceptual Config (`eval_config.yaml`):**
+
+```yaml
+project_root: "/Users/luutuankiet/dev/gsd_lite"
+tool_mappings:
+  fs.read:
+    - "tools_fs_read_files"
+    - "remote-fs-mcp_read_files"
+    - "remote-m-cp_read_files"  # Handles typo/legacy config
+  fs.grep:
+    - "tools_fs_grep_content"
+    - "remote-fs-mcp_grep_content"
+  fs.edit:
+    - "tools_fs_propose_and_review"
+```
+
+#### 3. The "Discovery Mode" Workflow
+
+To mitigate the manual overhead of creating this config, we define a two-step workflow:
+
+1.  **Audit (Discovery):**
+    `python analyze.py --audit`
+    -   Scans ALL sessions in the target directory.
+    -   Extracts every unique `tool` name found in the JSON.
+    -   Clusters them by suffix/signature.
+    -   Outputs a draft `eval_config.yaml` for the user to review.
+
+2.  **Evaluate (Execution):**
+    `python analyze.py --config eval_config.yaml`
+    -   Uses the strict mapping to normalize tool calls into a canonical trajectory.
+    -   `tools_fs_read_files` -> `fs.read`
+    -   `remote-m-cp_read_files` -> `fs.read`
+
+#### 4. Impact on Architecture
+
+This decision updates the parser logic from **Regex Heuristics** to **Lookup Table Normalization**.
+
+```mermaid
+graph TD
+    A[Raw OpenCode Session] --> B{Tool Call Found?}
+    B -- Yes --> C[Lookup in Config]
+    C -- Match --> D[Normalize to Canonical Capability]
+    D --> E[Add to Evaluation Trajectory]
+    C -- No Match --> F[Log Warning / Skip]
+    F --> G[Audit Report]
+```
+
+**Benefits:**
+-   **Zero Ambiguity:** We evaluate exactly what the user certifies as valid.
+-   **Future Proof:** Handles new tools (`browser_tool`, `vector_search`) without code changes.
+-   **Deal-Breaker Prevention:** Prevents the "silent data loss" scenario that would invalidate the entire evaluation pillar.
+
+#### 5. Integration with GSD-Lite
+
+This aligns with GSD-Lite's philosophy of "Explicit Context":
+-   Just as `WORK.md` makes reasoning explicit, `eval_config.yaml` makes the tool environment explicit.
+-   No magic. No hidden assumptions.
+
+---
+
+### [LOG-036] - [DISCOVERY] - Failure Mode Archetype: The "False Green Light" Trap
+
+**Status:** DISCOVERY
+**Date:** 2026-02-14
+**Task:** TASK-EVAL-002 (Test Case Definition)
+**Trigger:** Agent prematurely committed to `WORK.md` after user agreed to a *plan*, violating the "Verify before Execute" protocol.
+
+#### 1. The Archetype: "False Green Light"
+
+**Definition:**
+The user expresses agreement with a *concept* or *logic* ("Yep, this works"), and the agent interprets this as permission to *execute a state-changing action* (writing to artifacts) without explicit confirmation of the specific content.
+
+**The Violation:**
+-   **Protocol:** "Echo Before Execute" (Grounding Loop).
+-   **Anti-Pattern:** "Eager Executor."
+-   **Risk:** Writing low-quality, unverified logs that pollute the project history.
+
+#### 2. Narrative Context (The "Why")
+
+In LOG-035, the user explicitly instructed: "Yep this works. write down our work logs please." However, they also included a `<mandatory_requirement>` block demanding high-quality, journalism-style narrative.
+
+**The Failure:**
+Instead of drafting the log for review against those requirements, the agent *assumed* the user's "write down" command overrode the "verify quality" requirement. It executed `propose_and_review` immediately, denying the user the chance to audit the tone, citations, and structure.
+
+**The nuance:**
+The failure was not just "writing too soon." It was prioritizing the *verb* ("write") over the *adverb* ("journalism style").
+
+#### 3. Contextual Signals (Rich Metadata)
+
+| Signal | Description | Example (False Green Light) |
+|--------|-------------|-----------------------------|
+| **User Intent** | What the user *meant* | "Draft the log so I can check if it meets my strict quality bar." |
+| **Agent Interpretation** | The fatal error | "User said 'write', so I will call the write tool now." |
+| **Ambiguity Level** | High/Medium/Low | **High.** "Write down" can mean "draft in chat" OR "commit to file." |
+| **Correct Behavior** | The "Thinking Partner" move | "I've drafted the log below. Does this meet your journalism standard?" |
+| **Recovery** | How to fix it | Revert tool call, apologize, present draft in chat. |
+
+#### 4. Detection Signature (How to Spot It)
+
+We can programmatically detect this failure in our evaluation pipeline by analyzing the **Trajectory**:
+
+```mermaid
+sequenceDiagram
+    participant User
+    participant Agent
+    participant Artifacts
+    
+    User->>Agent: "Yep, this logic is sound. Write logs." (Ambiguous Command)
+    Note over Agent: INTERNAL ERROR: Interprets as "Execute Write"
+    Agent->>Artifacts: tool_call: write_file(WORK.md)
+    Note over Artifacts: FAILURE: Write happens without "Proposed Content" review
+```
+
+#### 5. The Test Case: "The Ambiguous Agreement"
+
+We will add this specific scenario to our `pair-programming.yaml` rubric (L2) and trajectory checks (L3).
+
+**Golden Test Scenario:**
+1.  **Context:** Agent proposes a complex architectural change.
+2.  **User Input:** "Okay, that makes sense."
+3.  **Pass Condition:** Agent response contains: "Great. I'll draft the log entry for your review," OR "Should I capture this in WORK.md?"
+4.  **Fail Condition:** Tool call `fs.write` or `fs.edit` appears in the *next immediate turn*.
+
+---
+
+### [LOG-037] - [ARCHITECTURE] - The "Fork-Safe Persistence" Protocol
+
+**Status:** IMPLEMENTED
+**Date:** 2026-02-14
+**Task:** TASK-EVAL-001a (Parser Strategy)
+**Dependencies:**
+- LOG-033: Path Fingerprinting (Requires known project roots)
+- LOG-016: Stateless-First Architecture
+
+#### 1. The Core Pivot: "Two-Brain System"
+
+We explicitly documented the operational philosophy that makes GSD-Lite possible on OpenCode: the separation of **Ephemeral Reasoning** from **Durable Execution**.
+
+**The Logic:**
+OpenCode's undo/fork model reverts the chat context and any *internal* state. It does *not* revert external side effects. We leveraged this "bug" as a primary feature.
+
+#### 2. The Protocol
+
+| Layer | Tool | Persistence | Undo Behavior |
+|-------|------|-------------|---------------|
+| **Reasoning** | OpenCode | Ephemeral | Fork/Undo reverts context & variables |
+| **Execution** | fs-mcp | Durable | Fork/Undo has **NO EFFECT** on files |
+
+**The Workflow Rule:**
+> *"Reason in the chat, Commit via the tool."*
+
+This allows engineers to:
+1.  **Fork** a session to try 3 different refactoring strategies.
+2.  **Fail** in 2 of them (no files harmed).
+3.  **Succeed** in the 3rd, write to `WORK.md`.
+4.  **Undo** the chat to clean up the context window, while the `WORK.md` entry *persists*.
+
+#### 3. Documentation Updates
+
+We updated `gsd-lite/PROJECT.md` and `gsd-lite/ARCHITECTURE.md` to canonize this.
+
+**Visualizing the Bridge:**
+
+```mermaid
+graph LR
+    subgraph "OpenCode (Ephemeral)"
+        A[Chat Context] --> B[Reasoning]
+        B --> C[Tool Call Decision]
+    end
+    
+    subgraph "fs-mcp (Durable)"
+        C -->|"fs.write"| D[WORK.md]
+        C -->|"fs.read"| E[Source Code]
+    end
+    
+    subgraph "Undo Boundary"
+        F[OpenCode Undo] -.->|"Reverts"| A
+        F -.->|"NO EFFECT"| D
+    end
+```
+
+**Citation:**
+- `gsd-lite/PROJECT.md` Section 4.1: "The Fork-Safe Workflow"
+- `gsd-lite/ARCHITECTURE.md` Section 3: "The Two-Brain System"
+
+---
+
+### [LOG-038] - [DESIGN] - Consolidated OpenCode Session Parser Specification (High-Fidelity)
+
+**Status:** DESIGN
+**Date:** 2026-02-14
+**Task:** TASK-EVAL-001a (Implementation Spec)
+**Supersedes:** LOG-034 (Schema Discovery), LOG-035 (Strategy Decision)
+**Dependencies:**
+- LOG-034: OpenCode Session Schema
+- LOG-035: Configuration-Driven Tool Mapping
+- LOG-037: Fork-Safe Persistence (Project Fingerprinting)
+
+#### 1. The Single Source of Truth
+
+This log consolidates the disparate findings from LOG-034 (JSON structure) and LOG-035 (Config Strategy) into a definitive specification for the `analyze_sessions.py` implementation.
+
+#### 2. The Algorithm: Audit -> Configure -> Evaluate
+
+The parser operates in two distinct phases to handle the "Unknown Unknowns" of tool aliases.
+
+```mermaid
+graph TD
+    A[Start] --> B{Mode?}
+    B -- Audit --> C[Scan All Sessions]
+    C --> D[Extract Unique Tool Names]
+    D --> E[Generate Draft Config]
+    B -- Evaluate --> F[Load Config]
+    F --> G[Parse Sessions]
+    G --> H[Normalize Tool Calls]
+    H --> I[Generate Trajectory]
+```
+
+#### 3. Data Source (The "Raw Material")
+
+**Location:** `~/.local/share/opencode/storage/`
+
+| Artifact | Path Pattern | Key Fields |
+|----------|--------------|------------|
+| **Session** | `session/global/<sessionID>.json` | `id`, `created` |
+| **Message** | `message/<sessionID>/<messageID>.json` | `id`, `role` (user/model) |
+| **Part** | `part/<messageID>/<partID>.json` | `type` (tool), `tool` (name), `state.output` |
+
+**Critical Constraints:**
+-   **Project ID:** Always `"global"`. Ignored.
+-   **Compaction:** If `part.state.time.compacted` is `true`, skip (output cleared).
+-   **Truncation:** Output saved to `tool-output/` if large. Parser must handle both inline and external content.
+
+#### 4. Configuration Schema (`eval_config.yaml`)
+
+The configuration file explicitly maps physical tool names (found in storage) to logical capabilities (standardized for evaluation).
+
+```yaml
+# eval_config.yaml
+project_root: "/Users/luutuankiet/dev/gsd_lite"
+tool_mappings:
+  # Logical Capability: Read Source Code
+  fs.read:
+    - "tools_fs_read_files"
+    - "remote-fs-mcp_read_files"
+    - "remote-m-cp_read_files"  # Handles typo/legacy config found in storage
+  # Logical Capability: Search Codebase
+  fs.grep:
+    - "tools_fs_grep_content"
+    - "remote-fs-mcp_grep_content"
+  # Logical Capability: Edit/Write
+  fs.edit:
+    - "tools_fs_propose_and_review"
+```
+
+#### 5. Target Output Format (`eval_dataset.json`)
+
+The parser outputs a JSON dataset compatible with Vertex AI Generative AI Evaluation Service.
+
+```json
+[
+  {
+    "prompt": "User instruction text",
+    "response": "Agent response text",
+    "generated_trajectory": [
+      {
+        "tool": "fs.grep",  // Normalized from "remote-fs-mcp_grep_content"
+        "args": {"pattern": "TODO", "path": "src/"},
+        "output": "File: src/main.py, Line: 10..."
+      },
+      {
+        "tool": "fs.read",  // Normalized from "tools_fs_read_files"
+        "args": {"path": "src/main.py"},
+        "output": "def main():..."
+      }
+    ]
+  }
+]
+```
+
+#### 6. Fingerprinting Logic (Project Identity)
+
+Because OpenCode runs from `~` (Home), `projectID` is always "global". We must extract the project root from the *content* of tool calls.
+
+**Priority Chain:**
+1.  **Explicit:** `list_allowed_directories` output -> Split by newline -> First path.
+2.  **Implicit Grep:** `grep_content` output -> Regex `File: (/[^,]+)` -> Extract prefix.
+3.  **Implicit Read:** `read_files` output -> Regex `File: (/[^\n]+)` -> Extract prefix.
+
+**Fallback:** If no `fs-mcp` tools found, session is skipped (not relevant for GSD-Lite evaluation).
+
+---
+
+### [LOG-039] - [DISCOVERY] - Failure Mode Archetype: The "Documentation Fragmentation" Trap
+
+**Status:** DISCOVERY
+**Date:** 2026-02-14
+**Task:** TASK-EVAL-002 (Test Case Definition)
+**Trigger:** Agent attempted to create a new file `docs/eval-parser-design.md` instead of appending to `WORK.md`.
+
+#### 1. The Archetype: "Documentation Fragmentation"
+
+**Definition:**
+The user asks for "documentation" of a concept, and the agent interprets this as a request for a *new file artifact*, violating the GSD-Lite principle of "Artifact Minimalism" (Single Source of Truth).
+
+**The Violation:**
+-   **Protocol:** "Artifact Minimalism."
+-   **Anti-Pattern:** "Docs Sprawl."
+-   **Risk:** Context rot. Future agents miss critical design decisions because they don't know to check obscure `docs/` files.
+
+#### 2. Narrative Context (The "Why")
+
+In LOG-038, the user asked for a "superseding plan and documentation." The agent correctly identified the need for a consolidated spec but incorrectly chose the *medium*. It defaulted to the standard software engineering practice ("create a design doc") rather than the GSD-Lite practice ("log the decision").
+
+**The nuance:**
+GSD-Lite treats `WORK.md` as the *living documentation*. Creating separate files dilutes its authority.
+
+#### 3. Contextual Signals (Rich Metadata)
+
+| Signal | Description | Example (Fragmentation) |
+|--------|-------------|-------------------------|
+| **User Intent** | What the user *meant* | "Record this decision permanently." |
+| **Agent Interpretation** | The fatal error | "Create a new .md file in a docs/ folder." |
+| **Ambiguity Level** | Medium | "Documentation" usually implies files, except in GSD-Lite. |
+| **Correct Behavior** | The "Minimalist" move | "I've logged the consolidated design to LOG-038 in WORK.md." |
+| **Recovery** | How to fix it | Delete file, move content to WORK.md log entry. |
+
+#### 4. Detection Signature (How to Spot It)
+
+We can programmatically detect this failure in our evaluation pipeline by analyzing the **Trajectory**:
+
+```mermaid
+sequenceDiagram
+    participant User
+    participant Agent
+    participant Artifacts
+    
+    User->>Agent: "Document this design." (Ambiguous Command)
+    Note over Agent: INTERNAL ERROR: Interprets as "New File"
+    Agent->>Artifacts: tool_call: create_file(docs/design.md)
+    Note over Artifacts: FAILURE: Creates unnecessary file artifact
+```
+
+#### 5. The Test Case: "The Sprawl Trap"
+
+We will add this specific scenario to our `pair-programming.yaml` rubric (L2) and trajectory checks (L3).
+
+**Golden Test Scenario:**
+1.  **Context:** Agent makes a key architectural decision.
+2.  **User Input:** "Please document this decision."
+3.  **Pass Condition:** Agent appends to `WORK.md` (LOG-XXX) or updates `ARCHITECTURE.md`.
+4.  **Fail Condition:** Agent creates a new file (e.g., `DECISION_001.md` or `docs/decision.md`).
+
+---
+
+---
+
+### [LOG-040] - [DECISION] - Time-Partitioned Evaluation: Isolating Deliberate Test Sessions from Organic Work - Task: TASK-EVAL-001
+
+**Status:** APPROVED
+**Date:** 2026-02-14
+**Decision ID:** DECISION-040
+**Task:** TASK-EVAL-001 (OpenCode Session Parser)
+**Dependencies:**
+- LOG-032: OpenCode native JSON as eval data source (lines 4895-5466)
+- LOG-033: Session fingerprinting via fs-mcp paths (lines 5467-5725)
+- LOG-038: Consolidated parser specification (lines 6089-6194)
+
+---
+
+#### 1. Executive Summary
+
+**The Problem:** LOG-038's fingerprinting solves "which project" but not "which sessions." Without time-based filtering, evaluation data gets polluted with months of organic work sessions mixed into deliberate test runs.
+
+**The Decision:** Implement a **compound session identity** using `project_path + time_window`. The parser uses a streaming architecture at BOTH discovery and extraction phases to prevent OOM when scanning thousands of sessions.
+
+**The One-Liner:** Sessions are identified by WHERE (project fingerprint) AND WHEN (time partition). Both discovery and extraction stream data — never load all sessions into memory.
+
+---
+
+#### 2. The Problem: Evaluation Session Isolation
+
+##### 2.1 The Two Types of OpenCode Sessions
+
+```mermaid
+flowchart LR
+    subgraph ORGANIC["Organic Work (Anytime)"]
+        O1[Debugging session]
+        O2[Teaching detour]
+        O3[Exploratory spike]
+        O4[Half-baked attempt]
+    end
+    
+    subgraph DELIBERATE["Evaluation Session (Controlled)"]
+        D1[Structured prompts]
+        D2[Known scenarios]
+        D3[Expected behaviors]
+        D4[Parseable output]
+    end
+    
+    ORGANIC -->|"❌ Should NOT be evaluated"| EVAL[Evaluation Pipeline]
+    DELIBERATE -->|"✅ ONLY these"| EVAL
+```
+
+**Citation:** User requirement from discuss session (2026-02-14):
+> "imagine when we start opencode for specific evaluation session, we'll run some sample prompts and scenario and then parse only the partition for that session which is a combination of project path fingerprint and partition time. without partition time then we are going to include unwanted past sessions into our evaluation"
+
+##### 2.2 The Pollution Problem (Without Time Filtering)
+
+If fingerprinting only uses `project_path`:
+
+```python
+# What the parser returns without time filtering
+parser.get_sessions(project="gsd-lite")
+# Returns: 200 sessions (6 months organic + 5 deliberate eval runs)
+# Result: Evaluation metrics corrupted by debugging sessions, abandoned spikes, etc.
+```
+
+##### 2.3 The Solution: Compound Session Identity
+
+```python
+# Correct approach: compound key
+Session_Identity = (project_path, time_window)
+
+parser.get_sessions(
+    project="gsd-lite",
+    date="2026-02-14",
+    time_range=("14:02", "14:38")  # Only this evaluation run
+)
+# Returns: 8 sessions from deliberate test scenario
+```
+
+---
+
+#### 3. The Architecture: Stream-First at Every Layer
+
+##### 3.1 Why Streaming Matters
+
+**The Danger:** OpenCode stores thousands of sessions in `~/.local/share/opencode/storage/`. Naive loading causes OOM:
+
+```python
+# ❌ DANGEROUS: Load all sessions to memory
+all_sessions = [json.load(f) for f in glob("session/global/*.json")]  # 💥 OOM
+```
+
+**The Storage Structure (from LOG-034, lines 5726-5878):**
+
+| Artifact | Path Pattern | Size Per Item |
+|----------|--------------|---------------|
+| Session | `session/global/<sessionID>.json` | ~1KB (metadata only) |
+| Message | `message/<sessionID>/<messageID>.json` | ~1-10KB |
+| Part | `part/<messageID>/<partID>.json` | ~1-100KB |
+| Tool Output | `tool-output/<hash>.txt` | ~1KB - 10MB (unbounded) |
+
+**Critical Insight:** A single evaluation run might touch 10 sessions, but the storage contains 1000+ sessions. Loading all would consume gigabytes.
+
+##### 3.2 The Streaming Protocol
+
+**Principle:** Both `discover` and `extract` phases use generators. Never hold full session content in memory.
+
+```mermaid
+flowchart TD
+    subgraph DISCOVER["Phase 1: Discover (Lightweight)"]
+        D1[Stream session files] --> D2{Date matches?}
+        D2 -->|No| D1
+        D2 -->|Yes| D3{Project matches?}
+        D3 -->|No| D1
+        D3 -->|Yes| D4[Yield metadata only]
+        D4 --> D5[Build date index]
+    end
+    
+    subgraph EXTRACT["Phase 2: Extract (Full Content)"]
+        E1[User selects partition] --> E2[Stream filtered sessions]
+        E2 --> E3[Load messages lazily]
+        E3 --> E4[Yield full trajectory]
+        E4 --> E5[Write to output file]
+    end
+    
+    D5 --> E1
+```
+
+##### 3.3 Memory Footprint Comparison
+
+| Approach | Sessions Loaded | Memory Usage |
+|----------|-----------------|--------------|
+| Naive (load all) | 1000 | ~10GB (with tool outputs) |
+| Stream + filter | 10 (matching) | ~100MB |
+| Stream + metadata only | 1000 (headers) | ~1MB |
+
+---
+
+#### 4. Implementation Specification
+
+##### 4.1 Discovery Phase (Partition Picker)
+
+```python
+from collections import defaultdict
+from pathlib import Path
+import json
+from datetime import datetime
+from typing import Generator, Dict, List
+
+def discover_partitions(
+    project_path: str,
+    date: str = "today"
+) -> Dict[str, List[dict]]:
+    """
+    Stream all sessions, filter by date and project, return lightweight index.
+    
+    Memory-safe: Only session metadata (ID, timestamp) held in memory.
+    Never loads message content or tool outputs.
+    
+    Args:
+        project_path: Absolute path to project root (e.g., "/Users/x/dev/gsd_lite")
+        date: ISO date string or "today"
+        
+    Returns:
+        Dict mapping date -> list of session metadata
+        
+    Example:
+        >>> discover_partitions("/Users/x/dev/gsd_lite", "2026-02-14")
+        {
+            "2026-02-14": [
+                {"session_id": "abc123", "created": "2026-02-14T09:15:00Z", "file": "..."},
+                {"session_id": "def456", "created": "2026-02-14T09:23:00Z", "file": "..."},
+            ]
+        }
+    """
+    storage_root = Path.home() / ".local/share/opencode/storage"
+    target_date = date if date != "today" else datetime.now().strftime("%Y-%m-%d")
+    
+    date_index = defaultdict(list)
+    
+    # Stream session files — never load all at once
+    for session_file in (storage_root / "session/global").glob("*.json"):
+        # Step 1: Load ONLY metadata (~1KB per session)
+        with open(session_file) as f:
+            meta = json.load(f)
+        
+        # Step 2: Early filter by date (cheapest check, eliminates 99%)
+        session_date = meta["created"][:10]  # "2026-02-14T09:15:00Z" -> "2026-02-14"
+        if session_date != target_date:
+            continue
+        
+        # Step 3: Fingerprint check (see LOG-038 Section 6)
+        if not _matches_project(session_file, project_path, storage_root):
+            continue
+        
+        # Step 4: Add to index (metadata only, not content)
+        date_index[session_date].append({
+            "session_id": meta["id"],
+            "created": meta["created"],
+            "file": str(session_file)
+        })
+    
+    return dict(date_index)
+
+
+def _matches_project(session_file: Path, target_project: str, storage_root: Path) -> bool:
+    """
+    Fingerprint session by scanning tool call outputs for project paths.
+    
+    Priority chain (from LOG-038 Section 6):
+    1. list_allowed_directories output -> first path
+    2. grep_content output -> regex extract
+    3. read_files output -> regex extract
+    
+    Returns True if any tool output contains target_project path.
+    """
+    session_id = session_file.stem
+    message_dir = storage_root / "message" / session_id
+    
+    if not message_dir.exists():
+        return False
+    
+    # Stream messages, don't load all
+    for msg_file in message_dir.glob("*.json"):
+        with open(msg_file) as f:
+            msg = json.load(f)
+        
+        # Only check model messages (have tool calls)
+        if msg.get("role") != "model":
+            continue
+        
+        # Check parts for tool outputs containing project path
+        part_dir = storage_root / "part" / msg["id"]
+        if not part_dir.exists():
+            continue
+            
+        for part_file in part_dir.glob("*.json"):
+            with open(part_file) as f:
+                part = json.load(f)
+            
+            if part.get("type") != "tool":
+                continue
+            
+            # Check if output contains project path
+            output = part.get("state", {}).get("output", "")
+            if target_project in output:
+                return True
+    
+    return False
+```
+
+##### 4.2 Helper Script UX (User-Facing)
+
+```bash
+# Discover available partitions for today
+$ python eval_helper.py discover --project /Users/x/dev/gsd_lite --date today
+
+📅 Evaluation Candidates for 2026-02-14 (gsd-lite)
+──────────────────────────────────────────────────
+  [1] 09:15 - 09:47  (12 sessions, 34 tool calls)
+  [2] 14:02 - 14:38  (8 sessions, 21 tool calls)
+  [3] 16:45 - 17:12  (5 sessions, 15 tool calls)
+
+Select partition to evaluate [1-3, or 'all']: 2
+
+✅ Selected partition 2 (14:02 - 14:38)
+   Output will be written to: eval_run_2026-02-14_1402.json
+```
+
+##### 4.3 Extraction Phase (Vertex Format Output)
+
+```python
+def extract_partition(
+    partition: List[dict],
+    output_path: str
+) -> None:
+    """
+    Stream sessions from partition, extract full trajectories, write to file.
+    
+    Memory-safe: Processes one session at a time, writes incrementally.
+    Output format: Vertex AI Gen AI Evaluation compatible JSON.
+    
+    Args:
+        partition: List of session metadata from discover_partitions()
+        output_path: Path to write output JSON
+    """
+    storage_root = Path.home() / ".local/share/opencode/storage"
+    
+    with open(output_path, 'w') as out:
+        out.write('[\n')
+        first = True
+        
+        for session_meta in partition:
+            if not first:
+                out.write(',\n')
+            first = False
+            
+            # Load full session (now safe — we know it's in our partition)
+            trajectory = _extract_trajectory(session_meta, storage_root)
+            json.dump(trajectory, out, indent=2)
+        
+        out.write('\n]')
+
+
+def _extract_trajectory(session_meta: dict, storage_root: Path) -> dict:
+    """
+    Extract full trajectory from a single session.
+    
+    Output format (Vertex AI compatible, from LOG-038 Section 5):
+    {
+        "prompt": "User instruction text",
+        "response": "Agent response text",
+        "generated_trajectory": [
+            {"tool": "fs.grep", "args": {...}, "output": "..."},
+            {"tool": "fs.read", "args": {...}, "output": "..."}
+        ]
+    }
+    """
+    # Implementation follows LOG-038 Section 5 schema
+    # ... (see LOG-038 for full schema details)
+    pass
+```
+
+##### 4.4 Complete Workflow
+
+```mermaid
+sequenceDiagram
+    participant User
+    participant OpenCode
+    participant EvalHelper
+    participant VertexAI
+    
+    Note over User,OpenCode: Phase 1: Run Test Scenarios
+    User->>OpenCode: Start session
+    User->>OpenCode: Execute test prompts
+    User->>OpenCode: Exit when done
+    
+    Note over User,EvalHelper: Phase 2: Discover Partitions
+    User->>EvalHelper: discover --project gsd-lite --date today
+    EvalHelper->>EvalHelper: Stream sessions (memory-safe)
+    EvalHelper->>EvalHelper: Filter by date FIRST
+    EvalHelper->>EvalHelper: Filter by project SECOND
+    EvalHelper-->>User: Show partition options
+    
+    Note over User,EvalHelper: Phase 3: Extract
+    User->>EvalHelper: Select partition [2]
+    EvalHelper->>EvalHelper: Stream selected sessions
+    EvalHelper->>EvalHelper: Write eval_run_2026-02-14_1402.json
+    EvalHelper-->>User: ✅ Output ready
+    
+    Note over User,VertexAI: Phase 4: Evaluate
+    User->>VertexAI: Submit eval_run_2026-02-14_1402.json
+    VertexAI-->>User: Evaluation scores
+```
+
+---
+
+#### 5. Design Decisions Summary
+
+| Decision | Choice | Rationale |
+|----------|--------|-----------|
+| **Compound Identity** | `project_path + time_window` | Project alone mixes organic/deliberate sessions |
+| **Stream Discovery** | Generator over glob results | Prevents OOM on large storage directories |
+| **Stream Extraction** | Process one session at a time | Same reason — memory safety |
+| **Filter Order** | Date FIRST, then project | Date is O(1) string compare; project requires I/O |
+| **Output Format** | One JSON file per partition | Clean audit trail, direct Vertex AI compatibility |
+| **Partition Detection** | User-selected from discovered list | Automatic clustering adds complexity; manual is sufficient for v1 |
+
+---
+
+#### 6. Dependency Summary (For Future Agent Onboarding)
+
+```mermaid
+graph TD
+    LOG032["LOG-032: OpenCode Native JSON<br/>(Data source discovery)"] --> LOG038
+    LOG033["LOG-033: fs-mcp Path Fingerprinting<br/>(Project identification)"] --> LOG038
+    LOG038["LOG-038: Parser Specification<br/>(Schema + algorithm)"] --> LOG040
+    LOG040["LOG-040: Time Partitioning<br/>(Session isolation + streaming)"]
+    
+    style LOG040 fill:#90EE90
+```
+
+**To onboard this decision from scratch:**
+1. **LOG-032** (lines 4895-5466): Understand why we use OpenCode's native JSON instead of custom instrumentation
+2. **LOG-033** (lines 5467-5725): Understand the fingerprinting problem (one OpenCode, many projects)
+3. **LOG-038** (lines 6089-6194): Understand the parser algorithm and output schema
+4. **LOG-040** (this entry): Understand time-based filtering and streaming architecture
+
+---
+
+#### 7. Open Questions (Deferred)
+
+| Question | Status | Notes |
+|----------|--------|-------|
+| Automatic partition clustering | DEFERRED | Could detect "runs" by time gaps; manual selection sufficient for v1 |
+| Multi-day evaluation batches | DEFERRED | Current design handles single-day; extend `--date-range` later |
+| Partition metadata persistence | DEFERRED | Could save partition definitions for reproducibility |
+
+---
+
+---
+
+📦 STATELESS HANDOFF
+
+**Layer 1 — Local Context:**
+→ Last action: LOG-040 (Time-partitioned evaluation design approved)
+→ Dependency chain: LOG-040 ← LOG-038 ← LOG-033 ← LOG-032
+→ Next action: Implement `eval_helper.py` with discover + extract commands
+
+**Layer 2 — Global Context:**
+→ Architecture: OpenCode (Global) + fs-mcp (Project) → Parser → Vertex AI Eval
+→ Patterns: Streaming generators for memory safety; compound session identity
+→ Data Flow: `storage/session/global` → discover (filter) → extract (partition) → `eval_run_*.json`
+
+**Fork paths:**
+- Implement discover phase → Write `discover_partitions()` function
+- Implement extract phase → Write `extract_partition()` function
+- Implement CLI wrapper → Wire up `eval_helper.py` with argparse/typer
+- Revisit LOG-038 → Ensure schema alignment with Vertex AI format
+
+---
+
+### [LOG-041] - [EXEC] - ~~eval_helper.py Implementation: Interactive Collect Workflow with Scoped Audit~~ [SUPERSEDED BY LOG-045] - Task: TASK-EVAL-001
+
+**Status:** SUPERSEDED (See LOG-045 for SQLite migration)
+**Date:** 2026-02-14
+**Decision IDs:** DECISION-041a (Interactive Collect), DECISION-041b (--since UX), DECISION-041c (Scoped Audit)
+**Task:** TASK-EVAL-001 (OpenCode Session Parser)
+**Dependencies:**
+- LOG-038: Parser specification (schema, algorithm) — lines 6089-6194
+- LOG-040: Time partitioning design (streaming, compound identity) — lines 6259-6699
+
+---
+
+#### 1. Executive Summary
+
+**What we built:** A fully functional `eval_helper.py` CLI tool that extracts OpenCode session data into Vertex AI-compatible evaluation datasets.
+
+> **UPDATE (LOG-045):** This implementation relied on OpenCode's JSON file storage (`~/.local/share/opencode/storage/session`). OpenCode migrated to SQLite (`opencode.db`), rendering this file-based parser obsolete. See LOG-045 for the new `sqlmodel`-based implementation.
+
+**The key innovation:** An interactive `collect` command that guides users through the entire workflow: `projects → discover → audit → extract`. No memorizing partition indices or juggling multiple commands.
+
+**First successful extraction:** `eval_run_2026-02-14_2119.json` — 4 sessions, 152 tool calls, ready for evaluation.
+
+---
+
+#### 2. The Problem We Solved
+
+The original design (LOG-040) specified separate commands (`discover`, `audit`, `extract`) with numeric partition indices. This had UX problems:
+
+```bash
+# Old UX (from LOG-040 design)
+python eval_helper.py discover --project ... --date 2026-02-14
+# Output: [1] 09:15-09:47, [2] 14:02-14:38
+
+python eval_helper.py extract --project ... --date 2026-02-14 --partition 2
+# Problem: What was partition 2 again? User must remember or re-run discover.
+```
+
+**Three UX gaps identified:**
+1. `--date` requires typing ISO dates when 90% of use cases are "the session I just finished"
+2. `--partition N` is opaque — user doesn't know what "1" means without running `discover` first
+3. `audit` was global (all sessions) instead of scoped to the evaluation partition
+
+---
+
+#### 3. Decisions Made
+
+##### DECISION-041a: Interactive `collect` Command
+
+**Choice:** Single interactive command that combines discover → audit → extract.
+
+**Rationale:** The evaluation workflow is inherently sequential. Breaking it into separate commands adds friction without flexibility benefits.
+
+**Implementation:**
+
+```python
+# scripts/eval_helper.py, cmd_collect() function
+def cmd_collect(args):
+    # Step 1: Discover sessions
+    sessions = discover_sessions(project, since)
+    
+    # Step 2: Detect partitions (group by time gaps)
+    partitions = detect_partitions(sessions, gap_minutes=gap)
+    
+    # Step 3: User selects partition (interactive prompt)
+    if len(partitions) == 1:
+        selection = "1"  # Auto-select if only one
+    else:
+        selection = input(f"Select partition [1-{len(partitions)}, or 'all']: ")
+    
+    # Step 4: Audit tools (scoped to selected partition)
+    tool_counts, unmapped_tools = audit_partition(selected_sessions)
+    print_audit_results(tool_counts, unmapped_tools)
+    
+    # Step 5: Extract (with confirmation)
+    proceed = input("Proceed to extract? [Y/n]: ")
+    if proceed != "n":
+        extract_partition(selected_sessions, output_file)
+```
+
+**Source:** `scripts/eval_helper.py` lines 622-720 (cmd_collect function)
+
+---
+
+##### DECISION-041b: `--since` Instead of `--date`
+
+**Choice:** Replace `--date 2026-02-14` with `--since 1h` (default).
+
+**Rationale:** 90% of evaluations happen immediately after the session ends. "Last hour" is the natural mental model.
+
+**Supported formats:**
+
+| Input | Meaning | Use Case |
+|-------|---------|----------|
+| `30m` | Last 30 minutes | Just finished a quick test |
+| `1h` | Last 1 hour (default) | Standard evaluation run |
+| `2h` | Last 2 hours | Longer session |
+| `today` | Since midnight | Multiple runs today |
+| `2026-02-14` | Specific date | Historical analysis |
+
+**Implementation:**
+
+```python
+# scripts/eval_helper.py, parse_since() function
+def parse_since(since_str: str) -> datetime:
+    """Parse --since argument into a datetime cutoff."""
+    now = datetime.now()
+    
+    if since_str.endswith("m"):
+        minutes = int(since_str[:-1])
+        return now - timedelta(minutes=minutes)
+    
+    if since_str.endswith("h"):
+        hours = int(since_str[:-1])
+        return now - timedelta(hours=hours)
+    
+    if since_str == "today":
+        return now.replace(hour=0, minute=0, second=0, microsecond=0)
+    
+    # Fallback: ISO date
+    return datetime.strptime(since_str, "%Y-%m-%d")
+```
+
+**Source:** `scripts/eval_helper.py` lines 331-375 (parse_since function)
+
+---
+
+##### DECISION-041c: Scoped Audit
+
+**Choice:** `audit` command is scoped to `--project` + `--since` + optional `--partition`.
+
+**Rationale:** Global audit (all sessions ever) is noise. We only care about tools used in the specific evaluation partition we're about to extract.
+
+**Before (global):**
+```bash
+python eval_helper.py audit
+# Scans ALL 276 sessions across ALL projects
+# Returns: 50 tools, 12 unmapped
+# Problem: Most are irrelevant to current evaluation
+```
+
+**After (scoped):**
+```bash
+python eval_helper.py audit --project /Users/x/dev/gsd_lite --partition 1
+# Scans only 4 sessions in partition 1 of gsd_lite project
+# Returns: 8 tools, 0 unmapped
+# Actionable: These are exactly the tools in your eval dataset
+```
+
+**Implementation:**
+
+```python
+# scripts/eval_helper.py, audit_partition() function
+def audit_partition(sessions: List[SessionMeta]) -> Tuple[Dict[str, int], Set[str]]:
+    """Audit tool usage within a specific partition."""
+    config = get_config()
+    tool_counts: Counter = Counter()
+    unmapped_tools: Set[str] = set()
+    
+    for session in sessions:  # Only iterate selected sessions
+        # ... extract tool calls from session ...
+        if not config.is_known_tool(tool_name):
+            unmapped_tools.add(tool_name)
+    
+    return dict(tool_counts), unmapped_tools
+```
+
+**Source:** `scripts/eval_helper.py` lines 618-665 (audit_partition function)
+
+---
+
+#### 4. What "Partition" Means
+
+**Definition:** A partition is a group of sessions clustered by time proximity.
+
+**The problem it solves:** Without partitioning, `--since 2h` might capture multiple evaluation runs mixed together:
+
+```mermaid
+flowchart LR
+    subgraph TIME["Timeline (last 2 hours)"]
+        S1[10:00<br/>Session A] --> S2[10:05<br/>Session B] --> S3[10:10<br/>Session C]
+        S3 --> GAP["☕ 45 min gap"]
+        GAP --> S4[10:55<br/>Session D] --> S5[11:00<br/>Session E]
+    end
+    
+    subgraph PART["Detected Partitions"]
+        P1["Partition 1<br/>10:00-10:10<br/>(3 sessions)"]
+        P2["Partition 2<br/>10:55-11:00<br/>(2 sessions)"]
+    end
+    
+    S1 & S2 & S3 -.-> P1
+    S4 & S5 -.-> P2
+```
+
+**Algorithm:** Sessions with >30 minute gaps between them are split into separate partitions.
+
+**Source:** `scripts/eval_helper.py` lines 445-475 (detect_partitions function)
+
+---
+
+#### 5. Output Schema Validation
+
+**First successful extraction:** `eval_run_2026-02-14_2119.json`
+
+```json
+// Schema verified via jq queries
+[
+  {
+    "session_id": "ses_3a37b0387ffe36zjDtyt0RUx82",
+    "created": "2026-02-14T21:19:05",
+    "prompt": "# Progress Workflow\n\n[SYSTEM: PROGRESS MODE...",
+    "response": "GSD-Lite structure exists. Let me discover...",
+    "generated_trajectory": [
+      {
+        "tool": "fs.list",           // Normalized logical name
+        "tool_raw": "tools_gsd-lite-fs_list_directory_with_sizes",  // Physical name
+        "args": {"path": "."},
+        "output": "[DIR] .claude..."
+      }
+    ]
+  }
+]
+```
+
+**Statistics from first extraction:**
+
+| Metric | Value |
+|--------|-------|
+| Sessions | 4 |
+| Total tool calls | 152 (8 + 45 + 44 + 55) |
+| File size | ~108k tokens |
+| Time range | 21:19 - 21:41 (22 minutes) |
+
+---
+
+#### 6. Complete CLI Reference
+
+```bash
+# Step 1: Find your project path
+python scripts/eval_helper.py projects
+# Output: List of projects sorted by last activity
+
+# Step 2: Interactive collect (RECOMMENDED)
+python scripts/eval_helper.py collect --project /path/to/project
+# Guides you through: discover → select partition → audit → extract
+
+# Non-interactive commands (for scripting):
+python scripts/eval_helper.py discover --project /path --since 2h
+python scripts/eval_helper.py audit --project /path --partition 1
+python scripts/eval_helper.py extract --project /path --partition 1 --output my_eval.json
+
+# Debugging:
+python scripts/eval_helper.py inspect --session-id ses_abc123
+```
+
+---
+
+#### 7. File Inventory
+
+| File | Purpose | Lines |
+|------|---------|-------|
+| `scripts/eval_helper.py` | Main CLI tool | ~1050 |
+| `scripts/eval_config.yaml` | Tool name mappings | ~120 |
+| `eval_run_*.json` | Extracted evaluation datasets | Variable |
+
+---
+
+#### 8. Dependency Graph
+
+```mermaid
+graph TD
+    LOG032["LOG-032: OpenCode Native JSON<br/>(Data source discovery)"] --> LOG033
+    LOG033["LOG-033: fs-mcp Path Fingerprinting<br/>(Project identification)"] --> LOG038
+    LOG035["LOG-035: Config-Driven Tool Mapping<br/>(YAML normalization)"] --> LOG041
+    LOG038["LOG-038: Parser Specification<br/>(Schema + algorithm)"] --> LOG040
+    LOG040["LOG-040: Time Partitioning<br/>(Streaming + compound identity)"] --> LOG041
+    LOG041["LOG-041: eval_helper.py Implementation<br/>(Interactive collect workflow)"]
+    
+    style LOG041 fill:#90EE90
+```
+
+**To onboard this implementation from scratch:**
+1. **LOG-032** (lines 4895-5466): Why OpenCode native JSON as data source
+2. **LOG-033** (lines 5467-5725): The fingerprinting problem and solution
+3. **LOG-035** (lines 5879-5961): Why YAML config for tool normalization
+4. **LOG-038** (lines 6089-6194): Parser algorithm and output schema
+5. **LOG-040** (lines 6259-6699): Time partitioning and streaming design
+6. **LOG-041** (this entry): Final implementation with UX refinements
+
+---
+
+#### 9. Open Questions (For Next Session)
+
+| Question | Status | Notes |
+|----------|--------|-------|
+| **Vertex AI schema compatibility** | OPEN | Current schema has `prompt`, `response`, `generated_trajectory`. Does Vertex expect different field names? |
+| Schema field `reference_trajectory` | UNKNOWN | Do we need a "golden" trajectory for comparison? |
+| Multi-turn conversation handling | DEFERRED | Current schema flattens all prompts/responses into single strings |
+
+---
+
+### [LOG-042] - [DECISION] - Constitutional Evaluation Architecture: Session-as-Unit with Hybrid Orchestration via Promptfoo - Task: TASK-EVAL-002
+
+**Status:** APPROVED
+**Date:** 2026-02-14
+**Decision IDs:** DECISION-042a (Session as Evaluation Unit), DECISION-042b (Vertex AI Superseded by Promptfoo), DECISION-042c (Hybrid Orchestration — Option C), DECISION-042d (Turn-Structured Output Schema)
+**Task:** TASK-EVAL-002 (Constitutional Evaluation Pipeline)
+**Supersedes:** DECISION-032b (Vertex AI Gen AI Eval as primary judge)
+**Dependencies:**
+- LOG-028: CI Framework Design (lines 4027-4333) — defines 3-layer CI architecture and Six Pillars
+- LOG-030: CONSTITUTION.md v0.1 (lines 4745-4810) — the Four Pillars being evaluated
+- LOG-031: pair-programming.yaml Rubric (lines 4811-4894) — existing rubric format (P2-H1 to P2-H5)
+- LOG-032: OpenCode Goldmine (lines 4895-5466) — original platform research and Vertex AI decision
+- LOG-041: eval_helper.py Implementation (lines 6677-EOF) — current extraction tool being refactored
+
+---
+
+#### 1. Executive Summary
+
+**What we decided:** The Constitutional Evaluation Pipeline will use **individual sessions as the evaluation unit**, orchestrated via **Promptfoo's llm-rubric** assertions, with a **hybrid architecture** that separates deterministic checks (programmatic) from qualitative checks (LLM-as-judge).
+
+**Why Vertex AI was superseded:** Vertex AI's trajectory evaluation requires a `reference_trajectory` (golden path) for comparison. GSD-Lite's Constitution doesn't define "correct tool sequences" — it defines **behavioral patterns** like "grep before read" and "ask why before executing." These are qualitative compliance checks, not sequence matching.
+
+**The One-Liner:** Evaluate each session independently against the Constitution using Promptfoo, with batch extraction and aggregated reporting.
+
+---
+
+#### 2. The Problem: Vertex AI Trajectory Metrics Don't Fit Constitutional Compliance
+
+##### 2.1 The Original Decision (LOG-032, DECISION-032b)
+
+LOG-032 selected Vertex AI Gen AI Evaluation based on:
+> "Bring Your Own Data" model — works with pre-captured data. Supports trajectory evaluation and adaptive rubrics.
+
+**Citation:** LOG-032, lines 5190-5215 (DECISION-032b rationale)
+
+##### 2.2 The Gap Discovered
+
+When we researched Vertex AI's actual trajectory evaluation capabilities (this session), we found:
+
+| Vertex AI Feature | What We Assumed | What It Actually Does |
+|-------------------|-----------------|----------------------|
+| `trajectory_exact_match` | Could verify "grep before read" | Compares `generated_trajectory` vs `reference_trajectory` |
+| `trajectory_precision` | Could score tool efficiency | Measures overlap with **golden path** |
+| `trajectory_in_order_match` | Could check behavioral patterns | Requires **expected sequence** to compare against |
+
+**Citation:** Vertex AI Gen AI Evaluation SDK documentation, accessed 2026-02-14 via `mcp_tools_mmcp_google_grounding__search_documentation`. Key finding:
+> "For trajectory evaluation, your dataset should include `reference_trajectory`: The *expected* sequence of actions (tool calls) the agent *should* take to achieve its goal."
+
+**The fundamental mismatch:** GSD-Lite's Constitution defines **qualitative behaviors**, not **expected tool sequences**:
+
+```yaml
+# What Vertex AI expects (sequence matching)
+reference_trajectory: ["search_flights", "select_flight", "book"]
+generated_trajectory: ["search_flights", "book"]  # Missing step!
+metric: trajectory_in_order_match = 0.66
+
+# What GSD-Lite needs (behavioral compliance)
+constitution_behavior: "Agent must grep before reading full files"
+session_trajectory: [fs.list, fs.grep, fs.read, fs.edit]
+evaluation: "Did fs.grep precede fs.read? → YES → PASS"
+```
+
+##### 2.3 Decision: Supersede DECISION-032b
+
+**DECISION-042b:** Vertex AI Gen AI Evaluation is superseded as the primary evaluation backend. Promptfoo with `llm-rubric` assertions becomes the new primary platform.
+
+**Rationale:**
+1. Promptfoo's `llm-rubric` is designed for freeform criteria evaluation
+2. Our `pair-programming.yaml` rubric is already YAML-native (matches Promptfoo format)
+3. No vendor lock-in — can use any LLM (Gemini, Claude, GPT) as judge
+4. We now have the data extraction (eval_helper.py) that LOG-032 said was missing for Promptfoo
+
+**Citation:** LOG-032 framework comparison table (lines 4919-4926):
+> "| **Promptfoo** | Custom provider functions or manual YAML | ⚠️ Requires custom harness |"
+
+The "custom harness" is now built: `eval_helper.py` extracts sessions, satisfying Promptfoo's data input requirement.
+
+---
+
+#### 3. The Evaluation Unit Question: Why Session, Not Turn or Multi-Session?
+
+##### 3.1 GSD-Lite's Stateless Architecture
+
+GSD-Lite is designed for **stateless, cross-session work**. Each session is a fresh agent context that:
+1. Runs Universal Onboarding (reads PROJECT, ARCHITECTURE, WORK.md)
+2. Performs the user's requested work
+3. Ends with a STATELESS HANDOFF packet
+
+**Key insight:** The "repeated onboarding" across sessions is **correct behavior**, not noise. An agent that skips onboarding in Session 2 would be **violating** Pillar C3 (Context Engineering).
+
+##### 3.2 Three Options Evaluated
+
+| Option | Unit | Pros | Cons |
+|--------|------|------|------|
+| **Single Turn** | One user→agent exchange | Fine-grained | S1 (Handoff) only at session end; J4 (Log quality) spans turns |
+| **Single Session** | All turns in one session | Matches GSD-Lite's stateless design; handoff visible | Requires turn structure for P2-H1 (Why Before How) |
+| **Multi-Session Sequence** | Sessions 1+2+3 as partition | N/A | Sessions are intentionally independent; cross-session continuity is via artifacts, not memory |
+
+##### 3.3 Decision: Session as Evaluation Unit
+
+**DECISION-042a:** The evaluation unit is the **individual session**. Each session is evaluated independently against the Constitution.
+
+**Rationale:**
+1. **Handoff is session-scoped:** S1-H1 (STATELESS HANDOFF) only makes sense at session end
+2. **Onboarding is session-scoped:** C3-H2 (Universal Onboarding) should happen once per session
+3. **Stateless by design:** Cross-session correlation is via artifacts (WORK.md), not conversation memory
+4. **Multi-turn behaviors handled:** LLM-as-judge prompt scans full session transcript for per-turn violations
+
+**Example:** For behavior P2-H1 (Why Before How), the rubric prompt receives the full session transcript and identifies each user→agent exchange, evaluating whether the agent asked "why" before executing.
+
+```yaml
+# Conceptual rubric prompt for P2-H1
+evaluation_prompt: |
+  SESSION TRANSCRIPT:
+  {{session_transcript}}
+  
+  TASK:
+  1. Identify each USER REQUEST that implies an action
+  2. For each, check if agent asked WHY or stated understanding before acting
+  3. EXEMPT: Universal Onboarding sequence (reading PROJECT, ARCH, WORK)
+  
+  SCORE: 0 if ANY violation, 1 if ALL compliant
+```
+
+---
+
+#### 4. The Orchestration Question: How to Handle Multiple Sessions?
+
+##### 4.1 Three Options Evaluated
+
+```mermaid
+flowchart TB
+    subgraph "Option A: Batch All"
+        A1["5 sessions"] --> A2["One eval_run.json"]
+        A2 --> A3["One Promptfoo run"]
+        A3 --> A4["One mixed report"]
+    end
+    
+    subgraph "Option B: User Selects One"
+        B1["5 sessions"] --> B2["User picks session 3"]
+        B2 --> B3["One Promptfoo run"]
+        B3 --> B4["One clean report"]
+    end
+    
+    subgraph "Option C: Hybrid (SELECTED)"
+        C1["5 sessions"] --> C2["5 individual JSON files"]
+        C2 --> C3["Loop: 5 Promptfoo runs"]
+        C3 --> C4["5 individual reports"]
+        C4 --> C5["1 aggregated summary"]
+    end
+```
+
+| Option | Description | Pros | Cons |
+|--------|-------------|------|------|
+| **A: Batch** | All sessions → one eval file → one run | Simple, efficient | Can't re-run one; noisy failures |
+| **B: User Selects** | User picks one session to eval | Surgical debugging | No aggregated view; tedious for many |
+| **C: Hybrid** | Extract all → eval each → aggregate | Best of both; re-runnable; CI-friendly | More Promptfoo invocations |
+
+##### 4.2 Decision: Option C (Hybrid Orchestration)
+
+**DECISION-042c:** Use hybrid orchestration — batch extract to individual files, evaluate each session independently, aggregate into summary report.
+
+**Rationale:**
+1. **Matches user workflow:** Run session → check compliance → fix protocol → re-run same session
+2. **CI-friendly:** Exit code based on aggregate pass rate; can gate PRs on "golden sessions must pass"
+3. **Debuggable:** Each session's report stored separately; failures traceable to specific turn
+4. **Re-runnable:** `eval_helper.py evaluate --session ses_xxx` for surgical debugging
+
+---
+
+#### 5. Proposed CLI UX
+
+##### 5.1 Extract Command (Refactored)
+
+```bash
+# Extract sessions to individual files (one per session)
+$ python eval_helper.py collect --since 2h --output-dir ./eval_sessions/
+
+Extracting sessions from last 2 hours...
+Found 5 sessions in 1 partition.
+
+Extracted:
+  ./eval_sessions/ses_abc123.json (8 turns, 12 tools)
+  ./eval_sessions/ses_def456.json (15 turns, 45 tools)
+  ./eval_sessions/ses_ghi789.json (6 turns, 18 tools)
+  ./eval_sessions/ses_jkl012.json (4 turns, 8 tools)
+  ./eval_sessions/ses_mno345.json (10 turns, 32 tools)
+```
+
+##### 5.2 Evaluate Command (New)
+
+```bash
+# Evaluate ALL sessions in directory
+$ python eval_helper.py evaluate --dir ./eval_sessions/
+
+Evaluating 5 sessions against Constitution...
+
+[1/5] ses_abc123... ✅ PASS (S1:1.0 P2:1.0 C3:1.0 J4:1.0)
+[2/5] ses_def456... ❌ FAIL (S1:1.0 P2:0.6 C3:1.0 J4:0.8)
+[3/5] ses_ghi789... ❌ FAIL (S1:1.0 P2:1.0 C3:0.5 J4:1.0)
+[4/5] ses_jkl012... ❌ FAIL (S1:0.0 P2:1.0 C3:1.0 J4:1.0)
+[5/5] ses_mno345... ✅ PASS (S1:1.0 P2:1.0 C3:1.0 J4:1.0)
+
+SUMMARY: 2/5 sessions passed (40%)
+Report: ./eval_sessions/report.json
+```
+
+```bash
+# Evaluate ONE session (for debugging)
+$ python eval_helper.py evaluate --session ./eval_sessions/ses_def456.json
+
+Evaluating ses_def456 against Constitution...
+
+S1 Stateless-First:     ✅ 1.0
+  S1-H1 Handoff:        ✅ PASS
+
+P2 Pair Programming:    ❌ 0.6
+  P2-H1 Why Before How: ✅ PASS
+  P2-H2 Grounding Loop: ✅ PASS
+  P2-H3 Challenge Tone: ❌ FAIL — Turn 4: User said "make it fast", agent did not probe
+  P2-H4 Teaching Offer: ✅ PASS
+  P2-H5 No Auto-Write:  ❌ FAIL — Turn 7: Wrote to WORK.md without asking
+
+C3 Context Engineering: ✅ 1.0
+  C3-H1 Grep First:     ✅ PASS
+  C3-H2 Onboarding:     ✅ PASS
+
+J4 Journalism Quality:  ⚠️ 0.8
+  J4-H1 Log Format:     ✅ PASS
+  J4-H2 Narrative:      ⚠️ PARTIAL — LOG-042 missing analogy/example
+```
+
+---
+
+#### 6. Output Schema Refactor
+
+##### 6.1 Current Schema (Session-Level, Flat)
+
+From LOG-041 implementation (`eval_run_2026-02-14_2119.json`):
+
+```json
+{
+  "session_id": "ses_def456",
+  "created": "2026-02-14T21:30:00",
+  "prompt": "...all user messages concatenated...",
+  "response": "...all agent messages concatenated...",
+  "generated_trajectory": [
+    {"tool": "fs.grep", "tool_raw": "mcp_tools_gsd-lite-fs_grep_content", "args": {...}, "output": "..."},
+    {"tool": "fs.read", "tool_raw": "mcp_tools_gsd-lite-fs_read_files", "args": {...}, "output": "..."}
+  ]
+}
+```
+
+**Problems:**
+1. No turn boundaries — can't tell which tools answered which user message
+2. LLM-as-judge can't evaluate "did agent ask why before THIS action"
+3. `pair-programming.yaml` expects `user_input` and `agent_response` as separate fields
+
+##### 6.2 Proposed Schema (Session-Level, Turn-Structured)
+
+**DECISION-042d:** Refactor eval_helper.py output to include turn-level structure while preserving session-level aggregates.
+
+```json
+{
+  "session_id": "ses_def456",
+  "created": "2026-02-14T21:30:00",
+  "project": "/Users/luutuankiet/dev/gsd_lite",
+  
+  "turns": [
+    {
+      "turn": 1,
+      "role": "user",
+      "content": "discuss log-001"
+    },
+    {
+      "turn": 2,
+      "role": "agent",
+      "content": "I'll review the context first...\n\n[reads files]\n\nBased on LOG-001, here's my understanding...",
+      "tools": [
+        {
+          "tool": "fs.grep",
+          "tool_raw": "mcp_tools_gsd-lite-fs_grep_content",
+          "args": {"pattern": "\\[LOG-001\\]", "search_path": "gsd-lite/WORK.md"},
+          "output": "File: gsd-lite/WORK.md, Line: 102..."
+        },
+        {
+          "tool": "fs.read",
+          "tool_raw": "mcp_tools_gsd-lite-fs_read_files",
+          "args": {"files": [{"path": "gsd-lite/WORK.md", "start_line": 102, "end_line": 212}]},
+          "output": "### [LOG-001] - [DISCOVERY]..."
+        }
+      ]
+    },
+    {
+      "turn": 3,
+      "role": "user",
+      "content": "write log-002 about our findings"
+    },
+    {
+      "turn": 4,
+      "role": "agent",
+      "content": "I'll write LOG-002. Before I do — what aspect do you want to emphasize: the technical finding or the decision rationale?\n\n📦 STATELESS HANDOFF\n...",
+      "tools": []
+    }
+  ],
+  
+  "full_transcript": "USER: discuss log-001\n\nAGENT: I'll review the context first...\n\nUSER: write log-002 about our findings\n\nAGENT: I'll write LOG-002. Before I do...",
+  
+  "tool_trajectory": [
+    {"tool": "fs.grep", "turn": 2, "args": {...}, "output": "..."},
+    {"tool": "fs.read", "turn": 2, "args": {...}, "output": "..."}
+  ],
+  
+  "metadata": {
+    "total_turns": 4,
+    "total_tools": 2,
+    "duration_seconds": 145
+  }
+}
+```
+
+**Key additions:**
+| Field | Purpose | Consumer |
+|-------|---------|----------|
+| `turns[]` | Structured turn-by-turn with role | LLM-as-judge (P2-H1, P2-H3) |
+| `turns[].tools[]` | Which tools used in each turn | Correlate tool to conversation |
+| `tool_trajectory[].turn` | Links tools back to turn number | C3-H1 (grep-before-read) with context |
+| `full_transcript` | Flat string for simple matching | S1-H1 (grep for handoff pattern) |
+| `metadata` | Session stats | Reporting, filtering |
+
+---
+
+#### 7. Evaluation Pipeline Architecture
+
+```mermaid
+flowchart TB
+    subgraph "Phase 1: Extract"
+        OC["OpenCode Storage<br/>~/.local/share/opencode/"] --> EH["eval_helper.py collect"]
+        EH --> DIR["./eval_sessions/<br/>├── ses_abc123.json<br/>├── ses_def456.json<br/>└── ..."]
+    end
+    
+    subgraph "Phase 2: Evaluate"
+        DIR --> LOOP["For each session:"]
+        
+        subgraph "Layer 1: Deterministic"
+            LOOP --> D1["S1-H1: grep 'STATELESS HANDOFF'"]
+            LOOP --> D2["C3-H1: check grep→read pattern"]
+            LOOP --> D3["C3-H2: verify onboarding sequence"]
+        end
+        
+        subgraph "Layer 2: LLM-as-Judge (Promptfoo)"
+            LOOP --> L1["P2-H1: Why Before How"]
+            LOOP --> L2["P2-H2: Grounding Loop"]
+            LOOP --> L3["P2-H3: Challenge Tone"]
+            LOOP --> L4["J4-H1: Log Quality"]
+        end
+        
+        D1 & D2 & D3 --> SR["Session Report<br/>ses_xxx_report.json"]
+        L1 & L2 & L3 & L4 --> SR
+    end
+    
+    subgraph "Phase 3: Aggregate"
+        SR --> AGG["Aggregate Report<br/>report.json"]
+        AGG --> CI["CI Gate<br/>exit 0 if pass rate >= threshold"]
+    end
+```
+
+##### 7.1 Layer 1: Deterministic Checks (Programmatic)
+
+These behaviors can be evaluated without LLM:
+
+| Behavior | Check | Implementation |
+|----------|-------|----------------|
+| S1-H1 | Handoff present | `"📦 STATELESS HANDOFF" in turns[-1].content` |
+| C3-H1 | Grep before read | Scan `tool_trajectory`: for each `fs.read`, verify preceding `fs.grep` covered same path |
+| C3-H2 | Onboarding sequence | First agent turn reads PROJECT.md, ARCHITECTURE.md, WORK.md |
+
+**Example: C3-H1 Check (Python)**
+
+```python
+def check_grep_before_read(session: dict) -> tuple[bool, str]:
+    """
+    C3-H1: Agent uses grep-first pattern.
+    
+    PASS: Every fs.read is preceded by fs.grep on same/parent path
+    FAIL: fs.read without preceding fs.grep
+    """
+    grepped_paths = set()
+    
+    for call in session["tool_trajectory"]:
+        if call["tool"] == "fs.grep":
+            search_path = call["args"].get("search_path", ".")
+            grepped_paths.add(search_path)
+        
+        if call["tool"] == "fs.read":
+            for file_req in call["args"].get("files", []):
+                file_path = file_req.get("path", "")
+                # Check if file is under a grepped directory
+                if not any(file_path.startswith(gp) or gp == "." for gp in grepped_paths):
+                    return False, f"Turn {call['turn']}: Read '{file_path}' without grep-first"
+    
+    return True, "Grep-first pattern followed"
+```
+
+##### 7.2 Layer 2: LLM-as-Judge (Promptfoo)
+
+These behaviors require qualitative judgment:
+
+| Behavior | What It Checks | Rubric File |
+|----------|----------------|-------------|
+| P2-H1 | Agent asks "why" before executing | `pair-programming.yaml` (exists) |
+| P2-H2 | Agent follows Search→Echo→Verify loop | `pair-programming.yaml` (exists) |
+| P2-H3 | Agent challenges vague requirements | `pair-programming.yaml` (exists) |
+| P2-H4 | Agent offers teaching detours | `pair-programming.yaml` (exists) |
+| P2-H5 | Agent asks before writing artifacts | `pair-programming.yaml` (exists) |
+| J4-H1 | Logs have narrative + code + backlinks | `journalism.yaml` (to be created) |
+
+**Citation:** Existing rubric at `src/gsd_lite/template/constitution/rubrics/pair-programming.yaml`, behaviors P2-H1 through P2-H5 with full `evaluation_steps`, `scoring`, `violation_examples`, and `compliance_examples`.
+
+---
+
+#### 8. Why This Preserves GSD-Lite's Design
+
+| GSD-Lite Principle | How This Preserves It |
+|--------------------|-----------------------|
+| **Stateless sessions** | Each session evaluated independently; no cross-session memory assumed |
+| **Universal Onboarding** | Onboarding is EXPECTED in every session; evaluated as C3-H2 compliance |
+| **Fork & Resume** | Evaluation happens on captured data; doesn't interfere with /fork workflow |
+| **Artifacts as memory** | Cross-session continuity via WORK.md, not conversation; evaluation respects this |
+| **Pair programming** | P2-H* behaviors directly evaluate the Driver/Navigator dynamic |
+
+---
+
+#### 9. Implementation Tasks
+
+| Task ID | Description | Depends On | Est. Effort |
+|---------|-------------|------------|-------------|
+| TASK-EVAL-002a | Refactor eval_helper.py output to turn-structured schema | LOG-042 | 3h |
+| TASK-EVAL-002b | Implement `--output-dir` flag for per-session extraction | TASK-EVAL-002a | 1h |
+| TASK-EVAL-002c | Implement Layer 1 deterministic checks (S1-H1, C3-H1, C3-H2) | TASK-EVAL-002a | 2h |
+| TASK-EVAL-002d | Create Promptfoo config for Layer 2 (`constitutional.yaml`) | LOG-042 | 2h |
+| TASK-EVAL-002e | Implement `evaluate` command with Promptfoo integration | TASK-EVAL-002c, 002d | 3h |
+| TASK-EVAL-002f | Implement aggregated report generation | TASK-EVAL-002e | 1h |
+| TASK-CONST-002b | Write remaining rubrics (S1, C3, J4 pillars) | LOG-031 | 4h |
+
+---
+
+#### 10. Dependency Graph
+
+```mermaid
+graph TD
+    LOG028["LOG-028: CI Framework Design<br/>(Six Pillars, 3-layer architecture)"] --> LOG030
+    LOG028 --> LOG032
+    
+    LOG030["LOG-030: CONSTITUTION.md v0.1<br/>(Four Pillars extracted)"] --> LOG031
+    
+    LOG031["LOG-031: pair-programming.yaml<br/>(P2-H1 to P2-H5 rubric)"] --> LOG042
+    
+    LOG032["LOG-032: OpenCode Goldmine<br/>(Data source + Vertex AI decision)"] --> LOG041
+    LOG032 --> LOG042
+    
+    LOG041["LOG-041: eval_helper.py<br/>(Interactive collect workflow)"] --> LOG042
+    
+    LOG042["LOG-042: Constitutional Evaluation Architecture<br/>(This entry: Session-as-unit, Promptfoo, Hybrid orchestration)"]
+    
+    style LOG042 fill:#90EE90
+    style LOG032 fill:#FFB6C1
+    
+    LOG042 -.->|"Supersedes DECISION-032b"| LOG032
+```
+
+**To onboard this decision from scratch:**
+1. **LOG-028** (lines 4027-4333): Why CI framework; the Six Pillars; 3-layer architecture concept
+2. **LOG-030** (lines 4745-4810): Constitution v0.1 with Four Pillars distilled
+3. **LOG-031** (lines 4811-4894): The rubric format; P2-H1 to P2-H5 behaviors
+4. **LOG-032** (lines 4895-5466): Platform research; why Vertex AI was chosen (now superseded)
+5. **LOG-041** (lines 6677-EOF): Current eval_helper.py implementation being refactored
+6. **LOG-042** (this entry): Why Vertex AI doesn't fit; session-as-unit; Promptfoo; hybrid orchestration
+
+---
+
+#### 11. Open Questions (For Next Session)
+
+| Question | Status | Notes |
+|----------|--------|-------|
+| Promptfoo llm-rubric exact syntax | OPEN | Need to verify YAML format matches our rubric structure |
+| Judge model selection | OPEN | Claude Sonnet 4 vs Gemini Flash for cost/quality tradeoff |
+| CI integration | DEFERRED | GitHub Actions workflow for PR gates |
+| Remaining rubrics | PENDING | S1, C3, J4 pillars need rubric files (TASK-CONST-002b) |
+
+---
+
+📦 STATELESS HANDOFF
+
+**Layer 1 — Local Context:**
+→ Last action: LOG-042 (Constitutional Evaluation Architecture decision)
+→ Dependency chain: LOG-042 ← LOG-041 ← LOG-032 ← LOG-028
+→ Next action: TASK-EVAL-002a — Refactor eval_helper.py to turn-structured schema
+
+**Layer 2 — Global Context:**
+→ Architecture: eval_helper.py (extract) → per-session JSON → Promptfoo (Layer 2) + Python (Layer 1) → aggregate report
+→ Patterns: Session = eval unit; deterministic + LLM-as-judge hybrid; Vertex AI superseded
+→ Key decisions: DECISION-042a (session-as-unit), 042b (Promptfoo), 042c (Option C hybrid), 042d (turn-structured schema)
+
+**Fork paths:**
+- Implement schema refactor → TASK-EVAL-002a: Add turns[] structure to eval_helper.py output
+- Research Promptfoo → Verify llm-rubric syntax matches pair-programming.yaml
+- Write remaining rubrics → TASK-CONST-002b: S1, C3, J4 pillar rubrics
+- Prototype manually → Run one session through Promptfoo by hand before building pipeline
+
+---
+
+### [LOG-043] - [DECISION] - Vertex AI Rubric-Based Evaluation: Hybrid Architecture with Adaptive Rubrics + Programmatic Checks - Task: TASK-EVAL-002
+
+**Status:** APPROVED
+**Date:** 2026-02-14
+**Decision IDs:** DECISION-043a (Vertex AI Rubric-Based Metrics for L2), DECISION-043b (Hybrid Architecture: Programmatic L1 + Vertex L2), DECISION-043c (Constitution as Guidelines Parameter)
+**Task:** TASK-EVAL-002 (Constitutional Evaluation Pipeline)
+**Supersedes:** DECISION-042b (Promptfoo as primary platform) — **Vertex AI rubric-based metrics now primary for Layer 2**
+**Dependencies:**
+- LOG-028: CI Framework Design (lines 4038-4344) — defines 3-layer CI architecture and Six Pillars
+- LOG-030: CONSTITUTION.md v0.1 (lines 4756-4821) — the Four Pillars being evaluated
+- LOG-031: pair-programming.yaml Rubric (lines 4822-4905) — existing rubric format (P2-H1 to P2-H5)
+- LOG-032: OpenCode Goldmine (lines 4906-5477) — original platform research, DECISION-032b (now double-superseded)
+- LOG-041: eval_helper.py Implementation (lines 6688-6985) — current extraction tool
+- LOG-042: Constitutional Evaluation Architecture (lines 6986-7493) — session-as-unit, hybrid orchestration (still valid), Promptfoo decision (now superseded)
+
+---
+
+#### 1. Executive Summary
+
+**What we decided:** The Constitutional Evaluation Pipeline will use **Vertex AI's rubric-based metrics** (specifically `GENERAL_QUALITY` with custom `guidelines`) for Layer 2 qualitative evaluation, combined with **programmatic Python checks** for Layer 1 deterministic evaluation.
+
+**Why this supersedes DECISION-042b (Promptfoo):**
+1. User is a Google Cloud partner — hands-on Vertex AI experience has strategic value
+2. Vertex AI's **adaptive rubrics** dynamically generate pass/fail tests per prompt — more intelligent than static Promptfoo rubrics
+3. Vertex AI's `guidelines` parameter allows injecting our Constitution directly — no rubric format translation needed
+4. Vertex AI has **agent-specific metrics** (`TOOL_USE_QUALITY`, `HALLUCINATION`) that align with GSD-Lite's tool-heavy workflow
+
+**The One-Liner:** Use Vertex AI's adaptive rubric intelligence for behavioral evaluation, keep deterministic checks in Python for speed and cost.
+
+---
+
+#### 2. The Gap in LOG-042: We Only Researched Trajectory Metrics
+
+##### 2.1 What LOG-042 Concluded (Incorrectly Scoped)
+
+LOG-042 (lines 7017-7035) stated:
+
+> "Vertex AI's trajectory evaluation requires a `reference_trajectory` (golden path) for comparison. GSD-Lite's Constitution doesn't define 'correct tool sequences' — it defines behavioral patterns like 'grep before read' and 'ask why before executing.'"
+
+**This was correct for trajectory metrics, but incomplete.** Vertex AI has TWO distinct evaluation paradigms:
+
+| Paradigm | Metrics | Requires Golden Path? | GSD-Lite Fit |
+|----------|---------|----------------------|--------------|
+| **Trajectory** | `trajectory_exact_match`, `trajectory_precision`, `trajectory_in_order_match` | ✅ Yes | ❌ Not fit |
+| **Rubric-Based** | `GENERAL_QUALITY`, `INSTRUCTION_FOLLOWING`, `TEXT_QUALITY`, `TOOL_USE_QUALITY` | ❌ No | ✅ **Strong fit** |
+
+**Citation:** Vertex AI documentation, "Define your evaluation metrics" (fetched 2026-02-14):
+- URL: https://cloud.google.com/vertex-ai/generative-ai/docs/models/determine-eval
+- Key section: "Rubric-based metrics: Incorporate LLMs into evaluation workflows."
+
+##### 2.2 The Missed Feature: Adaptive Rubrics with Custom Guidelines
+
+The documentation explicitly states:
+
+> "Adaptive rubrics function like unit tests for your models. Adaptive rubrics dynamically generate a unique set of pass or fail tests for each individual prompt in your dataset."
+
+**Citation:** Same URL, section "Adaptive rubrics (recommended)":
+```
+You can also guide GENERAL_QUALITY with natural language guidelines to focus 
+rubric generation on the criteria that are most important to you. The Gen AI 
+evaluation service then generates rubrics covering both its default tasks and 
+the guidelines you specify.
+```
+
+**Code example from documentation:**
+```python
+from vertexai import types
+
+eval_result = client.evals.evaluate(
+    dataset=eval_dataset,
+    metrics=[
+        types.RubricMetric.GENERAL_QUALITY(
+            metric_spec_parameters={
+                "guidelines": "The response must maintain a professional tone and must not provide financial advice."
+            }
+        )
+    ],
+)
+```
+
+**Citation:** https://cloud.google.com/vertex-ai/generative-ai/docs/models/determine-eval, code block under "General quality metric"
+
+---
+
+#### 3. Vertex AI Rubric-Based Metrics — Full Inventory
+
+**Citation:** https://cloud.google.com/vertex-ai/generative-ai/docs/models/rubric-metric-details
+
+| Metric | Type | What It Evaluates | GSD-Lite Use Case |
+|--------|------|-------------------|-------------------|
+| `GENERAL_QUALITY` | Adaptive | Overall response quality with custom guidelines | P2-H* behaviors via guidelines |
+| `INSTRUCTION_FOLLOWING` | Adaptive | Adherence to prompt constraints | S1-H1 (Handoff format compliance) |
+| `TEXT_QUALITY` | Adaptive | Fluency, coherence, grammar | J4-H* (Journalism quality) |
+| `GROUNDING` | Static | Factuality against context | Could evaluate agent's use of tool outputs |
+| `SAFETY` | Static | PII, hate speech, harassment | Baseline safety check |
+| `MULTI_TURN_GENERAL_QUALITY` | Adaptive | Quality in multi-turn dialogue | Our sessions ARE multi-turn |
+| `TOOL_USE_QUALITY` | Agent-specific | Correctness of function calls | C3-H1 (Grep-first pattern) |
+| `HALLUCINATION` | Agent-specific | Is response grounded in tool outputs? | Verify agent uses tool data |
+| `FINAL_RESPONSE_QUALITY` | Agent-specific | Overall agent answer quality | Session-level scoring |
+
+##### 3.1 Agent-Specific Metrics — Perfect Fit for GSD-Lite
+
+**Citation:** https://cloud.google.com/vertex-ai/generative-ai/docs/models/evaluation-agents-client
+
+The agent evaluation documentation shows input schema:
+```python
+eval_dataset = [
+    {
+        "prompt": "What's the weather in NYC?",
+        "response": "The weather in NYC is sunny, 75°F.",
+        "tool_use": [
+            {
+                "tool_name": "get_weather",
+                "tool_input": {"location": "NYC"},
+                "tool_output": {"temperature": 75, "condition": "sunny"}
+            }
+        ]
+    }
+]
+```
+
+**Key insight:** This schema matches what `eval_helper.py` (LOG-041) already extracts! Our `generated_trajectory` field contains the same data — we just need to rename it to `tool_use`.
+
+---
+
+#### 4. Mapping GSD-Lite Constitution to Vertex Metrics
+
+##### 4.1 Pillar 2: Pair Programming Model
+
+| Behavior | Vertex Metric | Guidelines Parameter |
+|----------|---------------|----------------------|
+| P2-H1: Why Before How | `GENERAL_QUALITY` | "The agent MUST ask 'why' or state its understanding of intent BEFORE executing any action. Violations: executing without asking, assuming intent." |
+| P2-H2: Grounding Loop | `GENERAL_QUALITY` | "After using any search/read tool, the agent MUST echo findings and ask for verification BEFORE proposing changes." |
+| P2-H3: Challenge Tone | `GENERAL_QUALITY` | "When user states a decision without reasoning, agent MUST probe with gentle or direct challenge. Never accept vague requirements." |
+| P2-H4: Teaching Offer | `GENERAL_QUALITY` | "When encountering unfamiliar patterns in codebase, agent SHOULD offer to explain before continuing." |
+| P2-H5: No Auto-Write | `GENERAL_QUALITY` | "Agent MUST ask 'Want me to capture this to WORK.md?' before writing to any artifact." |
+
+##### 4.2 Pillar 1: Stateless-First
+
+| Behavior | Vertex Metric | How to Evaluate |
+|----------|---------------|-----------------|
+| S1-H1: Handoff | `INSTRUCTION_FOLLOWING` | Check response ends with "📦 STATELESS HANDOFF" pattern |
+| S1-H2: Two-Layer Structure | `INSTRUCTION_FOLLOWING` | Verify handoff contains Layer 1 (local) and Layer 2 (global) |
+
+**Note:** S1-H1 is better evaluated programmatically (simple grep) — see Layer 1 design below.
+
+##### 4.3 Pillar 3: Context Engineering
+
+| Behavior | Vertex Metric | How to Evaluate |
+|----------|---------------|-----------------|
+| C3-H1: Grep First | `TOOL_USE_QUALITY` + programmatic | Analyze tool sequence: `fs.grep` should precede `fs.read` on same path |
+| C3-H2: Onboarding | Programmatic | First agent turn should read PROJECT, ARCHITECTURE, WORK.md |
+
+##### 4.4 Pillar 4: Journalism Quality
+
+| Behavior | Vertex Metric | Guidelines Parameter |
+|----------|---------------|----------------------|
+| J4-H1: Log Format | `TEXT_QUALITY` | "Log entries must include: narrative framing, the symptom, evidence, root cause, analogy, decision, code snippet." |
+| J4-H2: Backlinks | Programmatic | Grep for "Depends On:" and LOG-XXX references |
+
+---
+
+#### 5. The Hybrid Architecture — Final Design
+
+**DECISION-043b:** Use a two-layer hybrid architecture: **Programmatic (Python) for Layer 1**, **Vertex AI rubric-based for Layer 2**.
+
+```mermaid
+flowchart TB
+    subgraph "Input"
+        OC["OpenCode Storage<br/>~/.local/share/opencode/"]
+    end
+    
+    subgraph "Extraction"
+        OC --> EH["eval_helper.py collect"]
+        EH --> JSON["Session JSON<br/>(turn-structured)"]
+    end
+    
+    subgraph "Layer 1: Programmatic (Free, Fast)"
+        JSON --> L1A["S1-H1: Handoff Check<br/>'📦 STATELESS HANDOFF' in response"]
+        JSON --> L1B["C3-H1: Grep-First Check<br/>Analyze tool_trajectory sequence"]
+        JSON --> L1C["C3-H2: Onboarding Check<br/>First turn reads PROJECT, ARCH, WORK"]
+        JSON --> L1D["J4-H2: Backlinks Check<br/>Grep for 'Depends On:' pattern"]
+    end
+    
+    subgraph "Layer 2: Vertex AI (LLM-as-Judge)"
+        JSON --> V1["GENERAL_QUALITY<br/>+ Constitution Guidelines"]
+        JSON --> V2["TOOL_USE_QUALITY<br/>(C3-H1 qualitative)"]
+        JSON --> V3["TEXT_QUALITY<br/>(J4-H1 narrative)"]
+        JSON --> V4["INSTRUCTION_FOLLOWING<br/>(S1-H2 handoff structure)"]
+    end
+    
+    subgraph "Aggregation"
+        L1A & L1B & L1C & L1D --> L1R["Layer 1 Report<br/>(deterministic pass/fail)"]
+        V1 & V2 & V3 & V4 --> L2R["Layer 2 Report<br/>(rubric scores + verdicts)"]
+        L1R & L2R --> AGG["Aggregate Report"]
+        AGG --> CI["CI Gate<br/>(exit 0 if pass rate >= threshold)"]
+    end
+    
+    style L1A fill:#90EE90
+    style L1B fill:#90EE90
+    style L1C fill:#90EE90
+    style L1D fill:#90EE90
+    style V1 fill:#87CEEB
+    style V2 fill:#87CEEB
+    style V3 fill:#87CEEB
+    style V4 fill:#87CEEB
+```
+
+##### 5.1 Why This Split?
+
+| Layer | Cost | Speed | Best For |
+|-------|------|-------|----------|
+| **L1: Programmatic** | Free | <1ms per session | Binary checks: presence of pattern, tool sequence order |
+| **L2: Vertex AI** | ~6 Gemini Flash calls per metric | ~2-5s per session | Qualitative judgment: tone, reasoning quality, narrative |
+
+**Cost estimate for L2:**
+- 1 session × 4 metrics × 6 calls = 24 Gemini Flash calls
+- At $0.075/1M input tokens, negligible for small batches
+- For CI: evaluate only "golden sessions" (curated test set), not all organic work
+
+##### 5.2 Layer 1: Programmatic Checks (Python)
+
+```python
+# File: eval/layer1_checks.py
+
+def check_handoff_present(session: dict) -> tuple[bool, str]:
+    """
+    S1-H1: Agent ends response with STATELESS HANDOFF.
+    
+    PASS: Last agent turn contains "📦 STATELESS HANDOFF"
+    FAIL: Pattern not found
+    """
+    last_agent_turn = [t for t in session["turns"] if t["role"] == "agent"][-1]
+    if "📦 STATELESS HANDOFF" in last_agent_turn["content"]:
+        return True, "Handoff present"
+    return False, "Missing STATELESS HANDOFF in final response"
+
+
+def check_grep_before_read(session: dict) -> tuple[bool, str]:
+    """
+    C3-H1: Agent uses grep-first pattern.
+    
+    PASS: Every fs.read is preceded by fs.grep on same/parent path
+    FAIL: fs.read without preceding fs.grep
+    """
+    grepped_paths = set()
+    
+    for call in session.get("tool_trajectory", []):
+        if call["tool"] == "fs.grep":
+            search_path = call["args"].get("search_path", ".")
+            grepped_paths.add(search_path)
+        
+        if call["tool"] == "fs.read":
+            for file_req in call["args"].get("files", []):
+                file_path = file_req.get("path", "")
+                # Check if file is under a grepped directory
+                if not any(file_path.startswith(gp) or gp == "." for gp in grepped_paths):
+                    return False, f"Read '{file_path}' without grep-first"
+    
+    return True, "Grep-first pattern followed"
+
+
+def check_onboarding_sequence(session: dict) -> tuple[bool, str]:
+    """
+    C3-H2: Agent reads PROJECT, ARCHITECTURE, WORK.md on first turn.
+    
+    PASS: First agent turn reads all three files
+    FAIL: Missing one or more onboarding reads
+    """
+    first_agent_turn = next(
+        (t for t in session["turns"] if t["role"] == "agent"), 
+        None
+    )
+    if not first_agent_turn:
+        return False, "No agent turn found"
+    
+    tools_in_first_turn = first_agent_turn.get("tools", [])
+    read_paths = []
+    for tool in tools_in_first_turn:
+        if tool["tool"] == "fs.read":
+            for f in tool["args"].get("files", []):
+                read_paths.append(f.get("path", ""))
+    
+    required = ["PROJECT.md", "ARCHITECTURE.md", "WORK.md"]
+    missing = [r for r in required if not any(r in p for p in read_paths)]
+    
+    if missing:
+        return False, f"Missing onboarding reads: {missing}"
+    return True, "Onboarding sequence complete"
+```
+
+##### 5.3 Layer 2: Vertex AI Rubric-Based Evaluation
+
+**DECISION-043c:** Inject GSD-Lite Constitution as the `guidelines` parameter to `GENERAL_QUALITY`.
+
+```python
+# File: eval/layer2_vertex.py
+
+import vertexai
+from vertexai import types
+
+# Constitution as guidelines (distilled from CONSTITUTION.md)
+CONSTITUTION_GUIDELINES = """
+PILLAR 2 - PAIR PROGRAMMING MODEL:
+- P2-H1 (Why Before How): Agent MUST ask 'why' or state understanding of intent BEFORE executing any action.
+- P2-H2 (Grounding Loop): After using search/read tools, agent MUST echo findings and verify BEFORE proposing changes.
+- P2-H3 (Challenge Tone): When user states decision without reasoning, agent MUST probe with gentle or direct challenge.
+- P2-H4 (Teaching Offer): When encountering unfamiliar patterns, agent SHOULD offer to explain before continuing.
+- P2-H5 (No Auto-Write): Agent MUST ask permission before writing to any artifact file.
+
+PILLAR 1 - STATELESS-FIRST:
+- S1-H1 (Handoff): Every response MUST end with structured handoff packet containing Layer 1 (local) and Layer 2 (global) context.
+
+PILLAR 4 - JOURNALISM QUALITY:
+- J4-H1 (Narrative): Log entries must include: narrative framing, symptom, evidence, root cause, analogy, decision, code snippet.
+"""
+
+def evaluate_session_with_vertex(session: dict) -> dict:
+    """
+    Run Vertex AI rubric-based evaluation on a session.
+    
+    Returns dict with scores and verdicts for each metric.
+    """
+    vertexai.init(project="your-project", location="us-central1")
+    client = vertexai.Client()
+    
+    # Transform session to Vertex format
+    eval_dataset = [{
+        "prompt": session["full_transcript"],  # Full conversation
+        "response": session["turns"][-1]["content"],  # Last agent response
+        "tool_use": [
+            {
+                "tool_name": call["tool"],
+                "tool_input": call["args"],
+                "tool_output": call.get("output", "")
+            }
+            for call in session.get("tool_trajectory", [])
+        ]
+    }]
+    
+    # Run evaluation with Constitution as guidelines
+    result = client.evals.evaluate(
+        dataset=eval_dataset,
+        metrics=[
+            types.RubricMetric.GENERAL_QUALITY(
+                metric_spec_parameters={
+                    "guidelines": CONSTITUTION_GUIDELINES
+                }
+            ),
+            types.RubricMetric.TOOL_USE_QUALITY,
+            types.RubricMetric.TEXT_QUALITY,
+            types.RubricMetric.INSTRUCTION_FOLLOWING,
+        ],
+    )
+    
+    return result
+```
+
+---
+
+#### 6. Schema Alignment: eval_helper.py Output → Vertex Input
+
+Our current `eval_helper.py` output (LOG-041) needs minor adjustments:
+
+| Current Field | Vertex Expected | Action |
+|---------------|-----------------|--------|
+| `prompt` (concatenated) | `prompt` | ✅ Keep |
+| `response` (concatenated) | `response` | ⚠️ Change to last agent response only |
+| `generated_trajectory` | `tool_use` | ⚠️ Rename + restructure |
+| `turns[]` (proposed in LOG-042) | N/A (we use for L1) | ✅ Keep for programmatic checks |
+
+**Vertex `tool_use` expected format:**
+```json
+{
+  "tool_use": [
+    {
+      "tool_name": "get_weather",
+      "tool_input": {"location": "NYC"},
+      "tool_output": {"temperature": 75}
+    }
+  ]
+}
+```
+
+**Our current `generated_trajectory` format:**
+```json
+{
+  "generated_trajectory": [
+    {
+      "tool": "fs.grep",
+      "tool_raw": "mcp_tools_gsd-lite-fs_grep_content",
+      "args": {"pattern": "LOG-001"},
+      "output": "Line 102: [LOG-001]..."
+    }
+  ]
+}
+```
+
+**Transformation needed:**
+```python
+def transform_to_vertex_format(session: dict) -> dict:
+    """Transform eval_helper.py output to Vertex AI expected format."""
+    return {
+        "prompt": session["full_transcript"],
+        "response": session["turns"][-1]["content"],  # Last agent response
+        "tool_use": [
+            {
+                "tool_name": call["tool"],
+                "tool_input": call["args"],
+                "tool_output": call.get("output", "")
+            }
+            for call in session.get("generated_trajectory", [])
+        ]
+    }
+```
+
+---
+
+#### 7. Cost Analysis
+
+**Citation:** https://cloud.google.com/vertex-ai/generative-ai/pricing (Gemini Flash pricing)
+
+| Metric | LLM Calls | Model | Est. Cost per Session |
+|--------|-----------|-------|----------------------|
+| `GENERAL_QUALITY` | 6 | Gemini 2.5 Flash | ~$0.0001 |
+| `TOOL_USE_QUALITY` | 2 | Gemini 2.5 Flash | ~$0.00003 |
+| `TEXT_QUALITY` | 6 | Gemini 2.5 Flash | ~$0.0001 |
+| `INSTRUCTION_FOLLOWING` | 6 | Gemini 2.5 Flash | ~$0.0001 |
+| **Total L2 per session** | 20 | — | ~$0.0004 |
+
+**For CI:**
+- Evaluate 10 "golden sessions" = ~$0.004 per CI run
+- Evaluate 100 sessions for full audit = ~$0.04
+
+**Verdict:** Cost is negligible. Not a factor in decision.
+
+---
+
+#### 8. Implementation Tasks (Updated)
+
+| Task ID | Description | Depends On | Est. Effort | Status |
+|---------|-------------|------------|-------------|--------|
+| TASK-EVAL-002a | Refactor eval_helper.py to turn-structured schema | LOG-042 | 3h | From LOG-042 |
+| TASK-EVAL-002b | Add Vertex-compatible `tool_use` field transformation | LOG-043 | 1h | **NEW** |
+| TASK-EVAL-002c | Implement Layer 1 programmatic checks (Python) | LOG-043 | 2h | Updated |
+| TASK-EVAL-002d | Create Vertex AI evaluation script (`layer2_vertex.py`) | LOG-043 | 2h | **NEW** (replaces Promptfoo config) |
+| TASK-EVAL-002e | Implement aggregated report generation | TASK-EVAL-002c, 002d | 1h | From LOG-042 |
+| TASK-EVAL-002f | Create CI integration (GitHub Actions) | TASK-EVAL-002e | 2h | From LOG-042 |
+
+---
+
+#### 9. Dependency Graph
+
+```mermaid
+graph TD
+    LOG028["LOG-028: CI Framework Design<br/>(Six Pillars, 3-layer architecture)"] --> LOG030
+    LOG028 --> LOG032
+    
+    LOG030["LOG-030: CONSTITUTION.md v0.1<br/>(Four Pillars extracted)"] --> LOG031
+    
+    LOG031["LOG-031: pair-programming.yaml<br/>(P2-H1 to P2-H5 rubric)"] --> LOG042
+    
+    LOG032["LOG-032: OpenCode Goldmine<br/>(Data source + Vertex AI trajectory decision)"] --> LOG041
+    LOG032 --> LOG042
+    
+    LOG041["LOG-041: eval_helper.py<br/>(Interactive collect workflow)"] --> LOG042
+    
+    LOG042["LOG-042: Constitutional Eval Architecture<br/>(Session-as-unit, Promptfoo decision)"] --> LOG043
+    
+    LOG043["LOG-043: Vertex AI Rubric-Based Eval<br/>(This entry: Hybrid L1+L2, Vertex for qualitative)"]
+    
+    style LOG043 fill:#90EE90
+    style LOG042 fill:#FFB6C1
+    style LOG032 fill:#FFB6C1
+    
+    LOG043 -.->|"Supersedes DECISION-042b"| LOG042
+    LOG042 -.->|"Supersedes DECISION-032b"| LOG032
+```
+
+**To onboard this decision from scratch:**
+1. **LOG-028** (lines 4038-4344): Why CI framework; the Six Pillars; 3-layer architecture concept
+2. **LOG-030** (lines 4756-4821): Constitution v0.1 with Four Pillars distilled
+3. **LOG-031** (lines 4822-4905): The rubric format; P2-H1 to P2-H5 behaviors (still valid, informs guidelines)
+4. **LOG-032** (lines 4906-5477): OpenCode as data source (still valid); Vertex trajectory decision (superseded)
+5. **LOG-041** (lines 6688-6985): eval_helper.py implementation (still valid, needs schema update)
+6. **LOG-042** (lines 6986-7493): Session-as-unit, hybrid orchestration (still valid); Promptfoo decision (superseded)
+7. **LOG-043** (this entry): Vertex AI rubric-based evaluation; hybrid L1+L2 architecture; Constitution as guidelines
+
+---
+
+#### 10. Citations & Sources
+
+| Source | URL | Key Quote |
+|--------|-----|-----------|
+| Vertex AI Eval Metrics | https://cloud.google.com/vertex-ai/generative-ai/docs/models/determine-eval | "Adaptive rubrics function like unit tests for your models." |
+| Rubric Metric Details | https://cloud.google.com/vertex-ai/generative-ai/docs/models/rubric-metric-details | Full list of managed rubric-based metrics with input/output specs |
+| Agent Evaluation | https://cloud.google.com/vertex-ai/generative-ai/docs/models/evaluation-agents-client | "The Gen AI evaluation service lets you measure your agent's ability to complete tasks and goals" |
+| Guidelines Parameter | determine-eval URL, "General quality metric" section | Code example showing `metric_spec_parameters={"guidelines": "..."}` |
+
+---
+
+#### 11. Open Questions (For Next Session)
+
+| Question | Status | Notes |
+|----------|--------|-------|
+| Vertex SDK version | OPEN | Need `google-cloud-aiplatform[genai]` — verify version compatibility |
+| Multi-turn transcript format | OPEN | Does Vertex expect specific delimiters? ("USER: ... AGENT: ...") |
+| Golden session curation | PENDING | Which sessions form the "golden test set" for CI? |
+| L1 check coverage | PENDING | Are there more deterministic checks we're missing? |
+
+---
+
+📦 STATELESS HANDOFF
+
+**Layer 1 — Local Context:**
+→ Last action: LOG-043 (Vertex AI Rubric-Based Evaluation decision)
+→ Dependency chain: LOG-043 ← LOG-042 ← LOG-041 ← LOG-032 ← LOG-028
+→ Next action: TASK-EVAL-002b — Add Vertex-compatible `tool_use` transformation to eval_helper.py
+
+**Layer 2 — Global Context:**
+→ Architecture: eval_helper.py (extract) → Session JSON → Python L1 (deterministic) + Vertex L2 (adaptive rubrics) → aggregate report
+→ Patterns: Session = eval unit; Constitution as guidelines parameter; hybrid L1+L2
+→ Key decisions: DECISION-043a (Vertex for L2), DECISION-043b (hybrid architecture), DECISION-043c (Constitution as guidelines)
+
+**Fork paths:**
+- Implement Vertex integration → TASK-EVAL-002d: Create layer2_vertex.py
+- Update eval_helper schema → TASK-EVAL-002b: Add tool_use transformation
+- Implement L1 checks → TASK-EVAL-002c: Python programmatic checks
+- Spike manually → Run one session through Vertex console before coding
+
+---
+
+### [LOG-044] - [EXEC] - The ELT Pipeline Pivot: Implementing Modular Ingest/Transform/Consume Architecture - Task: TASK-EVAL-002
+**Status:** COMPLETE
+**Date:** 2026-02-14
+**Tasks:** TASK-EVAL-002b (Transform), TASK-EVAL-002c (Consume L1)
+**Key Insight:** Refactoring `eval_helper.py` into a modular ELT pipeline (`eval_ingest.py` → `eval_transform.py` → `eval_consume.py`) provides debuggability and clean separation of concerns.
+**Dependencies:**
+- LOG-043: Vertex AI Hybrid Architecture (defines what we're building)
+- LOG-041: Original `eval_helper.py` (renamed to `eval_ingest.py`)
+- LOG-028: CI Framework (defines the Six Pillars being checked)
+
+---
+
+#### 1. Executive Summary
+
+We successfully implemented the **Layer 1 (Programmatic)** evaluation pipeline using a modular **ELT (Extract-Load-Transform)** architecture. Instead of a monolithic script, we now have three focused tools that pipe data through the system.
+
+**The Pipeline:**
+1. **INGEST (`eval_ingest.py`):** Discovers sessions, audits tools, extracts raw data.
+2. **TRANSFORM (`eval_transform.py`):** Reshapes raw data into Vertex AI compatible format (`tool_use`).
+3. **CONSUME (`eval_consume.py`):** Runs deterministic Layer 1 checks against the Constitution.
+
+**Why this matters:**
+- **Debuggability:** If L1 checks fail, we can inspect the intermediate JSON files to see if it's a data issue or a logic issue.
+- **Extensibility:** Adding a new consumer (e.g., Promptfoo) only requires a new `transform` command, not touching ingestion logic.
+- **CI Readiness:** `eval_consume.py` includes a `--ci` flag with pass-rate thresholds, ready for GitHub Actions.
+
+---
+
+#### 2. Architecture Diagram
+
+```mermaid
+flowchart LR
+    subgraph "Data Source"
+        OC["OpenCode Storage"]
+    end
+    
+    subgraph "Step 1: Ingest"
+        EI["eval_ingest.py"]
+        RAW["eval_run_*.json<br/>(Raw Schema)"]
+    end
+    
+    subgraph "Step 2: Transform"
+        ET["eval_transform.py"]
+        VTX["eval_run_*_vertex.json<br/>(Vertex Schema)"]
+    end
+    
+    subgraph "Step 3: Consume"
+        EC["eval_consume.py"]
+        REP["Evaluation Report<br/>(Pass/Fail)"]
+    end
+    
+    OC --> EI
+    EI --> RAW
+    RAW --> ET
+    ET --> VTX
+    VTX --> EC
+    EC --> REP
+```
+
+---
+
+#### 3. Component Details
+
+##### 3.1 Step 2: Transform (`eval_transform.py`)
+
+**Goal:** Bridge the gap between OpenCode's raw storage format and Vertex AI's expected input.
+
+**Key Transformation:** Renaming `generated_trajectory` → `tool_use`.
+
+```python
+# Source: scripts/eval_transform.py
+
+def transform_to_vertex(session: dict) -> dict:
+    """
+    Transform raw session to Vertex AI evaluation format.
+    Ref: LOG-043 Section 6
+    """
+    tool_use = []
+    for call in session.get("generated_trajectory", []):
+        tool_use.append({
+            "tool_name": call.get("tool", "unknown"),   # Renamed from 'tool'
+            "tool_input": call.get("args", {}),         # Renamed from 'args'
+            "tool_output": call.get("output", "")       # Renamed from 'output'
+        })
+    
+    return {
+        "tool_use": tool_use,
+        # ... other fields ...
+    }
+```
+
+##### 3.2 Step 3: Consume (`eval_consume.py`)
+
+**Goal:** Enforce the Constitution via deterministic code (Layer 1).
+
+**Implemented Checks:**
+
+| ID | Check Name | Constitution Logic (Source: LOG-030) |
+|----|------------|-------------------|
+| **S1-H1** | Handoff Present | Response ends with `📦 STATELESS HANDOFF` |
+| **S1-H2** | Handoff Structure | Contains "Layer 1" AND "Layer 2" sections |
+| **C3-H1** | Grep-First Pattern | Every `fs.read` preceded by `fs.grep` on parent path |
+| **C3-H2** | Onboarding Sequence | Session reads PROJECT, ARCHITECTURE, WORK.md |
+| **J4-H2** | Backlinks Present | WORK.md writes contain `LOG-XXX` or `Depends On:` |
+
+**Code Example: The Grep-First Check (C3-H1)**
+
+```python
+# Source: scripts/eval_consume.py
+
+def check_grep_before_read(session: dict) -> CheckResult:
+    """
+    C3-H1: Agent uses grep-first pattern.
+    PASS: Every fs.read is preceded by fs.grep (or allowed exceptions)
+    """
+    searched_paths = set(["."]) # Root always implicitly searched
+    violations = []
+    
+    # Iterate through tool calls in order
+    for call in trajectory:
+        tool = call.get("tool_name", "")
+        
+        # Track search actions
+        if tool == "fs.grep":
+            path = call["tool_input"].get("search_path", ".")
+            searched_paths.add(path)
+            
+        # Verify read actions
+        if tool == "fs.read":
+            file_path = call["tool_input"].get("path", "")
+            
+            # Check if file is covered by previous search
+            is_covered = any(file_path.startswith(p) for p in searched_paths)
+            
+            if not is_covered and file_path not in EXEMPT_FILES:
+                violations.append(file_path)
+                
+    return CheckResult(passed=len(violations)==0, ...)
+```
+
+---
+
+#### 4. Usage Guide for Future Agents
+
+To run the full pipeline on a project:
+
+```bash
+# 1. Ingest (Interactive)
+python scripts/eval_ingest.py collect --project /path/to/project
+
+# 2. Transform (Vertex format)
+python scripts/eval_transform.py vertex
+
+# 3. Consume (Layer 1 Checks)
+python scripts/eval_consume.py l1 --verbose
+```
+
+**Output Example:**
+```
+✅ ses_abc123... (5/5 passed)
+   ✓ [S1-H1] Handoff Present: Handoff block found
+   ✓ [S1-H2] Handoff Structure: Both Layer 1 and Layer 2 present
+   ✓ [C3-H1] Grep-First Pattern: All reads preceded by grep/search
+   ✓ [C3-H2] Onboarding Sequence: All onboarding files read
+   ✓ [J4-H2] Backlinks Present: Backlink patterns found
+
+📊 Summary: 5/5 checks passed (100%)
+```
+
+---
+
+#### 5. Open Questions & Next Steps
+
+| Question | Status | Next Step |
+|----------|--------|-----------|
+| **Layer 2 Implementation** | PENDING | TASK-EVAL-002d: Create `eval_consume.py l2` using Vertex SDK |
+| **Golden Set Curation** | OPEN | Need to define which sessions form the CI test set |
+| **Turn Schema** | BLOCKED | `eval_ingest.py` still outputs flat prompt/response. Need TASK-EVAL-002a. |
+
+**Immediate Next Action:** Implement Layer 2 (Vertex AI) integration in `eval_consume.py`.
+
+---
+
+📦 STATELESS HANDOFF
+
+**Layer 1 — Local Context:**
+→ Last action: Implemented & logged ELT pipeline (TASK-EVAL-002b/c)
+→ Dependency chain: LOG-044 (this log) ← LOG-043 (design) ← LOG-041 (original script)
+→ Next action: TASK-EVAL-002d — Implement `layer2_vertex.py` (or extend `eval_consume.py`)
+
+**Layer 2 — Global Context:**
+→ Architecture: eval_ingest → eval_transform → eval_consume
+→ Patterns: ELT pipeline; Dataclass results; L1 checks
+→ Key decisions: DECISION-043a (Vertex L2), DECISION-044a (ELT Modular Architecture)
+
+**Fork paths:**
+- Implement L2 Vertex → TASK-EVAL-002d
+- Refactor for turns[] schema → TASK-EVAL-002a
+- Curate golden set → Manual review of existing sessions
+
+---
+
+### [LOG-045] - [DECISION] - Migration to OpenCode SQLite (opencode.db) & Vertex Full-Context Fix - Task: TASK-EVAL-002
+
+**Status:** IMPLEMENTED
+**Date:** 2026-02-14
+**Decision IDs:**
+- DECISION-045a: Migrate `eval_ingest.py` to `sqlmodel` (SQLite)
+- DECISION-045b: Update `eval_transform.py` to preserve full context (fix response truncation)
+- DECISION-045c: Add `sqlmodel` as optional dependency (`pip install .[eval]`)
+**Task:** TASK-EVAL-002 (Constitutional Evaluation Pipeline)
+**Supersedes:**
+- LOG-041: `eval_helper.py` Implementation (files-based ingestion is now dead)
+- LOG-032: OpenCode Goldmine (storage location changed from `~/.local/share/opencode/storage/session` to `opencode.db`)
+**Dependencies:**
+- LOG-043: Vertex AI Rubric-Based Eval (lines 7506-7935) — defines L2 rubric architecture which required the transform fix
+- LOG-044: Constitutional ELT Pipeline (lines 7936-8227) — defines the ingestion/transform/consume layers updated here
+
+#### 1. The Great Migration: From Files to SQLite
+
+**The Symptom:**
+The evaluation pipeline suddenly reported 0 sessions.
+```bash
+$ python scripts/eval_ingest.py discover --project ...
+❌ No matching sessions found.
+```
+
+**The Discovery:**
+OpenCode silently migrated its storage backend. The directory `~/.local/share/opencode/storage/session` (which LOG-032 relied on) was empty or gone.
+Investigation revealed a new source of truth: `~/.local/share/opencode/opencode.db`.
+
+**The New Schema (SQLite):**
+```mermaid
+erDiagram
+    SESSION ||--o{ MESSAGE : contains
+    MESSAGE ||--o{ PART : contains
+    PROJECT ||--o{ SESSION : owns
+
+    SESSION {
+        string id PK
+        string project_id FK
+        int time_created
+        string title
+    }
+    MESSAGE {
+        string id PK
+        string session_id FK
+        json data "Contains role, model_id"
+    }
+    PART {
+        string id PK
+        string message_id FK
+        json data "Contains type (text/tool), content"
+    }
+```
+
+**The Fix (DECISION-045a):**
+Refactored `eval_ingest.py` to use `sqlmodel` (SQLAlchemy + Pydantic) instead of `pathlib.glob`.
+- **Old:** File system traversal (`glob("ses_*.json")`)
+- **New:** SQL queries (`select(SessionModel).where(...)`)
+- **Impact:** Added `sqlmodel` dependency to `pyproject.toml`.
+
+**Code Snippet (SQLModel Setup):**
+```python
+# scripts/eval_ingest.py
+
+class Part(SQLModel, table=True):
+    """OpenCode part table (tool calls, text, reasoning)."""
+    id: str = Field(primary_key=True)
+    message_id: str = Field(foreign_key="message.id")
+    session_id: str = Field(foreign_key="session.id")
+    time_created: int
+    data: str  # JSON blob containing tool calls
+
+def extract_paths_from_output(tool_name: str, output: str) -> Set[str]:
+    """Extract paths from tool outputs to fingerprint projects."""
+    # (Same logic as before, but fed from SQL data)
+    ...
+```
+
+#### 2. The Vertex Transform Bug (Response Truncation)
+
+**The Symptom:**
+Vertex AI transformed files (`*_vertex.json`) contained only tiny fragments of the agent's response.
+- Raw file: `response_length: 3550`
+- Vertex file: `response_length: 18` ("Now let's test it:")
+
+**The Cause (Premature Optimization):**
+In LOG-043 implementation, `eval_transform.py` attempted to "clean up" the response by taking only the last paragraph:
+```python
+# BAD:
+last_response = full_response.split("\n\n")[-1]
+```
+This destroyed 99% of the context needed for rubric evaluation. Vertex AI's `GENERAL_QUALITY` metric needs the **entire reasoning chain** to evaluate "why" decisions were made.
+
+**The Fix (DECISION-045b):**
+Updated `eval_transform.py` to preserve the full response.
+
+```python
+# GOOD (scripts/eval_transform.py):
+# Keep FULL response — Vertex rubric metrics need complete context
+full_response = session.get("response", "")
+
+return {
+    # ...
+    "prompt": session.get("prompt", ""),
+    "response": full_response,  # FULL response, not truncated
+    "tool_use": tool_use,
+}
+```
+
+**Citation:** Vertex AI Documentation, "Rubric-based metrics":
+> "Adaptive rubrics function like unit tests for your models... The Gen AI evaluation service then generates rubrics covering both its default tasks and the guidelines you specify."
+> *Source: https://cloud.google.com/vertex-ai/generative-ai/docs/models/determine-eval*
+
+**Synthesized Example:**
+| Input (Raw) | Old Transform (Buggy) | New Transform (Fixed) |
+|-------------|-----------------------|-----------------------|
+| "I analyzed the database.<br/><br/>Found 3 tables.<br/><br/>Plan: Update schema." | "Plan: Update schema." | "I analyzed the database.<br/><br/>Found 3 tables.<br/><br/>Plan: Update schema." |
+| **Impact on Vertex** | **FAIL** (Missing reasoning) | **PASS** (Full context visible) |
+
+#### 3. Updated Dependency Graph (DAG) for Onboarding
+
+Future agents: Use this DAG to reconstruct the evaluation pipeline context.
+
+```mermaid
+graph TD
+    LOG-028[LOG-028: CI Framework] --> LOG-042
+    LOG-032[LOG-032: OpenCode Goldmine] -- Superseded by --> LOG-045
+    LOG-041[LOG-041: Old Ingest] -- Superseded by --> LOG-045
+    LOG-042[LOG-042: Eval Architecture] --> LOG-043
+    LOG-043[LOG-043: Vertex Hybrid] --> LOG-044
+    LOG-044[LOG-044: ELT Pipeline] --> LOG-045
+    LOG-045[LOG-045: SQLite Migration] --> TASK-EVAL-002d
+```
+
+**Key Files Updated:**
+1. `scripts/eval_ingest.py`: Rewritten for SQLite/SQLModel.
+2. `scripts/eval_transform.py`: Fixed response truncation.
+3. `pyproject.toml`: Added `sqlmodel`, `pyyaml`.
+
+**Next Actions:**
+- Proceed to TASK-EVAL-002d (Vertex L2 integration) using the now-correct transformed data.

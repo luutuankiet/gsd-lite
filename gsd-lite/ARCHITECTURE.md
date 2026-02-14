@@ -40,3 +40,53 @@ graph TD
 - `src/gsd_lite/__main__.py` - **CLI Entry Point**: Main application logic, handles args parsing and file operations.
 - `pyproject.toml` - **Project Config**: Defines dependencies, scripts, and build targets.
 - `.planning/PROJECT.md` - **Vision**: Defines the "Why" and scope of the GSD-Lite project.
+
+## The Two-Brain System
+
+### Session vs. Filesystem Persistence
+
+GSD-Lite operates on a fundamental architectural principle: **ephemeral reasoning, durable artifacts**.
+
+| Component | Role | Persistence | Undo Behavior |
+|-----------|------|-------------|---------------|
+| **OpenCode Session** | Reasoning Engine | Ephemeral | Fork/Undo reverts context |
+| **fs-mcp Server** | Execution Engine | Durable | Fork/Undo has no effect |
+
+### The Persistence Bridge
+
+Agents MUST treat the filesystem as an **External API**, not as session state.
+
+```mermaid
+graph LR
+    subgraph "OpenCode (Ephemeral)"
+        A[Chat Context] --> B[Reasoning]
+        B --> C[Tool Call Decision]
+    end
+    
+    subgraph "fs-mcp (Durable)"
+        C -->|"fs.write"| D[WORK.md]
+        C -->|"fs.read"| E[Source Code]
+    end
+    
+    subgraph "Undo Boundary"
+        F[OpenCode Undo] -.->|"Reverts"| A
+        F -.->|"NO EFFECT"| D
+    end
+```
+
+### Why OpenCode Runs from Home
+
+The user spawns OpenCode from `~/` (Home Directory), not from project roots. This is intentional:
+
+1. **Single Entry Point:** One OpenCode instance manages multiple projects via different fs-mcp connections.
+2. **Global Session Pool:** All sessions land in `~/.local/share/opencode/storage/session/global/`.
+3. **Project Isolation via Fingerprinting:** We identify which project a session touched by parsing absolute paths from fs-mcp tool outputs (see LOG-033, LOG-034).
+
+### Consequences for Evaluation
+
+Because `projectID` is always "global", the evaluation parser must:
+1. Scan tool call outputs for absolute paths
+2. Extract project root from path prefixes
+3. Group sessions by detected project
+
+This is documented in LOG-033 (Fingerprinting) and LOG-034 (Schema).

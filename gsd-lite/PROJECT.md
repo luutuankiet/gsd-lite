@@ -104,6 +104,44 @@ When logging findings, use this prompt pattern:
 - **Grep-optimized:** Artifacts designed for surgical reads via `grep → read_files`
 - **Journalism quality:** Logs are onboarding documents, not bullet points
 
+## Operational Philosophy
+
+### The Fork-Safe Workflow
+
+GSD-Lite is designed for **Non-Linear Development**. The tooling architecture enforces a clean separation between ephemeral reasoning and durable state.
+
+| Layer | Tool | Persistence | Purpose |
+|-------|------|-------------|---------|
+| **Reasoning** | OpenCode | Ephemeral | Explore ideas, fork freely, undo mistakes |
+| **Execution** | fs-mcp | Durable | Commit decisions, write artifacts, persist code |
+
+**The Rule:** *"Reason in the chat, Commit via the tool."*
+
+### Why This Matters
+
+OpenCode's native file operations are **session-scoped**. When you fork or undo, file changes revert. This is dangerous for GSD-Lite artifacts—you could lose a LOG entry by forking.
+
+**The Solution:** All filesystem I/O goes through `fs-mcp`, an external MCP server. Because it's external to OpenCode's undo stack:
+- **Forks** don't revert file writes
+- **Undos** don't erase committed decisions
+- **WORK.md** becomes a true "forward-only" journal
+
+### The Workflow
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│  OpenCode (from ~/)           fs-mcp (project root)         │
+│  ─────────────────            ─────────────────────         │
+│  • Spawned from $HOME         • Connected to /dev/gsd_lite  │
+│  • projectID = "global"       • Absolute paths in outputs   │
+│  • Context is forkable        • Writes are permanent        │
+│  • Undo reverts chat state    • Undo has no effect          │
+└─────────────────────────────────────────────────────────────┘
+```
+
+**Practical Implication:**
+When evaluating past sessions (see LOG-032 to LOG-035), we cannot use OpenCode's `projectID` to identify which project a session touched. Instead, we **fingerprint** sessions by parsing absolute paths from `fs-mcp` tool call outputs.
+
 ## Philosophy
 
 **Agents are brilliant but ephemeral.** They can reason through complex problems, spot patterns humans miss, and execute with precision. But when the session ends, that brilliance evaporates.
