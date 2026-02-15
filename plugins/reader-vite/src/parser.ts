@@ -14,7 +14,7 @@
 import type { WorklogAST, LogEntry, Section } from './types';
 
 // Regex patterns (matching Python implementation exactly)
-const LOG_HEADER_PATTERN = /^### \[LOG-(\d+)\] - \[([A-Z_]+)\] - (.+)$/;
+const LOG_HEADER_PATTERN = /^### \[LOG-(\d+)\] - \[([^\]]+)\] - (.+)$/;
 const SECTION_HEADER_PATTERN = /^(#{2,5}) (.+)$/;
 const STRIKETHROUGH_PATTERN = /~~.+~~/;
 
