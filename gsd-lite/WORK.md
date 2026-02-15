@@ -9,17 +9,17 @@ execution
 </current_mode>
 
 <active_task>
-Task: READER-005 - Static Worklog Distribution (The Hotel Model)
-Status: COMPLETE (LOG-059) - Implemented remote dump command and static hosting.
+Task: READER-006 - Robustness & Debugging
+Status: COMPLETE (LOG-060) - Fixed nested outline bug, UTF-8 static dump corruption, and malformed WORK.md content.
 Key deliverables:
-- Remote server: Go binary (upload + serve) behind Traefik
-- CLI: `npx @luutuankiet/gsd-reader dump --remote=...`
-- Frontend: Base64 injection for safe static HTML
-- Live at: https://gsd.kenluu.org
+- Regex fix in parser.ts (allow special chars in TYPE)
+- UTF-8 fix in main.ts (atob -> TextDecoder)
+- Version printout in cli.cjs
+- Bumped @luutuankiet/gsd-reader to 0.2.6
 
 ---
 **Parked (resume next):**
-- Publish v0.2.0 to npm (trigger GHA)
+- Publish v0.2.6 to npm (trigger GHA)
 - TASK-EVAL-002d: Vertex AI integration (resume after publish)
 </active_task>
 
@@ -115,7 +115,7 @@ None - CI/CD workflow created. Requires NPM_TOKEN secret.
 
 <next_action>
 1. Ensure NPM_TOKEN/Trusted Publishing is configured.
-2. Push tag `reader-v0.2.0` to trigger release.
+2. Push tag `reader-v0.2.6` to trigger release.
 3. Resume TASK-EVAL-002d (Vertex AI integration).
 </next_action>
 
@@ -10697,3 +10697,29 @@ npx @luutuankiet/gsd-reader dump --remote=https://gsd.kenluu.org --user=ken
 - **Auth:** Protected by existing Traefik middleware (`ken:$apr1$...`).
 - **Offline Capable:** The resulting HTML is self-contained (except for lazy-loaded Mermaid chunks, which are cached).
 - **Mobile Ready:** "Close laptop, read on phone" workflow achieved.
+
+### [LOG-060] - [FIX] - Reader 0.2.6: Parsing Robustness & Static Dump Encoding - Task: READER-006
+
+**Summary:** Debugged and fixed critical issues in the reader plugin causing logs to display incorrectly (nested under sections) and UTF-8 characters to render corrupted in static dumps.
+
+**Key Fixes:**
+
+1.  **Parsing Robustness (Regex Update):**
+    -   **Problem:** Log titles like `[PLAN-PIVOT]` or `[DISCOVERY & REFINEMENT]` failed to match the strict regex `[A-Z_]+`, causing them to fall through as generic section headers. This resulted in logs appearing as children of the previous H2 section (e.g., "Atomic Session Log") instead of top-level logs.
+    -   **Fix:** Updated `LOG_HEADER_PATTERN` in `parser.ts` to allow special characters (`-`, `&`, space) in the TYPE field: `\[([^\]]+)\]`.
+
+2.  **Static Dump Encoding (UTF-8 Corruption):**
+    -   **Problem:** The static dump injects Base64 content. The frontend used `atob()` to decode it, which interprets bytes as Latin-1 string. Multi-byte UTF-8 characters (like em-dash `—`) were corrupted into `â€"`.
+    -   **Fix:** Switched to proper UTF-8 decoding using `TextDecoder` + `Uint8Array` in `main.ts`.
+
+3.  **CLI Debugging:**
+    -   **Enhancement:** Added version printout (`[GSD-Lite Reader] v0.2.6`) on startup to `cli.cjs` to help identify the running version.
+
+4.  **Content Fixes (Dogfooding):**
+    -   **Code Fence:** Fixed a malformed code fence in `WORK.md` (line ~462) where `),`\`\`\` was on the same line, breaking the parser.
+    -   **Mermaid:** Fixed a broken Mermaid diagram (line ~1450) by quoting labels with parentheses/HTML.
+
+**Outcome:**
+-   **Version:** Bumped `@luutuankiet/gsd-reader` to `0.2.6`.
+-   **Stability:** Logs render correctly regardless of TYPE characters.
+-   **Encoding:** Static dumps now support full Unicode (emojis, em-dashes).
