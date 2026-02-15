@@ -2,6 +2,46 @@
 
 <!-- version list -->
 
+## v1.15.0 (2026-02-15)
+
+### Bug Fixes
+
+- Cli dump to have utf8 support ([#15](https://github.com/luutuankiet/gsd-lite/pull/15),
+  [`3baaa7e`](https://github.com/luutuankiet/gsd-lite/commit/3baaa7ea991656a8d564db1f2b4d6e490bca6f3b))
+
+- Parser logic captures tag with dashes in brackets
+  ([#15](https://github.com/luutuankiet/gsd-lite/pull/15),
+  [`3baaa7e`](https://github.com/luutuankiet/gsd-lite/commit/3baaa7ea991656a8d564db1f2b4d6e490bca6f3b))
+
+### Documentation
+
+- Init plan ([#15](https://github.com/luutuankiet/gsd-lite/pull/15),
+  [`3baaa7e`](https://github.com/luutuankiet/gsd-lite/commit/3baaa7ea991656a8d564db1f2b4d6e490bca6f3b))
+
+### Features
+
+- Add first P2 rubric ([#15](https://github.com/luutuankiet/gsd-lite/pull/15),
+  [`3baaa7e`](https://github.com/luutuankiet/gsd-lite/commit/3baaa7ea991656a8d564db1f2b4d6e490bca6f3b))
+
+- Add gsd reader script ([#15](https://github.com/luutuankiet/gsd-lite/pull/15),
+  [`3baaa7e`](https://github.com/luutuankiet/gsd-lite/commit/3baaa7ea991656a8d564db1f2b4d6e490bca6f3b))
+
+- Add opencode parser for eval ([#15](https://github.com/luutuankiet/gsd-lite/pull/15),
+  [`3baaa7e`](https://github.com/luutuankiet/gsd-lite/commit/3baaa7ea991656a8d564db1f2b4d6e490bca6f3b))
+
+- Add vite build script ([#15](https://github.com/luutuankiet/gsd-lite/pull/15),
+  [`3baaa7e`](https://github.com/luutuankiet/gsd-lite/commit/3baaa7ea991656a8d564db1f2b4d6e490bca6f3b))
+
+- Publish to simple docker container host ([#15](https://github.com/luutuankiet/gsd-lite/pull/15),
+  [`3baaa7e`](https://github.com/luutuankiet/gsd-lite/commit/3baaa7ea991656a8d564db1f2b4d6e490bca6f3b))
+
+- Sticky headers on reader ([#15](https://github.com/luutuankiet/gsd-lite/pull/15),
+  [`3baaa7e`](https://github.com/luutuankiet/gsd-lite/commit/3baaa7ea991656a8d564db1f2b4d6e490bca6f3b))
+
+- Vite based hot serve work logs ([#15](https://github.com/luutuankiet/gsd-lite/pull/15),
+  [`3baaa7e`](https://github.com/luutuankiet/gsd-lite/commit/3baaa7ea991656a8d564db1f2b4d6e490bca6f3b))
+
+
 ## v1.14.0 (2026-02-07)
 
 ### Chores
