@@ -1,6 +1,6 @@
 {
   "name": "@luutuankiet/gsd-reader",
-  "version": "0.2.0",
+  "version": "0.2.2",
   "description": "Interactive Worklog Reader for GSD-Lite WORK.md files with live reload",
   "keywords": [
     "gsd-lite",
@@ -30,6 +30,7 @@
   },
   "dependencies": {
     "chokidar": "^4.0.0",
+    "tar": "^7.0.0",
     "ws": "^8.18.0"
   },
   "devDependencies": {

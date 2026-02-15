@@ -613,7 +613,7 @@ export function initializeInteractions(): void {
     
     // IntersectionObserver to detect which section is in view
     const observer = new IntersectionObserver(
-      (entries) => {
+      (entries: IntersectionObserverEntry[]) => {
         // Find the topmost visible section
         let topmostEntry: IntersectionObserverEntry | null = null;
         let topmostY = Infinity;
@@ -629,8 +629,8 @@ export function initializeInteractions(): void {
           }
         });
         
-        if (topmostEntry) {
-          const target = topmostEntry.target as HTMLElement;
+        if (topmostEntry !== null) {
+          const target = (topmostEntry as IntersectionObserverEntry).target as HTMLElement;
           const sectionTitle = target.dataset.sectionTitle || 'GSD-Lite Worklog';
           const sectionId = target.id;
           
@@ -658,7 +658,7 @@ export function initializeInteractions(): void {
                 if (parentItem) {
                   parentItem.classList.remove('collapsed');
                 }
-                parent = parentItem;
+                parent = parentItem ?? null;
               }
               
               // Scroll outline to show active item (smooth, if not visible)

@@ -41,12 +41,26 @@ async function loadAndRender(): Promise<void> {
   console.log(`[GSD-Lite Reader] Saving scroll position: ${savedScrollY}px`);
 
   try {
-    // Fetch the raw markdown from the plugin endpoint
-    const response = await fetch(WORKLOG_ENDPOINT);
-    if (!response.ok) {
-      throw new Error(`Failed to load WORK.md: ${response.status} ${response.statusText}`);
+    // Check for embedded content first (static dump mode)
+    // Then fall back to fetching from the dev server endpoint
+    let markdown: string;
+    
+    if ((window as any).__WORKLOG_CONTENT_B64__) {
+      // Static mode: content was injected during dump as Base64
+      markdown = atob((window as any).__WORKLOG_CONTENT_B64__);
+      console.log('[GSD-Lite Reader] Using embedded content (static mode)');
+    } else if ((window as any).__WORKLOG_CONTENT__) {
+      // Legacy: plain text injection (kept for backwards compatibility)
+      markdown = (window as any).__WORKLOG_CONTENT__;
+      console.log('[GSD-Lite Reader] Using embedded content (static mode, legacy)');
+    } else {
+      // Dev mode: fetch from the dev server
+      const response = await fetch(WORKLOG_ENDPOINT);
+      if (!response.ok) {
+        throw new Error(`Failed to load WORK.md: ${response.status} ${response.statusText}`);
+      }
+      markdown = await response.text();
     }
-    const markdown = await response.text();
 
     // Parse into AST
     const ast = parseWorklog(markdown);
@@ -432,8 +446,10 @@ function connectWebSocket(): void {
 // Initial load
 loadAndRender();
 
-// Start WebSocket connection for CLI live reload
-connectWebSocket();
+// Start WebSocket connection for CLI live reload (skip in static mode)
+if (!(window as any).__WORKLOG_CONTENT_B64__ && !(window as any).__WORKLOG_CONTENT__) {
+  connectWebSocket();
+}
 
 // Hot Module Replacement - reload when WORK.md changes (Vite dev server only)
 if (import.meta.hot) {

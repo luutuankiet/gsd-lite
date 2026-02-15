@@ -9,13 +9,13 @@ execution
 </current_mode>
 
 <active_task>
-Task: READER-004 - Reader v0.2.0 Features
-Status: COMPLETE (LOG-058) - Implemented section rendering, breadcrumbs, scroll sync.
+Task: READER-005 - Static Worklog Distribution (The Hotel Model)
+Status: COMPLETE (LOG-059) - Implemented remote dump command and static hosting.
 Key deliverables:
-- Render H2/H3 content in main view
-- Sticky breadcrumb
-- Outline follow-along
-- Version 0.2.0
+- Remote server: Go binary (upload + serve) behind Traefik
+- CLI: `npx @luutuankiet/gsd-reader dump --remote=...`
+- Frontend: Base64 injection for safe static HTML
+- Live at: https://gsd.kenluu.org
 
 ---
 **Parked (resume next):**
@@ -10593,3 +10593,107 @@ Version bumped to `0.2.0`.
 #### 4. Next Steps
 - Publish v0.2.0 to npm.
 - Resume Vertex AI integration (TASK-EVAL-002d).
+
+### [LOG-059] - [DECISION] - Static Worklog Distribution ("The Hotel Model") - Task: READER-005
+
+**Summary:** We implemented a "dump & read" distribution model (`npx ... dump --remote`) allowing engineers to push `WORK.md` to a centralized, auth-protected static server (`gsd.kenluu.org`) for offline mobile reading.
+
+**Key Insight:** SSH tunnels are great for laptops, but useless for mobile. To read logs on the bus, we need a static drop box. We call this "The Hotel Model" — a single server hosting multiple projects in isolated rooms.
+
+#### 1. The Context (Why This Matters)
+
+**The Problem:**
+- **Mobile Gap:** Reading `WORK.md` on a phone required keeping a laptop open with an SSH tunnel.
+- **Vite limitation:** Live reload requires a WebSocket connection to localhost, which doesn't exist on static hosting.
+- **Escaping hell:** Naively injecting markdown into HTML via `JSON.stringify` breaks when the markdown contains `</script>` tags or weird characters.
+
+**The Vision:**
+> "I want to close my laptop, walk away, and read the logs on my phone."
+
+#### 2. The Solution: "The Hotel Model" Architecture
+
+We deployed a lightweight Go server behind Traefik Basic Auth to serve static files and handle uploads.
+
+```mermaid
+graph TD
+    subgraph "Local Machine (CLI)"
+        CLI["npx @luutuankiet/gsd-reader dump"]
+        Build["Vite Build dist/"]
+        Inject["Inject Base64 WORK.md"]
+        Tar["Create .tar.gz"]
+    end
+
+    subgraph "Remote Server (Hetzner)"
+        Traefik["Traefik Proxy (Basic Auth)"]
+        GoServer["Go Binary :8080"]
+        FS["Persistent Volume /data"]
+    end
+
+    CLI -->|POST /upload/project-name| Traefik
+    Traefik -->|Forward| GoServer
+    GoServer -->|Extract| FS
+    
+    subgraph "Mobile Client"
+        Phone["Browser"]
+    end
+    
+    Phone -->|GET /project-name/| Traefik
+    Traefik -->|Serve Static| GoServer
+    GoServer -->|Read| FS
+```
+
+#### 3. Implementation Details
+
+##### 3.1 The Backend (Go Server)
+We chose Go for a single-binary deployment (~15MB image) with zero runtime dependencies. It handles:
+1.  **Project Picker:** Auto-generates `index.html` listing all uploaded projects.
+2.  **Static Serving:** Serves the extracted HTML/JS assets.
+3.  **Upload Handler:** Receives `tar.gz` via POST, extracts to `./data/{project}/`.
+
+**Source:** `remote_hetzner/gsd-reader/main.go`
+
+##### 3.2 The Frontend (Base64 Injection)
+**The Bug:** Initially, we used `JSON.stringify(markdown)` to inject content into `<script>`. This failed when markdown contained `</script>` tags or unescaped line breaks, causing `Uncaught SyntaxError`.
+
+**The Fix:** We switched to **Base64 encoding**. This ensures the payload is always safe, regardless of content.
+
+**CLI Injection (`plugins/reader-vite/cli.cjs`):**
+```javascript
+// Bulletproof injection: Base64 encodes EVERYTHING safely
+const base64Content = Buffer.from(worklogContent, 'utf-8').toString('base64');
+const injectScript = `<script>window.__WORKLOG_CONTENT_B64__ = "${base64Content}";</script>`;
+indexHtml = indexHtml.replace('</head>', `${injectScript}\n</head>`);
+```
+
+**Frontend Decoding (`plugins/reader-vite/src/main.ts`):**
+```typescript
+if ((window as any).__WORKLOG_CONTENT_B64__) {
+  // Static mode: Decode safe Base64 content
+  markdown = atob((window as any).__WORKLOG_CONTENT_B64__);
+  // Disable WebSocket connection (no live reload)
+} else {
+  // Dev mode: Fetch from server + connect WebSocket
+  connectWebSocket();
+}
+```
+
+##### 3.3 The CLI Command (`dump`)
+We added a `dump` command to the CLI that automates the build-and-push workflow.
+
+```bash
+# Usage
+npx @luutuankiet/gsd-reader dump --remote=https://gsd.kenluu.org --user=ken
+```
+
+**Logic:**
+1.  Builds the Vite app to `dist/`.
+2.  Injects `WORK.md` as Base64 into `index.html`.
+3.  Fixes asset paths (absolute `/assets/` -> relative `./assets/`) for subdirectory hosting.
+4.  Tars the `dist/` folder.
+5.  Uploads via HTTP POST with Basic Auth header.
+
+#### 4. Outcome
+- **Live at:** `https://gsd.kenluu.org/`
+- **Auth:** Protected by existing Traefik middleware (`ken:$apr1$...`).
+- **Offline Capable:** The resulting HTML is self-contained (except for lazy-loaded Mermaid chunks, which are cached).
+- **Mobile Ready:** "Close laptop, read on phone" workflow achieved.
