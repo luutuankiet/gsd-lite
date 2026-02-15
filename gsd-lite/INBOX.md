@@ -488,4 +488,15 @@ User chose Option 2 (Social) on 2026-01-23. Extended interface to include `bio`,
 
 ---
 
+### [LOOP-005] - Dark/Light Theme Toggle for Worklog Reader - Status: Open
+**Created:** 2026-02-15 | **Source:** READER-002a scaffold | **Origin:** User
+**Context:** During initial Vite scaffold, switched from dark to light theme per user preference. User asked if toggle exists.
+**Details:** Currently theme is hardcoded in CSS variables. Options:
+1. CSS toggle button + localStorage persistence
+2. System preference detection via `prefers-color-scheme`
+3. Both (toggle + default to system)
+**Resolution:** Defer to READER-002c or later polish phase. Light mode works for now.
+
+---
+
 *Review active loops before each phase promotion. Resolve or carry forward intentionally.*

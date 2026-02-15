@@ -503,25 +503,35 @@ def detect_partitions(sessions: List[SessionMeta], gap_minutes: int = 30) -> Lis
 
 def extract_trajectory(session: SessionMeta) -> dict:
     """
-    Extract full trajectory from a single session.
+    Extract full trajectory from a single session in Vertex AI native format.
     
-    Output format (Vertex AI compatible):
-    {
-        "session_id": "ses_...",
-        "created": "2026-02-14T09:15:00",
-        "title": "Session title",
-        "prompt": "User instruction text",
-        "response": "Agent response text", 
-        "generated_trajectory": [
-            {"tool": "fs.grep", "args": {...}, "output": "..."},
-            {"tool": "fs.read", "args": {...}, "output": "..."}
-        ]
-    }
+    Output format (Vertex AI Multi-Turn + Agent Evaluation compatible):
+    - request.contents[]: Gemini-format turn array for MULTI_TURN_GENERAL_QUALITY
+    - response.candidates[]: Final model response
+    - intermediate_events[]: Tool calls for TOOL_USE_QUALITY, HALLUCINATION
+    - conversation_history[]: For explicit field parsing
+    - generated_trajectory[]: Legacy format for Layer 1 programmatic checks
+    
+    References:
+    - LOG-042: DECISION-042d (turn-structured schema)
+    - LOG-043: Vertex AI rubric-based evaluation
+    - https://cloud.google.com/vertex-ai/generative-ai/docs/models/evaluation-dataset
     """
-    prompts: List[str] = []
-    responses: List[str] = []
-    trajectory: List[dict] = []
     config = get_config()
+    
+    # Collect turns in Vertex-native format
+    contents: List[dict] = []  # For request.contents
+    intermediate_events: List[dict] = []  # For agent evaluation
+    generated_trajectory: List[dict] = []  # Legacy format for L1 checks
+    
+    # Also collect flat concatenations for backward compatibility
+    all_prompts: List[str] = []
+    all_responses: List[str] = []
+    
+    # Track current turn's text accumulation
+    current_turn_text: List[str] = []
+    current_turn_role: Optional[str] = None
+    turn_number = 0
     
     with get_session() as db:
         # Get all messages for this session, ordered by creation time
@@ -539,6 +549,21 @@ def extract_trajectory(session: SessionMeta) -> dict:
                 continue
             
             role = msg_data.get("role", "")
+            vertex_role = "user" if role == "user" else "model"
+            
+            # Detect turn boundary (role change)
+            if current_turn_role is not None and current_turn_role != vertex_role:
+                # Flush previous turn to contents
+                if current_turn_text:
+                    combined_text = "\n\n".join(current_turn_text)
+                    contents.append({
+                        "role": current_turn_role,
+                        "parts": [{"text": combined_text}]
+                    })
+                    current_turn_text = []
+                    turn_number += 1
+            
+            current_turn_role = vertex_role
             
             # Get parts for this message
             parts_statement = (
@@ -558,10 +583,13 @@ def extract_trajectory(session: SessionMeta) -> dict:
                 
                 if part_type == "text":
                     text = part_data.get("text", "")
-                    if role == "user":
-                        prompts.append(text)
-                    elif role == "assistant":
-                        responses.append(text)
+                    if text:
+                        current_turn_text.append(text)
+                        # Also add to flat lists for backward compat
+                        if role == "user":
+                            all_prompts.append(text)
+                        elif role == "assistant":
+                            all_responses.append(text)
                 
                 elif part_type == "tool" and role == "assistant":
                     tool_name_raw = part_data.get("tool", "unknown")
@@ -572,20 +600,98 @@ def extract_trajectory(session: SessionMeta) -> dict:
                     # Normalize tool name
                     tool_name = config.normalize_tool(tool_name_raw)
                     
-                    trajectory.append({
+                    # Vertex AI intermediate_events format
+                    intermediate_events.append({
+                        "function_call": {
+                            "name": tool_name,
+                            "args": tool_args
+                        },
+                        "function_response": {
+                            "name": tool_name,
+                            "response": {"output": tool_output[:2000] if tool_output else ""}
+                        },
+                        "turn": turn_number
+                    })
+                    
+                    # Legacy format for L1 checks
+                    generated_trajectory.append({
                         "tool": tool_name,
                         "tool_raw": tool_name_raw,
                         "args": tool_args,
-                        "output": tool_output[:2000] if tool_output else ""
+                        "output": tool_output[:2000] if tool_output else "",
+                        "turn": turn_number
                     })
+        
+        # Flush final turn
+        if current_turn_text and current_turn_role:
+            combined_text = "\n\n".join(current_turn_text)
+            contents.append({
+                "role": current_turn_role,
+                "parts": [{"text": combined_text}]
+            })
+    
+    # Extract final response (last model turn)
+    final_response = ""
+    if contents and contents[-1]["role"] == "model":
+        final_response = contents[-1]["parts"][0]["text"]
+    
+    # Extract prompt (last user turn before final response)
+    prompt_for_eval = ""
+    for i in range(len(contents) - 1, -1, -1):
+        if contents[i]["role"] == "user":
+            prompt_for_eval = contents[i]["parts"][0]["text"]
+            break
+    
+    # Build conversation_history (all turns except the last user prompt)
+    conversation_history = []
+    if len(contents) > 1:
+        # Find the index of the last user message
+        last_user_idx = -1
+        for i in range(len(contents) - 1, -1, -1):
+            if contents[i]["role"] == "user":
+                last_user_idx = i
+                break
+        # Everything before the last user message is history
+        if last_user_idx > 0:
+            conversation_history = contents[:last_user_idx]
     
     return {
         "session_id": session.session_id,
         "created": session.created,
         "title": session.title,
-        "prompt": "\n\n".join(prompts),
-        "response": "\n\n".join(responses),
-        "generated_trajectory": trajectory
+        
+        # Vertex AI native format (for auto-parsing by Gen AI Eval)
+        "request": {
+            "contents": contents
+        },
+        "response": {
+            "candidates": [{
+                "content": {
+                    "role": "model",
+                    "parts": [{"text": final_response}]
+                }
+            }]
+        },
+        
+        # Explicit fields (alternative to auto-parsing)
+        "prompt": prompt_for_eval,
+        "conversation_history": conversation_history,
+        
+        # Agent evaluation fields
+        "intermediate_events": intermediate_events,
+        
+        # Legacy fields for Layer 1 programmatic checks
+        "generated_trajectory": generated_trajectory,
+        "prompt_concat": "\n\n".join(all_prompts),
+        "response_concat": "\n\n".join(all_responses),
+        
+        # Metadata
+        "metadata": {
+            "total_turns": len(contents),
+            "total_tools": len(generated_trajectory),
+            "user_turns": sum(1 for c in contents if c["role"] == "user"),
+            "model_turns": sum(1 for c in contents if c["role"] == "model")
+        }
     }
 
 

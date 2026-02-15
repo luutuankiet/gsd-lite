@@ -110,6 +110,86 @@ class EvalReport:
 
 
 # =============================================================================
+# Helper Functions for Turn-Based Schema
+# =============================================================================
+
+def get_final_response(session: dict) -> str:
+    """
+    Extract the final model response from turn-based schema.
+    
+    New schema (Vertex-native):
+        session["request"]["contents"] = [{"role": "user/model", "parts": [{"text": "..."}]}]
+        session["response"]["candidates"][0]["content"]["parts"][0]["text"]
+    
+    Falls back to legacy flat schema if new format not found.
+    """
+    # Try new Vertex-native format first
+    try:
+        response_obj = session.get("response", {})
+        if isinstance(response_obj, dict) and "candidates" in response_obj:
+            return response_obj["candidates"][0]["content"]["parts"][0]["text"]
+    except (KeyError, IndexError, TypeError):
+        pass
+    
+    # Try getting last model turn from request.contents
+    try:
+        contents = session.get("request", {}).get("contents", [])
+        for turn in reversed(contents):
+            if turn.get("role") == "model":
+                return turn["parts"][0]["text"]
+    except (KeyError, IndexError, TypeError):
+        pass
+    
+    # Fallback to legacy flat response_concat or response
+    return session.get("response_concat", session.get("response", ""))
+
+
+def get_trajectory(session: dict) -> list:
+    """
+    Extract tool trajectory from session, supporting multiple schema versions.
+    
+    Priority:
+    1. generated_trajectory (new ingest with turn info)
+    2. intermediate_events (Vertex agent format)
+    3. tool_use (old transform output)
+    """
+    # Prefer generated_trajectory (has turn numbers)
+    if session.get("generated_trajectory"):
+        return session["generated_trajectory"]
+    
+    # Try intermediate_events (Vertex format)
+    if session.get("intermediate_events"):
+        events = session["intermediate_events"]
+        # Normalize to common format
+        return [{
+            "tool": e.get("function_call", {}).get("name", ""),
+            "args": e.get("function_call", {}).get("args", {}),
+            "output": e.get("function_response", {}).get("response", {}).get("output", ""),
+            "turn": e.get("turn", 0)
+        } for e in events]
+    
+    # Legacy: tool_use from old transform
+    if session.get("tool_use"):
+        return [{
+            "tool": t.get("tool_name", ""),
+            "args": t.get("tool_input", {}),
+            "output": t.get("tool_output", "")
+        } for t in session["tool_use"]]
+    
+    return []
+
+
+def get_first_turn_tools(session: dict) -> list:
+    """
+    Get tools used in the first agent turn (for onboarding check).
+    
+    With turn-based schema, we check if onboarding happens in turn 0.
+    """
+    trajectory = get_trajectory(session)
+    return [t for t in trajectory if t.get("turn", 0) == 0]
+
+
+# =============================================================================
 # Layer 1 Checks (Programmatic)
 # =============================================================================
 
@@ -122,10 +202,9 @@ def check_handoff_present(session: dict) -> CheckResult:
     PASS: Response contains "📦 STATELESS HANDOFF"
     FAIL: Pattern not found
     
-    Note: With current flat schema (concatenated response), we check 
-    if handoff appears anywhere. With turns[] schema, we'd check last turn only.
+    Now uses turn-based schema: checks the FINAL model response only.
     """
-    response = session.get("response", "")
+    response = get_final_response(session)
     
     # Check for handoff marker
     if "📦 STATELESS HANDOFF" in response:
@@ -163,7 +242,7 @@ def check_handoff_structure(session: dict) -> CheckResult:
     PASS: Handoff contains both "Layer 1" and "Layer 2" sections
     FAIL: Missing one or both layers
     """
-    response = session.get("response", "")
+    response = get_final_response(session)
     
     # First check if handoff exists
     if "STATELESS HANDOFF" not in response:
@@ -218,10 +297,8 @@ def check_grep_before_read(session: dict) -> CheckResult:
     - Reading files that were just created
     - Reading after fs.search (file discovery)
     """
-    # Get trajectory - support both raw and vertex format
-    trajectory = session.get("generated_trajectory", [])
-    if not trajectory:
-        trajectory = session.get("tool_use", [])
+    # Get trajectory using helper (supports all schema versions)
+    trajectory = get_trajectory(session)
     
     if not trajectory:
         return CheckResult(
@@ -250,9 +327,9 @@ def check_grep_before_read(session: dict) -> CheckResult:
     violations = []
     
     for call in trajectory:
-        # Normalize field names (raw vs vertex format)
-        tool = call.get("tool") or call.get("tool_name", "")
-        args = call.get("args") or call.get("tool_input", {})
+        # Fields already normalized by get_trajectory()
+        tool = call.get("tool", "")
+        args = call.get("args", {})
         
         # Track grep/search paths
         if tool in ("fs.grep", "grep_content"):
@@ -316,13 +393,14 @@ def check_onboarding_sequence(session: dict) -> CheckResult:
     PASS: Session includes reads of core onboarding files
     FAIL: Missing one or more onboarding reads
     
-    Note: This checks the entire session, not just first turn (flat schema limitation).
-    With turns[] schema, we'd check specifically the first agent turn.
+    Now uses turn-based schema: checks tools in the FIRST agent turn (turn 0).
     """
-    # Get trajectory
-    trajectory = session.get("generated_trajectory", [])
+    # Get first turn tools for onboarding check
+    trajectory = get_first_turn_tools(session)
+    
+    # If no turn info available, fall back to full trajectory
     if not trajectory:
-        trajectory = session.get("tool_use", [])
+        trajectory = get_trajectory(session)
     
     if not trajectory:
         return CheckResult(
@@ -332,11 +410,11 @@ def check_onboarding_sequence(session: dict) -> CheckResult:
             message="No tool calls - cannot verify onboarding"
         )
     
-    # Collect all read paths
+    # Collect all read paths (fields already normalized)
     read_paths = []
     for call in trajectory:
-        tool = call.get("tool") or call.get("tool_name", "")
-        args = call.get("args") or call.get("tool_input", {})
+        tool = call.get("tool", "")
+        args = call.get("args", {})
         
         if tool in ("fs.read", "read_files"):
             files = args.get("files", [])
@@ -387,15 +465,15 @@ def check_backlinks_present(session: dict) -> CheckResult:
     Note: Only applicable if session appears to be creating log entries.
     Skip check if no log-writing activity detected.
     """
-    response = session.get("response", "")
+    response = get_final_response(session)
     
     # Check if this session involves log writing
-    trajectory = session.get("generated_trajectory", []) or session.get("tool_use", [])
+    trajectory = get_trajectory(session)
     
     writes_to_work = False
     for call in trajectory:
-        tool = call.get("tool") or call.get("tool_name", "")
-        args = call.get("args") or call.get("tool_input", {})
+        tool = call.get("tool", "")
+        args = call.get("args", {})
         
         if tool in ("fs.edit", "propose_and_review", "fs.write"):
             path = args.get("path", "")

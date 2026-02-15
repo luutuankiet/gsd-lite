@@ -4,3 +4,4 @@ __pycache__
 eval
 .opencode
 gsd-lite/template
+node_modules

@@ -9,10 +9,14 @@ execution
 </current_mode>
 
 <active_task>
-Task: TASK-EVAL-002 - Constitutional Evaluation Pipeline
-Status: SQLITE MIGRATION COMPLETE - See LOG-045
-Key insight: ELT Pipeline (ingest → transform → consume) updated for OpenCode's new SQLite architecture. Transform fixed to preserve full context for Vertex.
-Next: TASK-EVAL-002d — Implement Layer 2 Vertex AI integration in `eval_consume.py` (requires `google-cloud-aiplatform`)
+Task: READER-002 - GSD-Lite Worklog Reader (Node/TypeScript + Vite Hot Reload)
+Status: EXECUTION - Hot Reload & Error DX Complete (LOG-050)
+Key insight: Custom Vite plugin watches external WORK.md. "Agent-First" Error Panel aggregates Mermaid errors for easy fixing.
+Next: READER-002f — Implement Pan/Zoom for Mermaid diagrams
+
+---
+**Parked (resume after READER-002):**
+- TASK-EVAL-002d: Vertex AI integration (resume after READER-002)
 </active_task>
 
 <parked_tasks>
@@ -93,18 +97,24 @@ DECISION-045a: Migrate eval_ingest.py to sqlmodel (SQLite) (LOG-045)
 
 DECISION-045b: Update eval_transform.py to preserve full context (LOG-045)
 - Rationale: Truncating responses to the last paragraph destroyed context for Vertex rubric evaluation. Rubric metrics like `GENERAL_QUALITY` need the full reasoning chain to be effective.
+
+DECISION-046a: Implement Vertex-native turn-structured schema in `eval_ingest.py` (LOG-046)
+- Rationale: Layer 1 checks failed on flat schema (losing turn context). Vertex `MULTI_TURN_GENERAL_QUALITY` requires structured turns. Refactored ingest to output `request.contents[]` directly.
+
+DECISION-046b: Decommission `eval_transform.py` (LOG-046)
+- Rationale: Transform layer existed only to bridge flat schema to Vertex format. Since ingest now outputs Vertex-native, the transform step is redundant complexity.
 </decisions>
 
 <blockers>
-None - Framework design complete, ready to begin implementation.
+None - POC complete and working.
 </blockers>
 
 <next_action>
 Fork paths (choose one):
-1. TASK-EVAL-002d → Implement Layer 2 Vertex AI integration (requires Google Cloud auth)
-2. TASK-EVAL-002a → Refactor ingest for `turns[]` schema (turn-level evaluation)
-3. TASK-EVAL-002e → Create CI workflow (GitHub Actions) using `eval_consume.py --ci`
-4. Manual spike → Run eval_consume.py on more sessions to tune L1 thresholds
+1. Continue execution → READER-002f (Pan/Zoom for diagrams)
+2. Continue execution → READER-002g (Syntax highlighting)
+3. Build static version → READER-002e (pnpm build)
+4. Pivot to evaluation → Resume TASK-EVAL-002d (Vertex AI integration)
 </next_action>
 
 ---
@@ -4001,7 +4011,7 @@ We embedded the tool directly into `gsd-housekeeping.md` and implemented a **Sta
 
 ```mermaid
 flowchart TD
-    Start[User says "go"] --> Tool[Run analyze_gsd_work_log]
+    Start["User says 'go'"] --> Tool[Run analyze_gsd_work_log]
     Tool --> Check{Check Output}
     
     Check -->|Tier 1 Flags + NO Header Tags| P1[Phase 1: Inference]
@@ -8388,3 +8398,1572 @@ graph TD
 
 **Next Actions:**
 - Proceed to TASK-EVAL-002d (Vertex L2 integration) using the now-correct transformed data.
+
+### [LOG-046] - [DECISION] - Vertex-Native Turn-Structured Schema & Pipeline Simplification: Decommissioning the Transform Layer - Task: TASK-EVAL-002a
+
+**Status:** IMPLEMENTED
+**Date:** 2026-02-15
+**Decision IDs:**
+- DECISION-046a: Implement Vertex-native turn-structured schema in `eval_ingest.py`
+- DECISION-046b: Decommission `eval_transform.py` (simplify pipeline)
+- DECISION-046c: Update `eval_consume.py` to be turn-aware
+**Task:** TASK-EVAL-002a (Turn-structured schema)
+**Supersedes:**
+- LOG-044: The ELT Pipeline Pivot (removed the "Transform" step)
+- LOG-045b: Update `eval_transform.py` (file is now dead)
+**Dependencies:**
+- LOG-042: Turn-Structured Output Schema (lines 6986-7493) — the original proposal for `turns[]`
+- LOG-043: Vertex AI Rubric-Based Eval (lines 7506-7935) — the rubric metric requirements
+
+#### 1. The Schema Gap: Concatenation vs. Conversation
+
+**The Symptom:**
+Layer 1 programmatic checks failed because they couldn't distinguish "Did the agent grep before reading THIS file?" vs "Did it grep somewhere else in the session?".
+Also, Vertex AI's `MULTI_TURN_GENERAL_QUALITY` metric was receiving a flat blob of text, losing the conversational context.
+
+**The Fix (DECISION-046a):**
+Refactored `eval_ingest.py` to output **Vertex-native turn structure** directly.
+
+**Old Schema (Flat):**
+```json
+{
+  "prompt": "User turn 1\n\nUser turn 2",
+  "response": "Agent turn 1\n\nAgent turn 2",
+  "generated_trajectory": [...]
+}
+```
+
+**New Schema (Vertex-Native):**
+```json
+{
+  "request": {
+    "contents": [
+      {"role": "user", "parts": [{"text": "User turn 1"}]},
+      {"role": "model", "parts": [{"text": "Agent turn 1"}]},
+      {"role": "user", "parts": [{"text": "User turn 2"}]}
+    ]
+  },
+  "response": {
+    "candidates": [
+      {"content": {"role": "model", "parts": [{"text": "Final agent response"}]}}
+    ]
+  },
+  "intermediate_events": [
+    {
+      "function_call": {"name": "fs.grep", "args": {...}},
+      "function_response": {"name": "fs.grep", "response": {...}},
+      "turn": 1
+    }
+  ],
+  "prompt_concat": "...",  // Backward compat for L1
+  "response_concat": "..." // Backward compat for L1
+}
+```
+
+**Citation:** Vertex AI Documentation, "Evaluation Dataset":
+> "The Gen AI evaluation service automatically parses multi-turn conversation data... identifies the previous turns and processes them as conversation_history."
+> *Source: https://cloud.google.com/vertex-ai/generative-ai/docs/models/evaluation-dataset*
+
+#### 2. Pipeline Simplification: Decommissioning Transform
+
+**The Insight (DECISION-046b):**
+`eval_transform.py` existed solely to bridge the gap between `eval_ingest.py`'s flat output and Vertex's schema. Now that ingest outputs Vertex-native directly, the transform step is redundant.
+
+**Old Pipeline (ELT):**
+```mermaid
+flowchart LR
+    Ingest[eval_ingest.py] -->|Flat JSON| Transform[eval_transform.py]
+    Transform -->|Vertex JSON| Consume[eval_consume.py]
+```
+
+**New Pipeline (E-L):**
+```mermaid
+flowchart LR
+    Ingest[eval_ingest.py] -->|Vertex-Native JSON| Consume[eval_consume.py]
+    Transform[eval_transform.py] ---x Dead
+```
+
+**Action:** Deleted `scripts/eval_transform.py`.
+
+#### 3. Turn-Aware Consumption
+
+**The Update (DECISION-046c):**
+Updated `eval_consume.py` to check specific turns instead of the whole blob.
+
+| Check | Old Logic (Flat) | New Logic (Turn-Aware) |
+|-------|------------------|------------------------|
+| **S1-H1** (Handoff) | Scanned entire session text | Checks **final model turn** only |
+| **C3-H1** (Grep First) | Flat list of tools | Checks tool sequence **per turn** |
+| **C3-H2** (Onboarding) | Checked entire session | Checks **Turn 0** specifically |
+
+**Code Snippet:**
+```python
+# scripts/eval_consume.py
+
+def get_final_response(session: dict) -> str:
+    """Extract final model response from Vertex-native schema."""
+    try:
+        # Try new Vertex-native format first
+        return session["response"]["candidates"][0]["content"]["parts"][0]["text"]
+    except KeyError:
+        # Fallback to legacy
+        return session.get("response_concat", "")
+```
+
+#### 4. Updated Dependency Graph (DAG)
+
+Future agents: This simplifies the architecture significantly.
+
+```mermaid
+graph TD
+    LOG-045[LOG-045: SQLite Migration] --> LOG-046
+    LOG-046[LOG-046: Vertex Schema & Pipeline Simplify] --> TASK-EVAL-002d
+    TASK-EVAL-002d[Vertex L2 Integration] --> TASK-EVAL-002e[CI Workflow]
+```
+
+**Next Actions:**
+- Proceed to TASK-EVAL-002d (Vertex L2 integration) using the simplified pipeline.
+- Verify L1 checks pass on the new schema.
+
+---
+
+### [LOG-047] - [VISION] - GSD-Lite Worklog Reader: Mobile-First Ubiquitous Access for Dense Knowledge Bases - Task: READER-001
+
+#### 1. Executive Summary
+
+**The Problem:** GSD-Lite's journalism-style worklogs (9,000+ lines, 46+ entries) are high-value knowledge assets but impossible to consume outside VS Code. Mobile GitHub viewer lacks outline navigation, scroll-to-bottom, and sticky headers — breaking the "ubiquitous access" principle that makes GTD workflows successful.
+
+**The Solution:** Build a Python generator that compiles WORK.md into a self-contained HTML viewer with mobile-first outline navigation, sticky breadcrumbs, and pre-rendered Mermaid diagrams.
+
+**Key Insight:** This isn't "make markdown render nicely" — it's "build a purpose-built worklog browser" that understands GSD-Lite's structure (LOG-NNN entries, TYPE badges, hierarchical sections).
+
+---
+
+#### 2. The Problem Narrative: Why Existing Tools Fail
+
+##### 2.1 The GTD Parallel
+
+The user's GTD setup (TickTick) exemplifies ubiquitous access:
+- Collect thoughts from any device
+- Clarify/review from phone, tablet, or desktop
+- Central inbox accessible everywhere
+
+GSD-Lite worklogs currently violate this principle:
+- **Locked to local filesystem** — WORK.md lives in `~/dev/gsd_lite/gsd-lite/`
+- **VS Code-dependent** — Outline view, sticky headers, cmd+down only work in IDE
+- **Private by nature** — Can't push to public repo, so no GitHub Pages
+
+##### 2.2 Failed Experiments
+
+| Approach | Issue |
+|----------|-------|
+| **GitHub Mobile App** | Opens at top of file. No scroll grab button. No outline view. 9k lines = lost immediately. |
+| **MkDocs / ReadTheDocs** | Great on desktop. Mobile: **outline disappears** (responsive design hides it). No "jump to bottom." |
+| **EPUB Conversion** | Converters only parse H1/H2 headers. GSD-Lite uses H3 (`### [LOG-NNN]`) for entries — invisible in TOC. |
+
+##### 2.3 The Core Requirement
+
+The user needs VS Code's markdown experience **on mobile**:
+
+| VS Code Feature | Mobile Equivalent Needed |
+|-----------------|-------------------------|
+| `Cmd+End` (jump to bottom) | "Jump to Latest" button |
+| Outline panel (H1-H5 hierarchy) | Collapsible sidebar/menu |
+| Sticky headers while scrolling | Breadcrumb bar showing current position |
+| Horizontal scroll for long lines | Prevent header wrapping in outline |
+
+---
+
+#### 3. The Solution: `generate_worklog_viewer.py`
+
+##### 3.1 Core Architecture
+
+```mermaid
+flowchart LR
+    WORK[WORK.md] --> Parser[Markdown Parser]
+    Parser --> Tree[JSON AST]
+    Tree --> Renderer[HTML Renderer]
+    Mermaid[Mermaid Blocks] --> |mmdc CLI| PNG[Base64 PNG]
+    PNG --> Renderer
+    Renderer --> HTML[worklog.html]
+```
+
+**Generator invocation:**
+```bash
+python generate_worklog_viewer.py gsd-lite/WORK.md -o worklog.html
+```
+
+**Output:** Single self-contained HTML file. AirDrop to phone. Open in any browser.
+
+##### 3.2 Parsing Contract
+
+The parser relies on GSD-Lite's consistent header format:
+
+| Pattern | Meaning | Regex |
+|---------|---------|-------|
+| `### [LOG-NNN] - [TYPE] - Title - Task: XXX` | Log entry | `^### \[LOG-(\d+)\] - \[(\w+)\] - (.+)` |
+| `#### Section Title` | Section within log | `^#### (.+)` |
+| `##### Subsection Title` | Subsection | `^##### (.+)` |
+| `[TAG]` anywhere in header | Type badge | `\[([A-Z_]+)\]` |
+| `~~strikethrough~~` in title | Superseded entry | `~~.+~~` |
+
+**Example parse (from LOG-043 header):**
+```
+Input:  ### [LOG-043] - [DECISION] - Vertex AI Rubric... - Task: TASK-EVAL-002
+Output: {
+    "id": "LOG-043",
+    "type": "DECISION",
+    "title": "Vertex AI Rubric...",
+    "task": "TASK-EVAL-002",
+    "superseded": false,
+    "line": 7521,
+    "children": [...]
+}
+```
+
+##### 3.3 Output Structure (Single HTML)
+
+```html
+<!DOCTYPE html>
+<html>
+<head>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <style>/* Inline CSS - mobile-first */</style>
+</head>
+<body>
+    <!-- Sticky top bar -->
+    <header class="top-bar">
+        <button id="outline-toggle">🔖 Outline</button>
+        <button id="jump-latest">⬇ Jump Latest</button>
+    </header>
+    
+    <!-- Sticky breadcrumb -->
+    <nav class="breadcrumb">LOG-043 > Part 5 > 5.2 Layer 1</nav>
+    
+    <!-- Outline panel (slide-in on mobile) -->
+    <aside class="outline">
+        <!-- Collapsible tree rendered here -->
+    </aside>
+    
+    <!-- Content area -->
+    <main class="content">
+        <!-- Rendered markdown with anchors -->
+    </main>
+    
+    <script>/* Inline JS - scroll sync, outline toggle */</script>
+</body>
+</html>
+```
+
+---
+
+#### 4. UX Specification
+
+##### 4.1 Layout (Mobile-First)
+
+```
+┌────────────────────────────────────────┐
+│ 🔖 Outline Toggle    [⬇ Jump Latest]  │  ← Sticky top bar
+├────────────────────────────────────────┤
+│ LOG-043 > Part 5 > 5.2 Layer 1        │  ← Sticky breadcrumb
+├────────────────────────────────────────┤
+│                                        │
+│  [Content area — scrollable]           │
+│                                        │
+│  #### 5.2 Layer 1: Programmatic...    │
+│  ```python                             │
+│  def check_handoff_present(...):       │
+│  ...                                   │
+│                                        │
+└────────────────────────────────────────┘
+```
+
+**Scrollbar:** Force-visible on mobile (CSS `overflow-y: scroll` + WebKit scrollbar styling). Grabbable thumb for quick navigation.
+
+##### 4.2 Outline Panel
+
+```
+📋 WORK.md Outline                    [horizontal scroll →]
+───────────────────────────────────────────────────────────
+▼ LOG-043 [DECISION] - Vertex AI Rubric-Based Evaluation...
+  ├─ 1. Executive Summary
+  ├─ 2. The Gap in LOG-042
+  │   ├─ 2.1 What LOG-042 Concluded
+  │   └─ 2.2 The Missed Feature
+  ├─ 3. Vertex AI Metrics Inventory
+  └─ ...
+  
+▶ LOG-042 [DECISION] - Constitutional Eval... (collapsed)
+▶ LOG-041 [EXEC] - ~~eval_helper.py...~~ (dimmed, superseded)
+```
+
+| Feature | Implementation |
+|---------|---------------|
+| **Horizontal scroll** | `white-space: nowrap; overflow-x: auto` — headers don't wrap |
+| **Dynamic badges** | Parser extracts all `[TAG]` patterns. No hardcoded list. |
+| **Superseded dimming** | 50% opacity + strikethrough preserved |
+| **Collapsible** | Click `▶` to expand children |
+
+##### 4.3 Type Badges (Dynamic)
+
+Badges are extracted from headers at parse time, not hardcoded:
+
+```python
+# Pseudocode
+def extract_badges(header_text: str) -> list[str]:
+    """Extract all [TAG] patterns from header."""
+    return re.findall(r'\[([A-Z_]+)\]', header_text)
+
+# Example
+extract_badges("### [LOG-043] - [DECISION] - Vertex AI...")
+# Returns: ["LOG-043", "DECISION"]
+```
+
+Color mapping is applied at render time:
+```css
+.badge-DECISION { background: #4CAF50; }
+.badge-EXEC { background: #2196F3; }
+.badge-DISCOVERY { background: #9C27B0; }
+.badge-VISION { background: #FF9800; }
+/* Unknown badges get neutral gray */
+.badge { background: #607D8B; }
+```
+
+##### 4.4 Scroll Sync
+
+**Outline → Content:** Click outline item → smooth scroll to anchor.
+
+**Content → Breadcrumb:** IntersectionObserver watches section headers. As user scrolls, breadcrumb updates to show current position in hierarchy.
+
+```javascript
+// Pseudocode
+const observer = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+        if (entry.isIntersecting) {
+            updateBreadcrumb(entry.target.dataset.path);
+        }
+    });
+}, { threshold: 0.1 });
+
+document.querySelectorAll('[data-section]').forEach(el => observer.observe(el));
+```
+
+---
+
+#### 5. Mermaid Diagram Handling
+
+##### 5.1 The Requirement
+
+Mermaid code blocks must render as images, not raw code. Mobile browsers don't execute Mermaid JS reliably.
+
+##### 5.2 The Solution: Pre-Render to PNG at Build Time
+
+**Build-time compilation using `mmdc` (Mermaid CLI):**
+
+```bash
+# Install mermaid-cli
+npm install -g @mermaid-js/mermaid-cli
+
+# Compile single diagram
+mmdc -i diagram.mmd -o diagram.png
+```
+
+**Generator workflow:**
+1. Extract all ```` ```mermaid ```` blocks from WORK.md
+2. Write each to temp `.mmd` file
+3. Run `mmdc` to compile → PNG
+4. Encode PNG as base64
+5. Replace code block with `<img src="data:image/png;base64,...">`
+
+##### 5.3 Syntax Validation (Fail Fast)
+
+If `mmdc` returns non-zero exit code, generator **fails with clear error**:
+
+```
+ERROR: Mermaid syntax error in block at line 1289
+
+  flowchart LR
+      A --> B
+      B ---> C  ← Invalid: triple arrow
+
+Fix the diagram before compiling.
+```
+
+**Rationale:** Silent failures produce blank images. Fail-fast ensures consistent render behavior across devices.
+
+##### 5.4 Base64 Embedding (Single-File Portability)
+
+```html
+<!-- Before (raw mermaid) -->
+<pre><code class="language-mermaid">
+flowchart LR
+    A --> B
+</code></pre>
+
+<!-- After (embedded PNG) -->
+<img 
+    class="mermaid-diagram" 
+    src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAA..."
+    alt="Mermaid diagram: flowchart LR A --> B"
+/>
+```
+
+**Trade-off acknowledged:** Each diagram adds ~50-200KB base64. For a worklog with 10 diagrams, that's 0.5-2MB. Acceptable for single-file portability.
+
+---
+
+#### 6. Filter Bar (Nice-to-Have, Phase 2)
+
+```
+[ALL] [DECISION] [EXEC] [DISCOVERY] [VISION] [MILESTONE]
+```
+
+**Behavior:** Tap badge to filter outline to just that type. Useful for "show me all decisions" use case.
+
+**Implementation:** CSS class toggle + JS filter on outline items.
+
+---
+
+#### 7. Technical Stack
+
+| Component | Choice | Rationale |
+|-----------|--------|-----------|
+| **Parser** | Python `mistune` or regex | Consistent GSD-Lite format makes regex viable |
+| **Mermaid CLI** | `@mermaid-js/mermaid-cli` (mmdc) | Official tooling, reliable PNG output |
+| **Markdown Render** | `marked.js` (CDN) or Python `mistune` | Lightweight, well-tested |
+| **Syntax Highlight** | `highlight.js` (inline) | Code blocks need Python/bash coloring |
+| **Styling** | Inline CSS | Single-file constraint |
+| **Interactivity** | Vanilla JS | No framework needed for scroll sync |
+
+---
+
+#### 8. Implementation Plan
+
+| Task ID | Description | Complexity |
+|---------|-------------|------------|
+| READER-001a | Build markdown parser (extract LOG entries + hierarchy) | Medium |
+| READER-001b | Build HTML renderer (outline + content + breadcrumb) | Medium |
+| READER-001c | Integrate Mermaid CLI (pre-render + base64 embed) | Low |
+| READER-001d | Implement scroll sync (IntersectionObserver) | Low |
+| READER-001e | Mobile CSS polish (scrollbar, hamburger menu) | Low |
+| READER-001f | End-to-end test on actual WORK.md | Low |
+
+**Estimated LOC:** ~400-600 Python (generator) + ~200 JS (inline) + ~150 CSS (inline)
+
+---
+
+#### 9. Plugin Architecture (Opt-In, Not Core)
+
+##### 9.1 The Principle: Keep GSD-Lite Light
+
+GSD-Lite core is a **protocol + templates** — markdown files and agent instructions. Zero runtime dependencies. Works with any LLM client that can read files.
+
+The Worklog Reader introduces dependencies:
+- Python 3.x
+- `@mermaid-js/mermaid-cli` (npm package)
+- Potentially `mistune` or other markdown parser
+
+**These MUST NOT pollute the base install.**
+
+##### 9.2 Distribution Model (Monorepo)
+
+```
+gsd-lite/                         ← Single repo
+├── gsd-lite/                     ← Core (always installed)
+│   ├── PROTOCOL.md
+│   ├── PROJECT.md
+│   ├── WORK.md
+│   └── templates/
+│       └── workflows/
+│
+└── plugins/                      ← Plugins (opt-in, same repo)
+    └── reader/
+        ├── generate_worklog_viewer.py
+        ├── requirements.txt
+        └── README.md
+```
+
+**Why monorepo over multi-repo:**
+| Concern | Multi-Repo | Monorepo |
+|---------|-----------|----------|
+| Cross-cutting changes | Multiple PRs, version sync | Single PR |
+| Discovery | "Where's the reader plugin?" | `plugins/` folder, obvious |
+| CI/CD | Separate pipelines | One pipeline, conditional jobs |
+| Maintenance burden | N repos to maintain | One repo |
+
+**Installation (future):**
+```bash
+# Core only (default)
+gsd-lite install
+
+# With reader plugin (same repo, just installs extra deps)
+gsd-lite install --with-plugins reader
+
+# Or manual for just the plugin
+cd plugins/reader && pip install -r requirements.txt
+```
+
+##### 9.3 Why This Matters
+
+| User Type | Needs Reader? | Install Path |
+|-----------|---------------|--------------|
+| **New user** exploring GSD-Lite | No | Core only |
+| **Light user** with short worklogs | No | Core only |
+| **Power user** with 5k+ line worklogs | Yes | Core + Reader plugin |
+| **Team lead** reviewing team worklogs | Yes | Core + Reader plugin |
+
+**The bar:** If your WORK.md fits comfortably in VS Code outline, you don't need this. If you're scrolling for 30 seconds to find LOG-042, you do.
+
+---
+
+#### 10. Future Enhancements (Out of Scope for POC, Post-Plugin)
+
+| Enhancement | Description |
+|-------------|-------------|
+| **Hosted version** | Deploy to VM/GitHub Pages with auth |
+| **Write support** | Add to INBOX.md from mobile |
+| **Search** | Full-text search across worklog |
+| **Dark mode** | Toggle for night reading |
+| **Split by LOG** | Generate one HTML per log entry for faster loading |
+
+---
+
+#### 11. Dependency Graph (For Future Agents)
+
+```mermaid
+graph TD
+    subgraph "Context Required"
+        PROTOCOL[PROTOCOL.md] -->|GSD-Lite structure| LOG-047
+        LOG-016[LOG-016: Stateless-First] -->|Journalism style rationale| LOG-047
+        LOG-017[LOG-017: Housekeeping Vision] -->|Large worklog problem space| LOG-047
+    end
+    
+    subgraph "This Entry"
+        LOG-047[LOG-047: Worklog Reader Vision]
+    end
+    
+    subgraph "Implementation"
+        LOG-047 --> READER-001a[Parser]
+        LOG-047 --> READER-001b[Renderer]
+        LOG-047 --> READER-001c[Mermaid CLI]
+    end
+```
+
+**To onboard this decision:**
+1. **LOG-016** — Understand why worklogs are dense (journalism style for zero-context agents)
+2. **LOG-017** — Understand the broader "large worklog" problem space (context rot, archival)
+3. **This entry (LOG-047)** — The mobile consumption solution
+
+---
+
+#### 12. Cross-References and Citations
+
+| Source | What It Informed |
+|--------|------------------|
+| User's TickTick GTD workflow | Ubiquitous access principle |
+| VS Code Outline View | Target UX for mobile equivalent |
+| MkDocs Material (https://squidfunk.github.io/mkdocs-material/) | Example of responsive design that hides outline on mobile — what NOT to do |
+| Mermaid CLI docs (https://github.com/mermaid-js/mermaid-cli) | `mmdc` invocation for PNG output |
+| WORK.md header grep (this session) | Confirmed consistent `### [LOG-NNN]` pattern for parsing |
+
+---
+
+#### 13. Decision Record
+
+| ID | Decision | Rationale |
+|----|----------|-----------|
+| **DECISION-047a** | Single HTML file with base64-embedded PNGs | Portability trumps file size. AirDrop/file-share without folder management. |
+| **DECISION-047b** | Pre-render Mermaid at build time | Mobile browsers can't reliably execute Mermaid JS. Build-time ensures consistent rendering. |
+| **DECISION-047c** | Fail-fast on Mermaid syntax errors | Silent failures produce blank images. Explicit errors force fix before distribution. |
+| **DECISION-047d** | Dynamic badge extraction (not hardcoded list) | Future-proofs for new log types. Parser extracts `[TAG]` patterns at runtime. |
+| **DECISION-047e** | Horizontal scroll for outline items | Prevents header wrapping on narrow screens. Preserves scanability. |
+| **DECISION-047f** | Force-visible scrollbar on mobile | Grabbable thumb enables quick navigation. Default hidden scrollbars break UX for long documents. |
+| **DECISION-047g** | **Plugin architecture (opt-in, not core)** | GSD-Lite core must stay light. Reader is a power-user feature for dense worklogs. Opt-in install, no dependencies added to base install. |
+| **DECISION-047h** | **Monorepo structure (not separate repos)** | Single `gsd-lite` repo with `plugins/` folder. Easier maintenance, single PR for cross-cutting changes, no multi-repo sync headaches. Plugins are still opt-in at install time. |
+
+---
+
+📦 STATELESS HANDOFF
+
+**Layer 1 — Local Context:**
+→ Last action: LOG-047 (VISION: Worklog Reader design)
+→ Dependency chain: LOG-047 ← LOG-017 (housekeeping problem space) ← LOG-016 (journalism rationale)
+→ Next action: READER-001a — Build markdown parser for LOG entry extraction
+
+**Layer 2 — Global Context:**
+→ Architecture: GSD-Lite worklogs use `### [LOG-NNN] - [TYPE] - Title` format consistently
+→ Patterns: Journalism-style dense logs optimized for zero-context agent onboarding
+→ Data Flow: WORK.md → Parser → JSON AST → HTML Renderer → worklog.html
+
+**Fork paths:**
+- Continue to implementation → Start with READER-001a (parser skeleton)
+- Discuss UX refinements → Reference Section 4 (UX Specification)
+- Pivot to hosting discussion → Reference Section 9 (Future: VM/GitHub Pages)
+
+---
+
+### [LOG-048] - [EXEC] - Worklog Reader POC: Parser + HTML Renderer Implementation (READER-001a, READER-001b) - Task: READER-001
+
+#### 1. Executive Summary
+
+**What was built:** A working POC of the GSD-Lite Worklog Reader — a Python generator that compiles WORK.md (9,000+ lines) into a self-contained HTML viewer with mobile-first outline navigation, collapsible sections, and desktop/mobile responsive design.
+
+**Files created:**
+- `plugins/reader/parse_worklog.py` (~160 lines) — Markdown parser extracting LOG entries into JSON AST
+- `plugins/reader/generate_worklog_viewer.py` (~800 lines) — HTML renderer with full viewer UX
+
+**Key decisions made:**
+- DECISION-048a: Positional parsing — only first two `[brackets]` extracted (ID, TYPE), rest is title
+- DECISION-048b: Single-click collapses descendants, double-click expands all descendants
+- DECISION-048c: Sidebar resizes as overlay (not pushing content)
+- DECISION-048d: Desktop toggle button visible (same `📋` button works on both mobile and desktop)
+
+---
+
+#### 2. The Implementation Journey
+
+##### 2.1 Parser Design (READER-001a)
+
+The parser contract was kept intentionally simple per user preference ("keep it simple, get to POC"):
+
+```
+### [LOG-NNN] - [TYPE] - {title}
+     ↑ pos 1    ↑ pos 2   ↑ everything else verbatim
+```
+
+**Source:** `plugins/reader/parse_worklog.py` lines 45-52
+
+```python
+LOG_HEADER_PATTERN = re.compile(
+    r'^### \[LOG-(\d+)\] - \[([A-Z_]+)\] - (.+)$'
+)
+```
+
+**Edge case discovered:** LOG-041 has three bracketed items:
+```
+### [LOG-041] - [EXEC] - ~~title~~ [SUPERSEDED BY LOG-045] - Task: TASK-EVAL-001
+```
+
+**Resolution (DECISION-048a):** Sequence matters. Parser extracts positions 1-2 only. The `[SUPERSEDED BY LOG-045]` stays in title string. Strikethrough detection (`~~...~~`) handles visual dimming separately.
+
+##### 2.2 Code Fence Bug
+
+**Symptom:** Parser was extracting headers from inside fenced code blocks (e.g., `## Philosophy` inside a markdown example).
+
+**Root cause:** No state tracking for code fences.
+
+**Fix:** `plugins/reader/parse_worklog.py` lines 72-80
+
+```python
+# Track fenced code blocks - skip parsing inside them
+in_code_fence = False
+
+for line_num, line in enumerate(lines, start=1):
+    # Toggle code fence state (``` or ~~~)
+    if line.startswith('```') or line.startswith('~~~'):
+        in_code_fence = not in_code_fence
+        continue
+    
+    # Skip all parsing inside code fences
+    if in_code_fence:
+        continue
+```
+
+##### 2.3 HTML Renderer Evolution (READER-001b)
+
+The renderer went through 6 iterations based on user feedback:
+
+| Version | Issue Fixed |
+|---------|-------------|
+| v1 | Initial implementation |
+| v2 | Tables broken → proper `<table><thead><tbody>` state machine |
+| v3 | Mobile banner overflow → flex-shrink fixes |
+| v4 | Collapse buttons + mobile scroll thumb |
+| v5 | Resizable sidebar + alignment fix for same-level items |
+| v6 | Desktop toggle button + collapse descendants on single-click |
+
+---
+
+#### 3. Key UX Decisions
+
+##### 3.1 DECISION-048b: Collapse/Expand Behavior
+
+**User requirement:** "Single click = one level, double-click = expand all descendants"
+
+**Implementation:** `plugins/reader/generate_worklog_viewer.py` lines 745-770
+
+```javascript
+// Single click - toggle this item; if collapsing, collapse descendants too
+btn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    const item = btn.closest('.outline-item');
+    const isCollapsed = item.classList.contains('collapsed');
+    
+    if (isCollapsed) {
+        // Expanding - just expand this item
+        item.classList.remove('collapsed');
+    } else {
+        // Collapsing - collapse this item AND all descendants
+        item.classList.add('collapsed');
+        item.querySelectorAll('.outline-item.has-children').forEach(child => {
+            child.classList.add('collapsed');
+        });
+    }
+});
+
+// Double click - expand all descendants
+btn.addEventListener('dblclick', (e) => {
+    e.stopPropagation();
+    const item = btn.closest('.outline-item');
+    item.classList.remove('collapsed');
+    item.querySelectorAll('.outline-item.has-children').forEach(child => {
+        child.classList.remove('collapsed');
+    });
+});
+```
+
+**Rationale:** After double-click expands everything, user expects single-click to reset to collapsed state. Without collapsing descendants, the tree stays "stuck" expanded.
+
+##### 3.2 DECISION-048c: Sidebar Resize as Overlay
+
+**User feedback:** "I was more so want a way to scan the outline without breaking the content main."
+
+**Resolution:** Removed `ResizeObserver` that adjusted content margin. Sidebar now resizes **over** content, not pushing it.
+
+**Source:** `plugins/reader/generate_worklog_viewer.py` — CSS `resize: horizontal` on `.outline`, no JS margin adjustment.
+
+##### 3.3 DECISION-048d: Desktop Toggle Button
+
+**User request:** "Did we ever implement a button to hide/show sidebar on desktop?"
+
+**Implementation:** Same `📋` button works on both platforms. JS detects viewport width and applies appropriate behavior:
+
+```javascript
+function toggleOutline() {
+    if (window.innerWidth >= 768) {
+        // Desktop: toggle hidden class + adjust content
+        outline.classList.toggle('hidden');
+        content.classList.toggle('full-width');
+    } else {
+        // Mobile: slide-in behavior
+        outline.classList.toggle('open');
+        overlay.classList.toggle('visible');
+    }
+}
+```
+
+---
+
+#### 4. Table Rendering Fix
+
+**Symptom:** Tables showed raw markdown (`| col1 | col2 |`) instead of HTML tables. Inline formatting (bold, italic) inside cells was also broken.
+
+**Root cause:** Original implementation detected table rows but didn't:
+1. Wrap rows in `<table><thead><tbody>` structure
+2. Apply inline formatting to cell content
+
+**Fix:** `plugins/reader/generate_worklog_viewer.py` lines 167-195
+
+```python
+def format_inline(text: str) -> str:
+    """Apply inline markdown formatting to text."""
+    text = re.sub(r'\*\*(.+?)\*\*', r'<strong>\1</strong>', text)
+    text = re.sub(r'\*(.+?)\*', r'<em>\1</em>', text)
+    text = re.sub(r'`(.+?)`', r'<code>\1</code>', text)
+    text = re.sub(r'~~(.+?)~~', r'<del>\1</del>', text)
+    text = re.sub(r'\[(.+?)\]\((.+?)\)', r'<a href="\2">\1</a>', text)
+    return text
+
+# In table rendering:
+if not in_table:
+    html_lines.append('<table><thead><tr>')
+    cells_html = ''.join(f'<th>{format_inline(html.escape(c))}</th>' for c in cells)
+    html_lines.append(f'{cells_html}</tr></thead><tbody>')
+    in_table = True
+else:
+    cells_html = ''.join(f'<td>{format_inline(html.escape(c))}</td>' for c in cells)
+    html_lines.append(f'<tr>{cells_html}</tr>')
+```
+
+---
+
+#### 5. Scroll Navigation Fixes
+
+##### 5.1 Banner Blocking Content
+
+**Symptom:** When clicking outline links, content scrolled but the target header was hidden behind the sticky top bar.
+
+**Fix:** CSS `scroll-margin-top` on all content elements:
+
+```css
+.content h1, .content h2, .content h3, .content h4, .content h5, .content p {
+    scroll-margin-top: 60px;
+}
+```
+
+**Source:** `plugins/reader/generate_worklog_viewer.py` lines 513-516
+
+##### 5.2 Mobile Scroll Thumb
+
+**User request:** "There is no big scroll button I can grab apart from the native browser scroll button."
+
+**Implementation:** Custom floating scroll thumb that tracks page position:
+
+```html
+<div class="scroll-thumb" id="scrollThumb">
+    <div class="thumb-icon"><span>↕</span></div>
+</div>
+```
+
+Touch-draggable via `touchstart`/`touchmove`/`touchend` handlers. Position updates on scroll via `ResizeObserver`.
+
+**Source:** `plugins/reader/generate_worklog_viewer.py` lines 690-700 (HTML), lines 780-810 (JS)
+
+---
+
+#### 6. Alignment Fix for Same-Level Items
+
+**Symptom:** In LOG-047's outline, "1. Executive Summary" (no children) appeared left-aligned while "2. The Problem..." (has children, shows `▼`) appeared indented due to the toggle button width.
+
+**Fix:** Items without children get padding to align with toggle button width:
+
+```css
+.outline-item:not(.has-children) .outline-row {
+    padding-left: 20px;
+}
+```
+
+**Source:** `plugins/reader/generate_worklog_viewer.py` lines 425-428
+
+---
+
+#### 7. Architecture Diagram
+
+```mermaid
+flowchart LR
+    subgraph "Parser (parse_worklog.py)"
+        MD[WORK.md] --> Regex[Regex Patterns]
+        Regex --> AST[JSON AST]
+    end
+    
+    subgraph "Renderer (generate_worklog_viewer.py)"
+        AST --> Outline[Outline HTML]
+        AST --> Content[Content HTML]
+        MD --> MDRender[Markdown → HTML]
+        Outline --> Template[HTML Template]
+        Content --> Template
+        MDRender --> Template
+        Template --> HTML[worklog.html]
+    end
+    
+    subgraph "Output Features"
+        HTML --> Mobile[Mobile: Slide-in sidebar + scroll thumb]
+        HTML --> Desktop[Desktop: Persistent sidebar + toggle]
+        HTML --> Collapse[Collapsible sections]
+        HTML --> Resize[Resizable sidebar]
+    end
+```
+
+---
+
+#### 8. File Manifest
+
+| File | Lines | Purpose |
+|------|-------|---------|
+| `plugins/reader/parse_worklog.py` | ~160 | Extract LOG entries from WORK.md into JSON AST |
+| `plugins/reader/generate_worklog_viewer.py` | ~800 | Generate self-contained HTML viewer |
+
+**Usage:**
+```bash
+cd plugins/reader
+python generate_worklog_viewer.py ../../gsd-lite/WORK.md -o worklog.html
+open worklog.html  # Desktop
+# AirDrop worklog.html to phone for mobile testing
+```
+
+---
+
+#### 9. Remaining Tasks (Not Implemented)
+
+| Task ID | Description | Status |
+|---------|-------------|--------|
+| READER-001c | Mermaid CLI integration (pre-render diagrams to base64 PNG) | Pending |
+| READER-001d | Scroll sync breadcrumb (IntersectionObserver) | Pending |
+| READER-001e | Mobile CSS polish | Pending |
+| READER-001f | End-to-end test on actual WORK.md | Pending |
+
+These are logged in LOG-047 Section 8 (Implementation Plan).
+
+---
+
+#### 10. Test Results
+
+| Feature | Desktop | Mobile |
+|---------|---------|--------|
+| Sidebar toggle | ✅ `📋` button shows/hides | ✅ Slide-in overlay |
+| Collapse/expand | ✅ Single/double-click works | ✅ Same behavior |
+| Resize sidebar | ✅ Drag handle, overlays content | ✅ Same behavior |
+| Table rendering | ✅ Proper `<table>` structure | ✅ Same |
+| Inline formatting in tables | ✅ Bold, italic, code, links | ✅ Same |
+| Scroll navigation | ✅ Clears sticky header | ✅ Same |
+| Scroll thumb | N/A (hidden on desktop) | ✅ Draggable `↕` button |
+| Same-level alignment | ✅ Items align regardless of children | ✅ Same |
+
+---
+
+#### 11. Decision Record
+
+| ID | Decision | Rationale |
+|----|----------|-----------|
+| **DECISION-048a** | Positional parsing (first two brackets only) | User preference for simplicity. `[SUPERSEDED BY...]` tag stays in title. Strikethrough handles dimming. |
+| **DECISION-048b** | Single-click collapses descendants, double-click expands all | Prevents "stuck" state after double-click expand. Natural mental model. |
+| **DECISION-048c** | Sidebar resizes as overlay, not pushing content | User wanted to scan outline without breaking reading flow in main content. |
+| **DECISION-048d** | Same toggle button (`📋`) for mobile and desktop | Simplest implementation. JS detects viewport and applies appropriate behavior. |
+
+---
+
+#### 12. Dependency Graph
+
+```mermaid
+graph TD
+    subgraph "Context Required"
+        LOG-047[LOG-047: Worklog Reader Vision] -->|Design spec| LOG-048
+        LOG-017[LOG-017: Housekeeping Vision] -->|Problem space: large worklogs| LOG-047
+        LOG-016[LOG-016: Stateless-First] -->|Journalism rationale| LOG-047
+    end
+    
+    subgraph "This Entry"
+        LOG-048[LOG-048: Parser + Renderer Implementation]
+    end
+    
+    subgraph "Outputs"
+        LOG-048 --> Parser[plugins/reader/parse_worklog.py]
+        LOG-048 --> Renderer[plugins/reader/generate_worklog_viewer.py]
+    end
+    
+    subgraph "Future Work"
+        LOG-048 -.-> READER-001c[Mermaid CLI]
+        LOG-048 -.-> READER-001d[Scroll Sync]
+    end
+```
+
+**To onboard this implementation:**
+1. **LOG-047** — Understand the vision and UX spec (Section 4: UX Specification, Section 7: Technical Stack)
+2. **This entry (LOG-048)** — Implementation details, decisions, and test results
+
+---
+
+📦 STATELESS HANDOFF
+
+**Layer 1 — Local Context:**
+→ Last action: LOG-049 (DECISION: Full Node/TypeScript rewrite with Vite hot reload)
+→ Dependency chain: LOG-049 ← LOG-048 (POC complete) ← LOG-047 (vision)
+→ Next action: READER-002a — Scaffold Node/TypeScript project with pnpm + Vite
+
+**Layer 2 — Global Context:**
+→ Architecture: `plugins/reader/` (Python, preserved) + `plugins/reader-vite/` (new TypeScript)
+→ Patterns: Vite HMR for hot reload, native Mermaid library (no shell-out), SVG diagrams
+→ Data Flow: WORK.md → chokidar watch → parser.ts → renderer.ts → WebSocket → browser
+
+**Fork paths:**
+- Begin implementation → READER-002a (scaffold pnpm + Vite + TypeScript project)
+- Discuss incremental rebuild strategy → How to avoid re-rendering 9k lines on every save
+- Pivot to evaluation work → Resume TASK-EVAL-002d (Vertex AI integration)
+
+---
+
+### [LOG-049] - [DECISION] - The Hot Reload Pivot: Migrating Worklog Reader from Python to Node/TypeScript with Vite - Task: READER-002
+
+#### 1. Executive Summary
+
+**The Catalyst:** After successfully building the Worklog Reader POC (LOG-048), user feedback revealed a gap between "working" and "delightful." The current workflow requires manual regeneration after every WORK.md edit — friction that breaks the flow during active GSD-Lite sessions.
+
+**The Decision:** Rewrite the Worklog Reader in Node/TypeScript with Vite for hot module replacement (HMR). When the user says "log this discovery," the browser updates instantly — no manual refresh, no regenerate command.
+
+**Key Decisions Made:**
+- **DECISION-049a:** Full Node/TypeScript rewrite (not Python + Node hybrid)
+- **DECISION-049b:** Vite as build tool and dev server (not custom esbuild + chokidar)
+- **DECISION-049c:** pnpm as package manager (not npm or yarn)
+- **DECISION-049d:** SVG for Mermaid diagrams (not PNG/base64)
+- **DECISION-049e:** Plugin architecture boundary — Core GSD-Lite stays Python (`uvx`), Reader plugin is Node (`pnpm`)
+
+---
+
+#### 2. The Problem: Manual Regeneration Breaks Flow
+
+##### 2.1 Current Workflow (LOG-048 POC)
+
+```mermaid
+sequenceDiagram
+    participant User
+    participant Agent
+    participant WORK.md
+    participant Terminal
+    participant Browser
+    
+    User->>Agent: "Log this discovery"
+    Agent->>WORK.md: Writes LOG-049
+    User->>Terminal: python generate_worklog_viewer.py
+    Terminal->>Browser: Generates worklog.html
+    User->>Browser: Manual refresh (Cmd+R)
+    Browser->>User: Shows updated content
+```
+
+**Pain points identified:**
+1. Context switch to terminal after every log write
+2. Manual browser refresh breaks reading flow
+3. No feedback that WORK.md changed — user must remember to regenerate
+
+##### 2.2 Desired Workflow (Hot Reload)
+
+```mermaid
+sequenceDiagram
+    participant User
+    participant Agent
+    participant WORK.md
+    participant Vite
+    participant Browser
+    
+    User->>Agent: "Log this discovery"
+    Agent->>WORK.md: Writes LOG-049
+    WORK.md->>Vite: chokidar detects change
+    Vite->>Vite: Re-parse, re-render
+    Vite->>Browser: WebSocket push (HMR)
+    Browser->>User: Content updates instantly
+```
+
+**The insight:** This mirrors the user's reference — [Mark Sharp](https://github.com/jonathanyeung/mark-sharp), a VS Code extension providing live Mermaid preview. The user wants that polish, but purpose-built for GSD-Lite's LOG-NNN structure.
+
+---
+
+#### 3. The Architecture Decision: Why Full Node/TypeScript?
+
+##### 3.1 The Two Paths Considered
+
+| Aspect | Path A: Python + Node Hybrid | Path B: Full Node/TypeScript |
+|--------|------------------------------|------------------------------|
+| **File watching** | `watchdog` (Python library) | `chokidar` (Node, battle-tested) |
+| **HTTP server** | `flask` or `http.server` | Vite dev server (built-in) |
+| **WebSocket/HMR** | DIY implementation | Vite HMR (zero config) |
+| **Mermaid integration** | Shell out to `mmdc` CLI | Native `mermaid` npm package |
+| **Hot reload ecosystem** | Manual wiring | Vite/esbuild — production-grade |
+| **Maintenance burden** | Two runtimes, two package managers | Single ecosystem |
+
+##### 3.2 The Uncomfortable Truth (Source: Discussion)
+
+> "If you're adding `mmdc` (which requires Node), you're already pulling in the Node ecosystem. Python becomes a 'glue layer' shelling out to Node tools."
+
+The original READER-001c plan (LOG-047, Section 5) called for:
+```bash
+# Install mermaid-cli (Node dependency)
+npm install -g @mermaid-js/mermaid-cli
+
+# Python shells out to Node
+subprocess.run(['mmdc', '-i', 'diagram.mmd', '-o', 'diagram.png'])
+```
+
+**This is the worst of both worlds:** Node as a hidden dependency, Python as a thin wrapper, no access to Node's superior hot reload tooling.
+
+##### 3.3 DECISION-049a: Full Node/TypeScript Rewrite
+
+**Rationale:** If Node is required anyway, embrace it fully. The parser logic is ~160 lines (LOG-048, Section 2.1) — a trivial port. The renderer is ~800 lines but follows clear patterns (state machines for tables/code fences). TypeScript adds type safety without runtime overhead.
+
+**Trade-off acknowledged:** Users who only want core GSD-Lite (markdown templates) now have an optional Node dependency for the Reader plugin. This is acceptable per the plugin architecture (LOG-047, Section 9).
+
+---
+
+#### 4. The Tooling Decisions
+
+##### 4.1 DECISION-049b: Vite as Build Tool
+
+**Why Vite over custom esbuild + chokidar:**
+
+| Concern | Custom Setup | Vite |
+|---------|--------------|------|
+| Hot reload | Manual WebSocket wiring | Built-in HMR, zero config |
+| Dev server | Express/Koa + middleware | `vite dev` — one command |
+| Build mode | esbuild config | `vite build` — one command |
+| CSS handling | Manual bundling | Automatic |
+| Time to working prototype | Days | Hours |
+
+**Source:** User preference expressed in discussion:
+> "vite please"
+
+**Vite's HMR contract:**
+```typescript
+// vite.config.ts
+export default defineConfig({
+  server: {
+    watch: {
+      // Watch WORK.md outside project root
+      ignored: ['!**/gsd-lite/WORK.md'],
+    },
+  },
+});
+```
+
+When `WORK.md` changes, Vite triggers a rebuild. The browser receives a WebSocket message and updates without full page refresh.
+
+##### 4.2 DECISION-049c: pnpm as Package Manager
+
+**Why pnpm over npm/yarn:**
+
+| Aspect | npm | yarn | pnpm |
+|--------|-----|------|------|
+| Disk usage | Duplicates packages per project | Duplicates | Hardlinks to global store |
+| Install speed | Baseline | Faster | Fastest |
+| Strictness | Allows phantom deps | Allows | Strict — only declared deps accessible |
+| Monorepo support | Workspaces | Workspaces | Native, with filtering |
+
+**Source:** User preference expressed in discussion:
+> "better yet can we do pnpm please i heard good things about build time and storage space"
+
+**Installation (requires Node 16.14+):**
+```bash
+# Enable corepack (ships with Node)
+corepack enable
+
+# pnpm is now available
+pnpm --version
+```
+
+##### 4.3 DECISION-049d: SVG for Mermaid Diagrams
+
+**The original plan (LOG-047, Section 5.4)** called for PNG with base64 embedding:
+```html
+<img src="data:image/png;base64,iVBORw0KGgo..." />
+```
+
+**Why SVG is better for the live server use case:**
+
+| Aspect | PNG (base64) | SVG |
+|--------|--------------|-----|
+| File size | 50-200KB per diagram | 5-20KB per diagram |
+| Scalability | Pixelates on zoom | Infinite resolution |
+| Text | Rasterized | Selectable, searchable |
+| Edit workflow | Re-render entire image | DOM diffing possible |
+| Mobile data usage | Higher | Lower |
+
+**Source:** Discussion:
+> "svg it is ! so we originally wanted png case it's base64 encodable for porting as standalone html pages. At your discretion what's best for the vision when we publish it to our live reverse proxied server for mobile reads."
+
+**Resolution:** SVG for the live dev server. For standalone HTML export (AirDrop to phone), SVG still works — it's inline XML, not an external file.
+
+**Mermaid native SVG render:**
+```typescript
+import mermaid from 'mermaid';
+
+// Initialize once
+mermaid.initialize({ startOnLoad: false, theme: 'default' });
+
+// Render diagram to SVG string
+const { svg } = await mermaid.render('diagram-1', `
+  flowchart LR
+    A --> B --> C
+`);
+
+// svg is now: '<svg xmlns="http://www.w3.org/2000/svg">...</svg>'
+```
+
+##### 4.4 DECISION-049e: Plugin Architecture Boundary
+
+**The principle (LOG-047, Section 9.1):**
+> "GSD-Lite core is a **protocol + templates** — markdown files and agent instructions. Zero runtime dependencies."
+
+**The boundary:**
+
+| Component | Distribution | Runtime |
+|-----------|--------------|---------|
+| Core GSD-Lite | `uvx gsd-lite install` | Python (scaffolds markdown only) |
+| Reader Plugin | `pnpm install` in `plugins/reader-vite/` | Node 18+ |
+
+**Friction points to track (captured for future distribution work):**
+
+| Friction Point | When It Hits | Mitigation |
+|----------------|--------------|------------|
+| Node not installed | User runs `pnpm` commands | Clear error + link to Node install |
+| pnpm not installed | User has Node but no pnpm | `corepack enable` or `npm i -g pnpm` |
+| Mermaid syntax errors | Invalid diagram in WORK.md | Fail-fast with line number |
+| Port 3000 in use | Another dev server running | `--port` CLI flag |
+| Large WORK.md (9k+ lines) | Hot reload feels slow | Incremental rebuild (future optimization) |
+
+---
+
+#### 5. The Implementation Plan
+
+##### 5.1 Task Breakdown
+
+| Task ID | Description | Complexity | Status |
+|---------|-------------|------------|--------|
+| **READER-002a** | Scaffold Node/TypeScript project with pnpm + Vite | Low | Pending |
+| **READER-002b** | Port `parse_worklog.py` to TypeScript | Medium | Pending |
+| **READER-002c** | Port `generate_worklog_viewer.py` to TypeScript + Mermaid | Medium | Pending |
+| **READER-002d** | Implement Vite dev server with HMR | Medium | Pending |
+| **READER-002e** | Static build mode (`pnpm build` → `worklog.html`) | Low | Pending |
+
+##### 5.2 Project Structure
+
+```
+plugins/
+├── reader/                      # Original Python (preserved for reference)
+│   ├── parse_worklog.py
+│   ├── generate_worklog_viewer.py
+│   └── worklog.html
+│
+└── reader-vite/                 # New TypeScript + Vite
+    ├── package.json
+    ├── pnpm-lock.yaml
+    ├── tsconfig.json
+    ├── vite.config.ts
+    ├── src/
+    │   ├── parser.ts            # Port of parse_worklog.py
+    │   ├── renderer.ts          # Port of generate_worklog_viewer.py
+    │   ├── mermaid.ts           # Native Mermaid integration
+    │   ├── server.ts            # Dev server entry point
+    │   └── types.ts             # TypeScript interfaces (WorklogAST, etc.)
+    ├── public/
+    │   └── index.html           # Dev server HTML shell
+    ├── dist/                    # Build output
+    │   └── worklog.html
+    └── README.md
+```
+
+##### 5.3 Developer Experience (Target)
+
+**Dev mode (hot reload):**
+```bash
+cd plugins/reader-vite
+pnpm install                     # One-time setup
+pnpm dev ../../gsd-lite/WORK.md  # Starts localhost:3000, watches for changes
+```
+
+**Build mode (static export):**
+```bash
+pnpm build ../../gsd-lite/WORK.md -o worklog.html
+# Output: dist/worklog.html (self-contained, AirDrop-ready)
+```
+
+##### 5.4 Data Flow (Dev Server)
+
+```mermaid
+flowchart LR
+    subgraph "File System"
+        WORK[WORK.md]
+    end
+    
+    subgraph "Vite Dev Server"
+        Watch[chokidar watcher]
+        Parser[parser.ts]
+        Mermaid[mermaid.ts]
+        Renderer[renderer.ts]
+        HMR[HMR WebSocket]
+    end
+    
+    subgraph "Browser"
+        DOM[Rendered HTML]
+    end
+    
+    WORK -->|"change event"| Watch
+    Watch -->|"read file"| Parser
+    Parser -->|"JSON AST"| Renderer
+    Parser -->|"mermaid blocks"| Mermaid
+    Mermaid -->|"SVG strings"| Renderer
+    Renderer -->|"HTML string"| HMR
+    HMR -->|"WebSocket push"| DOM
+```
+
+---
+
+#### 6. Mobile Strategy (Deferred)
+
+**User clarification:**
+> "nope let's keep mobile a secondary to this localhost requirement. So I'm envisioning a workflow where we publish this to a secure / reverse proxied with basic http password somewhere i'll read on mobile. But after this refactor please"
+
+**Interpretation:**
+1. **Phase 1 (this task):** Hot reload on localhost for desktop development
+2. **Phase 2 (future):** Expose via reverse proxy (nginx/Caddy) + HTTP basic auth for mobile access
+
+**Not in scope for READER-002:**
+- Network exposure configuration
+- Authentication setup
+- Mobile-specific optimizations
+
+---
+
+#### 7. Reference: Mark Sharp Extension
+
+**Source:** [github.com/jonathanyeung/mark-sharp](https://github.com/jonathanyeung/mark-sharp)
+
+**What it does:** VS Code extension providing streamlined markdown preview with:
+- Live preview (updates as you type)
+- Mermaid diagram rendering (first-class support)
+- GitHub-flavored markdown styling
+
+**Why referenced:** User's current workflow uses Mark Sharp for Mermaid preview in VS Code. The Worklog Reader aims to provide equivalent (or better) experience for GSD-Lite's specific structure:
+- LOG-NNN badges (Mark Sharp doesn't understand)
+- Collapsible outline navigation (Mark Sharp doesn't have)
+- Jump to Latest button (Mark Sharp doesn't have)
+- Mobile-friendly layout (Mark Sharp is VS Code-only)
+
+---
+
+#### 8. Superseded Plans
+
+This decision **supersedes** the original Mermaid integration approach from LOG-047:
+
+| Original (LOG-047 §5) | New (This Decision) |
+|-----------------------|---------------------|
+| Shell out to `mmdc` CLI | Native `mermaid` npm package |
+| PNG output with base64 | SVG output (inline XML) |
+| Python subprocess calls | TypeScript async/await |
+| Manual regeneration | Vite HMR (automatic) |
+
+**The original READER-001c task is now absorbed into READER-002c** (Mermaid is part of the TypeScript renderer, not a separate integration step).
+
+---
+
+#### 9. Risk Assessment
+
+| Risk | Likelihood | Impact | Mitigation |
+|------|------------|--------|------------|
+| TypeScript port introduces bugs | Medium | Low | Unit tests comparing output to Python version |
+| Vite HMR doesn't work with external file (WORK.md) | Low | High | Vite supports `server.watch` config for external files |
+| Large WORK.md causes slow hot reload | Medium | Medium | Incremental rebuild in Phase 2 (only re-render changed sections) |
+| Mermaid syntax errors crash dev server | Medium | Medium | Try-catch with error overlay (Vite pattern) |
+
+---
+
+#### 10. Decision Record
+
+| ID | Decision | Rationale |
+|----|----------|-----------|
+| **DECISION-049a** | Full Node/TypeScript rewrite | If Node is required for Mermaid anyway, embrace it fully for access to superior hot reload tooling. |
+| **DECISION-049b** | Vite as build tool and dev server | Built-in HMR, zero config, production-grade. User preference confirmed. |
+| **DECISION-049c** | pnpm as package manager | Faster installs, deduped storage via hardlinks. User preference confirmed. |
+| **DECISION-049d** | SVG for Mermaid diagrams | Smaller, scalable, text-selectable. Works for both dev server and static export. |
+| **DECISION-049e** | Plugin architecture boundary | Core GSD-Lite stays Python (`uvx`), Reader plugin is Node (`pnpm`). Clear separation of concerns. |
+
+---
+
+#### 11. Dependency Graph
+
+```mermaid
+graph TD
+    subgraph "Context Required"
+        LOG-047[LOG-047: Worklog Reader Vision] -->|"UX spec, plugin architecture"| LOG-049
+        LOG-048[LOG-048: Parser + Renderer POC] -->|"Working Python impl to port"| LOG-049
+        LOG-017[LOG-017: Housekeeping Vision] -->|"Problem: large worklogs need tooling"| LOG-047
+    end
+    
+    subgraph "This Entry"
+        LOG-049[LOG-049: Hot Reload Pivot to Node/TypeScript]
+    end
+    
+    subgraph "Outputs (Implementation Tasks)"
+        LOG-049 --> READER-002a[READER-002a: Scaffold pnpm + Vite]
+        LOG-049 --> READER-002b[READER-002b: Port parser.ts]
+        LOG-049 --> READER-002c[READER-002c: Port renderer.ts + Mermaid]
+        LOG-049 --> READER-002d[READER-002d: Vite dev server]
+        LOG-049 --> READER-002e[READER-002e: Static build mode]
+    end
+    
+    subgraph "Supersedes"
+        LOG-049 -.->|"absorbs"| READER-001c[READER-001c: Mermaid CLI integration]
+    end
+    
+    subgraph "Future Work"
+        LOG-049 -.->|"enables"| MOBILE[Mobile via reverse proxy]
+    end
+```
+
+**To onboard this decision:**
+1. **LOG-047** — Understand the original vision, UX spec, and plugin architecture
+2. **LOG-048** — Review the Python implementation being ported
+3. **This entry (LOG-049)** — Understand why we're pivoting to Node/TypeScript and the implementation plan
+
+---
+
+#### 12. Updated Current Understanding
+
+The following updates should be reflected in Section 1 (Current Understanding):
+
+```
+<active_task>
+Task: READER-002 - GSD-Lite Worklog Reader (Node/TypeScript + Vite Hot Reload)
+Status: PLANNING COMPLETE - See LOG-049
+Key insight: Full Node/TypeScript rewrite with Vite HMR for instant browser updates when WORK.md changes.
+Next: READER-002a — Scaffold pnpm + Vite + TypeScript project structure
+
+---
+**Parked:**
+- READER-001c through 001f: SUPERSEDED by READER-002 (absorbed into TypeScript rewrite)
+- TASK-EVAL-002d: Vertex AI integration (resume after READER-002)
+</active_task>
+```
+
+---
+
+### [LOG-050] - [EXEC] - The Hot Reload Loop & Error DX: Vite Plugin + Mermaid Error Aggregator - Task: READER-002d
+
+#### 1. Executive Summary
+
+**The Milestone:** We have successfully implemented the hot-reloading dev server for GSD-Lite Worklog Reader. The browser now updates instantly when `WORK.md` changes, solving the "friction" problem identified in LOG-049.
+
+**The DX Innovation:** During implementation, we discovered that Mermaid syntax errors were buried at the bottom of the page (Mermaid default behavior) or hard to locate in large files (8k+ lines). We pivoted to build an **"Agent-First" Error Panel** that aggregates all errors, highlights the source line, and provides a one-click "Copy All" button formatted specifically for pasting back to an AI agent for fixing.
+
+**Key Achievements:**
+- **Hot Module Replacement (HMR):** Custom Vite plugin watches external `WORK.md` and triggers client updates.
+- **Error Aggregation:** Sticky top-right panel collects all broken diagrams.
+- **Agent-Ready Output:** "Copy All" generates a markdown report with line numbers and error details.
+- **Zero-Config:** `pnpm dev` just works, pointing to `../../gsd-lite/WORK.md` by default.
+
+---
+
+#### 2. The Implementation: Bridging Filesystem to Browser
+
+##### 2.1 The Challenge: Watching External Files
+
+Vite is designed to watch files *inside* the project root. Our `WORK.md` lives two levels up (`../../gsd-lite/WORK.md`). Standard `vite.config.ts` watching triggers a rebuild but doesn't necessarily notify the client if the file isn't imported as a module.
+
+##### 2.2 The Solution: Custom Vite Plugin (`vite-plugin-worklog.ts`)
+
+We built a custom plugin that acts as the bridge:
+
+```typescript
+// plugins/reader-vite/src/vite-plugin-worklog.ts
+export function worklogPlugin(options: WorklogPluginOptions = {}): Plugin {
+  // ... configuration ...
+  return {
+    name: 'vite-plugin-worklog',
+    configureServer(devServer) {
+      // 1. Serve content via middleware
+      devServer.middlewares.use((req, res, next) => {
+        if (req.url === '/_worklog') {
+          const content = readFileSync(resolvedPath, 'utf-8');
+          res.end(content);
+        }
+        next();
+      });
+
+      // 2. Watch external file
+      devServer.watcher.add(resolvedPath);
+
+      // 3. Emit custom HMR event
+      devServer.watcher.on('change', (changedPath) => {
+        if (changedPath === resolvedPath) {
+          devServer.ws.send({
+            type: 'custom',
+            event: 'worklog-update', // Client listens for this
+            data: { timestamp: Date.now() },
+          });
+        }
+      });
+    },
+  };
+}
+```
+
+**Client-Side Consumption (`main.ts`):**
+
+```typescript
+// Listen for the custom event
+if (import.meta.hot) {
+  import.meta.hot.on('worklog-update', () => {
+    console.log('[GSD-Lite Reader] WORK.md changed, reloading...');
+    loadAndRender(); // Re-fetch from /_worklog and re-render
+  });
+}
+```
+
+---
+
+#### 3. The "Agent-First" Error DX
+
+##### 3.1 The Problem
+
+When a Mermaid diagram breaks (e.g., syntax error), Mermaid.js default behavior is to render a massive error message at the bottom of the DOM or replace the diagram with an ugly error box. In a 10,000-line `WORK.md` file, finding *which* diagram broke is painful.
+
+##### 3.2 The Solution: Aggregated Error Panel
+
+We implemented a robust error handling strategy:
+
+1.  **Suppress Default:** `mermaid.initialize({ suppressErrorRendering: true })`
+2.  **Catch & Collect:** Wrap `mermaid.render()` in try/catch blocks.
+3.  **Track Line Numbers:** The renderer now annotates wrappers with `data-start-line` derived from the source markdown.
+4.  **Sticky Panel:** A fixed panel shows all errors with "Jump" buttons.
+
+**The "Copy for Agent" Workflow:**
+The panel includes a "📋 Copy All" button that generates a report formatted for LLM consumption:
+
+```markdown
+## Mermaid Diagram Errors in WORK.md
+
+Found 2 broken diagram(s). Please fix:
+
+### Error 1: Line ~9420
+**Error:** Parse error on line 3: ... expecting 'Arrow', got 'EOF'
+**Broken code:**
+\`\`\`mermaid
+graph TD
+  A -->
+\`\`\`
+```
+
+This reduces the "Fix it" loop to seconds:
+1. User sees red panel.
+2. User clicks "Copy All".
+3. User pastes to Agent: "Fix these."
+4. Agent receives exact line numbers and error context.
+
+---
+
+#### 4. New Requirements & Next Steps
+
+During the review of the HMR implementation, new requirements emerged for the reading experience:
+
+**1. Pinch-to-Zoom for Diagrams:**
+Complex dependency graphs (like our Task vs. Decision graph) are hard to read on smaller screens. We need pan/zoom capabilities.
+
+**2. Syntax Highlighting:**
+Fenced code blocks are currently monochrome. We need proper syntax highlighting (PrismJS or similar) to match the "Journalism Quality" goal.
+
+**Updates to Task List:**
+
+| Task | Description | Status |
+|------|-------------|--------|
+| **READER-002d** | Vite dev server + HMR | **COMPLETE** |
+| **READER-002e** | Static build mode (`pnpm build`) | Pending |
+| **READER-002f** | **[NEW]** Pan/Zoom for Mermaid diagrams | Next |
+| **READER-002g** | **[NEW]** Syntax highlighting for code blocks | Next |
+
+---
+
+#### 5. Updated Current Understanding
+
+The following updates should be reflected in Section 1 (Current Understanding):
+
+```
+<active_task>
+Task: READER-002 - GSD-Lite Worklog Reader
+Status: EXECUTION - Hot Reload & Error DX Complete
+Current Focus: Enhancing Reading Experience (Zoom + Syntax Highlight)
+Next Action: READER-002f - Implement Pan/Zoom for Mermaid diagrams
+</active_task>
+```
+
+#### 6. Dependency Graph for Onboarding
+
+```mermaid
+graph TD
+    LOG-049[LOG-049: Hot Reload Pivot] -->|"Implemented via"| LOG-050
+    LOG-050[LOG-050: Vite Plugin + Error DX]
+    
+    LOG-050 --> READER-002f[READER-002f: Pan/Zoom]
+    LOG-050 --> READER-002g[READER-002g: Syntax Highlight]
+    
+    subgraph "Technical Components"
+        PLUGIN[vite-plugin-worklog.ts] -->|"Watches"| WORK[WORK.md]
+        PLUGIN -->|"Emits HMR"| CLIENT[main.ts]
+        CLIENT -->|"Catches Errors"| PANEL[Error Panel]
+    end
+```
