@@ -60,7 +60,7 @@ SESSION 2 (tokens: 0 → fresh start)
 - Distributed as pip-installable package (`uvx gsd-lite@latest install`)
 - Templates bundled in `src/gsd_lite/template/`
 - Designed for synergy with fs-mcp (grep-first file reading)
-- **Worklog Reader plugin** (`plugins/reader-vite/`): TypeScript/Vite app for interactive WORK.md viewing with live reload. Distributed separately via npm (`npx @gsd-lite/reader`). See ARCHITECTURE.md [Plugins section](./ARCHITECTURE.md#plugins) for details.
+- **Worklog Reader plugin** (`plugins/reader-vite/`): TypeScript/Vite app for interactive WORK.md viewing with live reload. Distributed separately via npm (`npx @luutuankiet/gsd-reader`). See ARCHITECTURE.md [Plugins section](./ARCHITECTURE.md#plugins) for details.
 
 **Prior work:**
 - Evolved from "Data Engineering Copilot Patterns" knowledge base project
@@ -110,7 +110,7 @@ When logging findings, use this prompt pattern:
 | Tool | Distribution | Purpose |
 |------|--------------|---------|
 | `gsd-lite` | `uvx gsd-lite@latest install` | Scaffold artifacts + agent config |
-| `@gsd-lite/reader` | `npx @gsd-lite/reader` | Interactive WORK.md viewer with live reload |
+| `@luutuankiet/gsd-reader` | `npx @luutuankiet/gsd-reader` | Interactive WORK.md viewer with live reload |
 | `fs-mcp` | `uvx fs-mcp@latest` | Filesystem MCP server for durable writes |
 
 **Typical remote workflow:**
@@ -118,7 +118,7 @@ When logging findings, use this prompt pattern:
 # On remote server
 uvx gsd-lite@latest install --local   # Scaffold gsd-lite/ artifacts
 uvx fs-mcp@latest --port 8124 &       # Start filesystem MCP
-npx @gsd-lite/reader &                # Start worklog viewer on :3000
+npx @luutuankiet/gsd-reader &         # Start worklog viewer on :3000
 
 # On local machine
 ssh -L 3000:localhost:3000 -L 8124:localhost:8124 remote

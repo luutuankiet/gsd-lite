@@ -65,10 +65,36 @@
       background: #5a5a7a;
     }
     
+    /* ===== STICKY BREADCRUMB ===== */
+    .breadcrumb {
+      position: fixed;
+      top: 50px;
+      left: 0;
+      right: 0;
+      height: 36px;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      display: flex;
+      align-items: center;
+      padding: 0 16px;
+      z-index: 999;
+      font-size: 13px;
+      font-weight: 500;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.15);
+      overflow: hidden;
+      white-space: nowrap;
+      text-overflow: ellipsis;
+    }
+    
+    .breadcrumb-text {
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    
     /* ===== OUTLINE PANEL ===== */
     .outline {
       position: fixed;
-      top: 50px;
+      top: 86px; /* top-bar (50px) + breadcrumb (36px) */
       left: 0;
       bottom: 0;
       width: 300px;
@@ -200,10 +226,18 @@
       text-decoration: none;
       font-size: 13px;
       flex-grow: 1;
+      border-radius: 4px;
+      transition: background-color 0.2s, border-left 0.2s;
     }
     
     .outline-link:hover {
       background: #f0f0f0;
+    }
+    
+    .outline-link.active {
+      background: linear-gradient(135deg, rgba(102, 126, 234, 0.15) 0%, rgba(118, 75, 162, 0.15) 100%);
+      border-left: 3px solid #667eea;
+      font-weight: 600;
     }
     
     .outline-children {
@@ -270,19 +304,126 @@
     
     /* ===== CONTENT AREA ===== */
     .content {
-      margin-top: 50px;
+      margin-top: 86px; /* top-bar (50px) + breadcrumb (36px) */
       padding: 16px;
       max-width: 900px;
       margin-left: auto;
       margin-right: auto;
       background: white;
-      min-height: calc(100vh - 50px);
+      min-height: calc(100vh - 86px);
     }
     
     /* Scroll margin for anchor navigation */
     .content h1, .content h2, .content h3, .content h4, .content h5,
-    .content p, .log-entry {
+    .content p, .log-entry, .worklog-section {
+      scroll-margin-top: 96px; /* 86px header + 10px padding */
+    }
+    
+    /* ===== SECTION CARDS ===== */
+    .worklog-section {
+      background: white;
+      border-radius: 8px;
+      padding: 1.5rem;
+      margin-bottom: 1.5rem;
+      border-left: 4px solid #6f42c1;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
       scroll-margin-top: 60px;
+    }
+    
+    .worklog-section.section-h2 {
+      border-left-color: #6f42c1;
+    }
+    
+    .worklog-section.section-h3 {
+      border-left-color: #20c997;
+    }
+    
+    .worklog-section .section-title {
+      font-size: 1.5rem;
+      font-weight: 600;
+      margin-bottom: 1rem;
+      color: #1a1a2e;
+    }
+    
+    .worklog-section.section-h3 .section-title {
+      font-size: 1.25rem;
+    }
+    
+    .worklog-section .section-content {
+      color: #333;
+    }
+    
+    /* Apply same typography to section content */
+    .section-content h1 { font-size: 24px; margin: 20px 0 12px; border-bottom: 2px solid #333; padding-bottom: 8px; }
+    .section-content h2 { font-size: 20px; margin: 18px 0 10px; color: #1a1a2e; }
+    .section-content h3 { font-size: 17px; margin: 14px 0 8px; color: #333; }
+    .section-content h4 { font-size: 15px; margin: 12px 0 6px; color: #555; }
+    .section-content h5 { font-size: 13px; margin: 10px 0 4px; color: #666; }
+    .section-content p { margin: 6px 0; }
+    .section-content pre {
+      background: #1a1a2e;
+      color: #f8f8f2;
+      padding: 12px;
+      border-radius: 6px;
+      overflow-x: auto;
+      margin: 10px 0;
+      font-size: 12px;
+    }
+    .section-content code {
+      background: #f0f0f0;
+      padding: 2px 5px;
+      border-radius: 3px;
+      font-family: 'SF Mono', 'Consolas', monospace;
+      font-size: 12px;
+    }
+    .section-content pre code {
+      background: none;
+      padding: 0;
+    }
+    .section-content table {
+      border-collapse: collapse;
+      margin: 10px 0;
+      width: 100%;
+      font-size: 13px;
+      display: block;
+      overflow-x: auto;
+    }
+    .section-content th {
+      background: #f5f5f5;
+      font-weight: 600;
+    }
+    .section-content td, .section-content th {
+      border: 1px solid #ddd;
+      padding: 6px 10px;
+      text-align: left;
+    }
+    .section-content tr:nth-child(even) {
+      background: #fafafa;
+    }
+    .section-content hr {
+      border: none;
+      border-top: 1px solid #ddd;
+      margin: 20px 0;
+    }
+    .section-content del {
+      color: #999;
+    }
+    .section-content a {
+      color: #2196F3;
+    }
+    .section-content blockquote {
+      border-left: 4px solid #ddd;
+      padding-left: 16px;
+      margin: 10px 0;
+      color: #666;
+      font-style: italic;
+    }
+    .section-content ul, .section-content ol {
+      margin: 10px 0;
+      padding-left: 24px;
+    }
+    .section-content li {
+      margin: 4px 0;
     }
     
     /* ===== LOG ENTRY CARDS ===== */
@@ -469,7 +610,7 @@
     .overlay {
       display: none;
       position: fixed;
-      top: 50px;
+      top: 86px; /* top-bar (50px) + breadcrumb (36px) */
       left: 0;
       right: 0;
       bottom: 0;
@@ -559,6 +700,15 @@
       
       .outline.hidden {
         transform: translateX(-100%);
+      }
+      
+      .breadcrumb {
+        left: 300px;  /* Align with content when outline is visible */
+        transition: left 0.3s ease;
+      }
+      
+      .breadcrumb.full-width {
+        left: 0;
       }
       
       .content {

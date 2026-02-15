@@ -125,8 +125,8 @@ The Reader solves this with a purpose-built worklog browser. See LOG-047 for the
 
 ```
 plugins/reader-vite/
-├── package.json           # npm package config (publishable as @gsd-lite/reader)
-├── cli.js                 # Production entry point (npx @gsd-lite/reader)
+├── package.json           # npm package config (@luutuankiet/gsd-reader)
+├── cli.cjs                # Production entry point (npx @gsd-lite/reader)
 ├── vite.config.ts         # Vite configuration (dev only)
 ├── dist/                  # Built static assets (shipped with npm package)
 │   ├── index.html
@@ -146,7 +146,7 @@ plugins/reader-vite/
 | Mode | Command | Use Case |
 |------|---------|----------|
 | **Development** | `cd plugins/reader-vite && pnpm dev` | Developing the reader itself |
-| **Production** | `npx @gsd-lite/reader [path]` | Using reader on any gsd-lite project |
+| **Production** | `npx @luutuankiet/gsd-reader [path]` | Using reader on any gsd-lite project |
 
 **Development mode** uses Vite's HMR for instant updates. **Production mode** uses a lightweight Node HTTP server with chokidar file watching and WebSocket live reload.
 
@@ -196,7 +196,7 @@ graph LR
     end
     
     subgraph "Remote Server"
-        Reader["@gsd-lite/reader :3000"]
+        Reader["@luutuankiet/gsd-reader :3000"]
         FSMCP[fs-mcp :8124]
         WORK[gsd-lite/WORK.md]
     end
@@ -209,7 +209,7 @@ graph LR
 **Workflow:**
 ```bash
 # On remote server
-npx @gsd-lite/reader ./gsd-lite/WORK.md --port 3000
+npx @luutuankiet/gsd-reader ./gsd-lite/WORK.md --port 3000
 
 # On local machine (add to SSH tunnel)
 ssh -L 3000:localhost:3000 remote-server

@@ -345,6 +345,27 @@ function renderMarkdown(content: string, startLine: number = 1): string {
 }
 
 // ============================================================
+// SECTION RENDERING
+// ============================================================
+
+/**
+ * Render a section (H2/H3) with its content
+ */
+function renderSection(section: Section): string {
+  const content = section.content ? renderMarkdown(section.content, section.lineNumber + 1) : '';
+  const levelClass = `section-h${section.level}`;
+  
+  return `
+    <section class="worklog-section ${levelClass}" id="line-${section.lineNumber}" data-section-title="${escapeHtml(section.title)}">
+      <h${section.level} class="section-title">${formatInline(escapeHtml(section.title))}</h${section.level}>
+      <div class="section-content">
+        ${content}
+      </div>
+    </section>
+  `;
+}
+
+// ============================================================
 // LOG ENTRY RENDERING
 // ============================================================
 
@@ -356,7 +377,7 @@ function renderLogEntry(log: LogEntry): string {
   const supersededClass = log.superseded ? ' superseded' : '';
   
   return `
-    <article class="log-entry${supersededClass}" id="line-${log.lineNumber}">
+    <article class="log-entry${supersededClass}" id="line-${log.lineNumber}" data-section-title="${escapeHtml(log.id + ': ' + log.title)}">
       <header class="log-header">
         <span class="log-badge">${log.id}</span>
         <span class="log-type badge-${log.type}">${log.type}</span>
@@ -380,7 +401,24 @@ function renderLogEntry(log: LogEntry): string {
  */
 export function renderWorklog(ast: WorklogAST): string {
   const outline = renderOutline(ast);
-  const content = ast.logs.map(log => renderLogEntry(log)).join('');
+  
+  // Combine sections and logs, sort by line number for correct document order
+  type ContentItem = { type: 'section' | 'log'; lineNumber: number; item: Section | LogEntry };
+  const allItems: ContentItem[] = [
+    ...ast.sections.map(s => ({ type: 'section' as const, lineNumber: s.lineNumber, item: s })),
+    ...ast.logs.map(l => ({ type: 'log' as const, lineNumber: l.lineNumber, item: l })),
+  ];
+  allItems.sort((a, b) => a.lineNumber - b.lineNumber);
+  
+  // Render in order
+  const content = allItems.map(({ type, item }) => {
+    if (type === 'section') {
+      return renderSection(item as Section);
+    } else {
+      return renderLogEntry(item as LogEntry);
+    }
+  }).join('');
+  
   const latestLogLine = ast.logs.length > 0 ? ast.logs[ast.logs.length - 1].lineNumber : 1;
   
   return `
@@ -390,6 +428,11 @@ export function renderWorklog(ast: WorklogAST): string {
       <span class="top-bar-title">GSD-Lite Worklog</span>
       <button class="btn-jump-latest" id="jumpLatest" data-line="${latestLogLine}">⬇ Latest</button>
     </header>
+    
+    <!-- Sticky Breadcrumb (shows current position while scrolling) -->
+    <nav class="breadcrumb" id="breadcrumb">
+      <span class="breadcrumb-text">GSD-Lite Worklog</span>
+    </nav>
     
     <!-- Outline Panel -->
     ${outline}
@@ -422,6 +465,7 @@ export function initializeInteractions(): void {
   const outline = document.getElementById('outline');
   const overlay = document.getElementById('overlay');
   const content = document.getElementById('content');
+  const breadcrumb = document.getElementById('breadcrumb');
   const outlineToggle = document.getElementById('outlineToggle');
   const outlineClose = document.getElementById('outlineClose');
   const expandAllBtn = document.getElementById('expandAllBtn');
@@ -437,6 +481,7 @@ export function initializeInteractions(): void {
     if (window.innerWidth >= 768) {
       outline!.classList.toggle('hidden');
       content!.classList.toggle('full-width');
+      breadcrumb?.classList.toggle('full-width');
     } else {
       outline!.classList.toggle('open');
       overlay!.classList.toggle('visible');
@@ -554,5 +599,91 @@ export function initializeInteractions(): void {
     
     window.addEventListener('scroll', updateThumbPosition);
     updateThumbPosition();
+  }
+  
+  // ===== SCROLL SYNC: BREADCRUMB + OUTLINE HIGHLIGHTING =====
+  const breadcrumbText = breadcrumb?.querySelector('.breadcrumb-text');
+  
+  // Find all trackable sections (log entries and sections with data-section-title)
+  const trackableSections = document.querySelectorAll('[data-section-title]');
+  
+  if (trackableSections.length > 0 && breadcrumbText) {
+    // Track which section is currently visible
+    let currentSectionId: string | null = null;
+    
+    // IntersectionObserver to detect which section is in view
+    const observer = new IntersectionObserver(
+      (entries) => {
+        // Find the topmost visible section
+        let topmostEntry: IntersectionObserverEntry | null = null;
+        let topmostY = Infinity;
+        
+        entries.forEach(entry => {
+          if (entry.isIntersecting) {
+            const rect = entry.boundingClientRect;
+            // Prefer sections closer to the top of the viewport
+            if (rect.top < topmostY && rect.top >= -100) {
+              topmostY = rect.top;
+              topmostEntry = entry;
+            }
+          }
+        });
+        
+        if (topmostEntry) {
+          const target = topmostEntry.target as HTMLElement;
+          const sectionTitle = target.dataset.sectionTitle || 'GSD-Lite Worklog';
+          const sectionId = target.id;
+          
+          // Only update if section changed
+          if (sectionId !== currentSectionId) {
+            currentSectionId = sectionId;
+            
+            // Update breadcrumb
+            breadcrumbText.textContent = sectionTitle;
+            
+            // Update outline highlighting
+            document.querySelectorAll('.outline-link').forEach(link => {
+              link.classList.remove('active');
+            });
+            
+            // Find the outline link for this section
+            const outlineLink = document.querySelector(`.outline-link[href="#${sectionId}"]`);
+            if (outlineLink) {
+              outlineLink.classList.add('active');
+              
+              // Ensure parent items are expanded so active item is visible
+              let parent = outlineLink.closest('.outline-item');
+              while (parent) {
+                const parentItem = parent.parentElement?.closest('.outline-item');
+                if (parentItem) {
+                  parentItem.classList.remove('collapsed');
+                }
+                parent = parentItem;
+              }
+              
+              // Scroll outline to show active item (smooth, if not visible)
+              const outlineContent = document.querySelector('.outline-content');
+              if (outlineContent && outlineLink) {
+                const linkRect = outlineLink.getBoundingClientRect();
+                const outlineRect = outlineContent.getBoundingClientRect();
+                
+                if (linkRect.top < outlineRect.top || linkRect.bottom > outlineRect.bottom) {
+                  outlineLink.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                }
+              }
+            }
+          }
+        }
+      },
+      {
+        root: null,
+        // Observe when section enters top 30% of viewport
+        rootMargin: '-10% 0px -70% 0px',
+        threshold: 0,
+      }
+    );
+    
+    // Observe all trackable sections
+    trackableSections.forEach(section => observer.observe(section));
   }
 }

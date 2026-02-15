@@ -22,6 +22,7 @@ export interface Section {
   level: number;
   lineNumber: number;
   children: Section[];
+  content?: string;   // Content between this section and next header
   logs?: LogEntry[];  // Optional - not always populated
 }
 

@@ -32,6 +32,14 @@ async function loadAndRender(): Promise<void> {
   // Reset errors on each render
   mermaidErrors = [];
 
+  // ==========================================================================
+  // Preserve scroll position across reloads
+  // Strategy: Save raw scrollY, restore after render. Simple and reliable.
+  // ==========================================================================
+  
+  const savedScrollY = window.scrollY;
+  console.log(`[GSD-Lite Reader] Saving scroll position: ${savedScrollY}px`);
+
   try {
     // Fetch the raw markdown from the plugin endpoint
     const response = await fetch(WORKLOG_ENDPOINT);
@@ -50,6 +58,7 @@ async function loadAndRender(): Promise<void> {
     initializeInteractions();
 
     // Initialize Mermaid diagrams (this populates mermaidErrors)
+    // Must complete BEFORE scroll restore since diagrams change page height
     await initMermaid();
 
     // Initialize diagram overlay click handlers (pan/zoom viewer)
@@ -60,6 +69,13 @@ async function loadAndRender(): Promise<void> {
 
     // Show error panel if there are errors
     showErrorPanel();
+
+    // Restore scroll position AFTER all async rendering is complete
+    // Use requestAnimationFrame to ensure browser has painted
+    requestAnimationFrame(() => {
+      window.scrollTo(0, savedScrollY);
+      console.log(`[GSD-Lite Reader] Restored scroll to ${savedScrollY}px`);
+    });
 
     console.log(`[GSD-Lite Reader] Loaded ${ast.metadata.totalLogs} logs in ${ast.metadata.parseTime}ms`);
   } catch (error) {
@@ -365,13 +381,64 @@ async function initMermaid(): Promise<void> {
   }
 }
 
+// =============================================================================
+// Live Reload: WebSocket (Production CLI) + Vite HMR (Development)
+// =============================================================================
+
+/**
+ * WebSocket client for production CLI live reload.
+ * The CLI server (cli.js) sends 'reload' messages when WORK.md changes.
+ * 
+ * This runs in both dev and production, but in dev the Vite HMR below
+ * will typically fire first (faster). Having both doesn't hurt.
+ */
+function connectWebSocket(): void {
+  // Determine WebSocket URL based on current page location
+  const protocol = location.protocol === 'https:' ? 'wss:' : 'ws:';
+  const wsUrl = `${protocol}//${location.host}`;
+  
+  try {
+    const ws = new WebSocket(wsUrl);
+    
+    ws.onopen = () => {
+      console.log('[GSD-Lite Reader] WebSocket connected');
+    };
+    
+    ws.onmessage = (event) => {
+      if (event.data === 'reload') {
+        console.log('[GSD-Lite Reader] WORK.md changed (WebSocket), reloading...');
+        loadAndRender();
+      }
+    };
+    
+    ws.onclose = () => {
+      // Reconnect after 2 seconds if connection lost
+      // This handles server restarts and network hiccups
+      console.log('[GSD-Lite Reader] WebSocket disconnected, reconnecting in 2s...');
+      setTimeout(connectWebSocket, 2000);
+    };
+    
+    ws.onerror = () => {
+      // Errors are followed by onclose, so we just log here
+      // In dev mode with Vite, this may fail (no WS server) - that's fine
+    };
+  } catch (err) {
+    // WebSocket constructor can throw in some edge cases
+    console.warn('[GSD-Lite Reader] WebSocket connection failed, will retry');
+    setTimeout(connectWebSocket, 2000);
+  }
+}
+
 // Initial load
 loadAndRender();
 
-// Hot Module Replacement - reload when WORK.md changes
+// Start WebSocket connection for CLI live reload
+connectWebSocket();
+
+// Hot Module Replacement - reload when WORK.md changes (Vite dev server only)
 if (import.meta.hot) {
   import.meta.hot.on('worklog-update', () => {
-    console.log('[GSD-Lite Reader] WORK.md changed, reloading...');
+    console.log('[GSD-Lite Reader] WORK.md changed (Vite HMR), reloading...');
     loadAndRender();
   });
 

@@ -46,6 +46,7 @@ export function parseWorklog(markdown: string): WorklogAST {
 
   // Stack for tracking hierarchy: [level, node]
   let currentLog: LogEntry | null = null;
+  let currentSection: Section | null = null;
   let currentContent: string[] = [];
   let sectionStack: Array<{ level: number; node: Section | LogEntry }> = [];
   
@@ -60,8 +61,8 @@ export function parseWorklog(markdown: string): WorklogAST {
     const trimmedLine = line.trim();
     if (trimmedLine.startsWith('```') || trimmedLine.startsWith('~~~')) {
       inCodeFence = !inCodeFence;
-      // Still capture content for logs even in code fences
-      if (currentLog) {
+      // Still capture content for logs/sections even in code fences
+      if (currentLog || currentSection) {
         currentContent.push(line);
       }
       continue;
@@ -69,7 +70,7 @@ export function parseWorklog(markdown: string): WorklogAST {
 
     // Inside code fence: capture content but skip header parsing
     if (inCodeFence) {
-      if (currentLog) {
+      if (currentLog || currentSection) {
         currentContent.push(line);
       }
       continue;
@@ -81,6 +82,11 @@ export function parseWorklog(markdown: string): WorklogAST {
       // Save previous log's content
       if (currentLog) {
         currentLog.content = currentContent.join('\n').trim();
+      }
+      // Save previous section's content
+      if (currentSection) {
+        currentSection.content = currentContent.join('\n').trim();
+        currentSection = null;
       }
 
       const logId = `LOG-${logMatch[1]}`;
@@ -134,17 +140,28 @@ export function parseWorklog(markdown: string): WorklogAST {
         if (currentLog) {
           currentLog.content = currentContent.join('\n').trim();
         }
+        // Save previous section's content
+        if (currentSection) {
+          currentSection.content = currentContent.join('\n').trim();
+        }
         sections.push(section);
         sectionStack = [{ level: 2, node: section }];
         currentLog = null;
+        currentSection = section;
         currentContent = [];
         continue;
       }
 
-      // H3 that's NOT a log entry - treat as section (ends current log)
+      // H3 that's NOT a log entry - treat as section (ends current log/section)
       if (level === 3 && currentLog === null) {
+        // Save previous section's content
+        if (currentSection) {
+          currentSection.content = currentContent.join('\n').trim();
+        }
         sections.push(section);
         sectionStack = [{ level: 3, node: section }];
+        currentSection = section;
+        currentContent = [];
         continue;
       }
 
@@ -154,6 +171,7 @@ export function parseWorklog(markdown: string): WorklogAST {
         sections.push(section);
         sectionStack = [{ level: 3, node: section }];
         currentLog = null;
+        currentSection = section;
         currentContent = [];
         continue;
       }
@@ -180,8 +198,8 @@ export function parseWorklog(markdown: string): WorklogAST {
       continue;
     }
 
-    // Regular line - capture as content if inside a log
-    if (currentLog) {
+    // Regular line - capture as content if inside a log or section
+    if (currentLog || currentSection) {
       currentContent.push(line);
     }
   }
@@ -189,6 +207,10 @@ export function parseWorklog(markdown: string): WorklogAST {
   // Don't forget last log's content
   if (currentLog) {
     currentLog.content = currentContent.join('\n').trim();
+  }
+  // Don't forget last section's content
+  if (currentSection) {
+    currentSection.content = currentContent.join('\n').trim();
   }
 
   const parseTime = Math.round(performance.now() - startTime);

@@ -9,14 +9,18 @@ execution
 </current_mode>
 
 <active_task>
-Task: READER-003 - Reader Distribution (Lightweight CLI with Native File Watching)
-Status: DECISION LOGGED (LOG-056) - Architecture B selected, documentation updated
-Key insight: Reader runs on remote server (same machine as WORK.md) so chokidar can use native file watching. Lightweight CLI (~2MB) vs shipping Vite runtime (~50MB).
-Next: Implementation phase — READER-003a (create cli.js), READER-003b (update package.json), READER-003c (WebSocket client)
+Task: READER-004 - Reader v0.2.0 Features
+Status: COMPLETE (LOG-058) - Implemented section rendering, breadcrumbs, scroll sync.
+Key deliverables:
+- Render H2/H3 content in main view
+- Sticky breadcrumb
+- Outline follow-along
+- Version 0.2.0
 
 ---
-**Parked (resume after READER-003):**
-- TASK-EVAL-002d: Vertex AI integration (resume after reader distribution)
+**Parked (resume next):**
+- Publish v0.2.0 to npm (trigger GHA)
+- TASK-EVAL-002d: Vertex AI integration (resume after publish)
 </active_task>
 
 <parked_tasks>
@@ -106,13 +110,13 @@ DECISION-046b: Decommission `eval_transform.py` (LOG-046)
 </decisions>
 
 <blockers>
-None - POC complete and working.
+None - CI/CD workflow created. Requires NPM_TOKEN secret.
 </blockers>
 
 <next_action>
-Fork paths (choose one):
-1. Build static version → READER-002e (`pnpm build`)
-2. Pivot to evaluation → Resume TASK-EVAL-002d (Vertex AI integration)
+1. Ensure NPM_TOKEN/Trusted Publishing is configured.
+2. Push tag `reader-v0.2.0` to trigger release.
+3. Resume TASK-EVAL-002d (Vertex AI integration).
 </next_action>
 
 ---
@@ -129,6 +133,8 @@ Fork paths (choose one):
 | LOG-020 | DISCOVERY | PROTOCOL-DOCS | 10k token budget as CI gate; HTML comments invisible to grep-first |
 | **LOG-028** | **DECISION** | **CI-FRAMEWORK** | **⭐ Constitutional Knowledge + Three-Layer CI (Structural → Constitutional → Behavioral)** |
 | LOG-053 | DISCOVERY | READER-002 | The Node Distribution Model: npm Registry vs pnpm Efficiency |
+| LOG-057 | MILESTONE | READER-003 | Reader Published to npm (@luutuankiet/gsd-reader v0.1.1) |
+| LOG-058 | EXEC | READER-004 | Reader v0.2.0: Section Rendering & Scroll Sync (completing LOG-047 vision) |
 
 
 ## 3. Atomic Session Log (Chronological)
@@ -10450,3 +10456,140 @@ graph TD
     LOG053[LOG-053: npm Registry] --> LOG056[LOG-056: Distribution Decision]
     LOG052 --> LOG056
 ```
+
+---
+
+### [LOG-057] - [MILESTONE] - Reader Published to npm: @luutuankiet/gsd-reader v0.1.1 - Task: READER-003
+**Timestamp:** 2026-02-15
+
+#### 1. Summary
+
+The GSD-Lite Worklog Reader is now published to npm and can be invoked with a single command:
+
+```bash
+npx @luutuankiet/gsd-reader
+```
+
+This milestone completes the Reader distribution story (READER-003).
+
+---
+
+#### 2. Implementation Details
+
+##### 2.1 Files Created/Modified
+
+| File | Change |
+|------|--------|
+| `plugins/reader-vite/cli.cjs` | **NEW** — HTTP server + chokidar file watching + WebSocket live reload |
+| `plugins/reader-vite/package.json` | Updated for npm publishing: bin, files, dependencies |
+| `plugins/reader-vite/src/main.ts` | Added WebSocket client + scroll position preservation |
+| `.github/workflows/publish-reader.yaml` | **NEW** — GHA workflow with npm trusted publishing (OIDC) |
+
+##### 2.2 Key Technical Decisions
+
+| Decision | Rationale |
+|----------|-----------|
+| `cli.cjs` not `cli.js` | Package has `"type": "module"`, so CommonJS needs `.cjs` extension |
+| `"bin": "./cli.cjs"` (string) | When bin is a string, npx auto-resolves scoped package name |
+| Scroll preservation via `savedScrollY` | Save before render, restore after Mermaid completes — simple and reliable |
+| WebSocket reconnect with 2s delay | Handles server restarts gracefully |
+
+##### 2.3 npm Package Details
+
+```
+Package: @luutuankiet/gsd-reader
+Version: 0.1.1
+Size: 808 KB (packed), 2.8 MB (unpacked)
+Dependencies: chokidar, ws
+Bin: npx @luutuankiet/gsd-reader
+```
+
+---
+
+#### 3. Usage
+
+```bash
+# On remote server (or local project)
+npx @luutuankiet/gsd-reader                     # Watches ./gsd-lite/WORK.md on :3000
+npx @luutuankiet/gsd-reader ./path/to/WORK.md   # Custom path
+npx @luutuankiet/gsd-reader --port=3001         # Custom port
+
+# For remote access, SSH tunnel the port
+ssh -L 3000:localhost:3000 remote-server
+# Then open http://localhost:3000 in browser
+```
+
+---
+
+#### 4. CI/CD: Trusted Publishing
+
+Created `.github/workflows/publish-reader.yaml` using npm trusted publishing (OIDC):
+
+- **Trigger:** `reader-v*` tags (e.g., `git tag reader-v0.2.0`)
+- **No secrets required:** Uses GitHub OIDC for authentication
+- **Automatic provenance:** npm generates attestations for supply chain security
+
+**Setup required on npmjs.com:**
+1. Go to package settings → Trusted Publisher
+2. Add GitHub Actions with workflow filename `publish-reader.yaml`
+
+---
+
+#### 5. Dependencies
+
+| Log ID | Relationship | Summary |
+|--------|--------------|---------|
+| LOG-056 | Decision | Architecture decision: lightweight CLI with chokidar + WebSocket |
+| LOG-052 | Builds on | Static build (`dist/`) ready for distribution |
+| LOG-053 | Builds on | npm registry mechanics understood |
+
+---
+
+#### 6. What's Next
+
+- Configure trusted publishing on npmjs.com (one-time setup)
+- Update ARCHITECTURE.md and PROJECT.md with `@luutuankiet/gsd-reader` package name
+- Resume evaluation work (TASK-EVAL-002d: Vertex AI integration)
+
+---
+
+### [LOG-058] - [EXEC] - Reader v0.2.0: Section Rendering & Scroll Sync - Task: READER-004
+**Timestamp:** 2026-02-15
+
+#### 1. Summary
+
+Implemented critical features from the original LOG-047 roadmap:
+- **Section Rendering:** H2/H3 headers now render as cards in the main content.
+- **Sticky Breadcrumb:** Top bar showing current scroll position.
+- **Outline Follow-Along:** Active outline item highlights and auto-scrolls.
+- **Scroll Sync:** Bi-directional sync between content and navigation.
+
+Version bumped to `0.2.0`.
+
+#### 2. Technical Implementation
+
+##### 2.1 Parser Update (`parser.ts`)
+- Modified `Section` interface to include `content?: string`.
+- Updated parsing loop to capture content for H2/H3 sections (previously only captured for LOG entries).
+- Ensured code fences (```) work correctly across section boundaries.
+
+##### 2.2 Renderer Update (`renderer.ts`)
+- Added `renderSection()`: Renders sections with purple left-border styling.
+- **Combined Rendering:** `renderWorklog` now interleaves sections and logs in line-number order.
+- **IntersectionObserver:** Tracks visible elements (`[data-section-title]`) to update breadcrumb and outline highlight.
+- **Auto-Scroll:** Active outline item scrolls into view if hidden.
+
+##### 2.3 Visual Design (`index.html`)
+- **Breadcrumb:** Sticky gradient bar (`#667eea` → `#764ba2`) below top header.
+- **Section Cards:** Distinct from logs (purple border vs pink).
+- **Active State:** Outline items get a subtle background and border when active.
+- **Layout:** Adjusted content top margin to 86px (50px header + 36px breadcrumb).
+
+#### 3. Why This Matters
+- **Navigation:** Users can now jump to "1. Current Understanding" via outline (broken before).
+- **Context:** Breadcrumb provides constant "Where am I?" context in 9,000+ line documents.
+- **Completeness:** Fulfills the "Ubiquitous Access" vision from LOG-047.
+
+#### 4. Next Steps
+- Publish v0.2.0 to npm.
+- Resume Vertex AI integration (TASK-EVAL-002d).
