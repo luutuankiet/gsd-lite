@@ -1,0 +1,168 @@
+# OpenCode Session Evaluation Config
+# 
+# Maps physical tool names (found in OpenCode storage) to logical capabilities
+# (standardized for evaluation). This enables consistent trajectory analysis
+# regardless of MCP server naming conventions.
+#
+# Design Reference: LOG-035 (Configuration-Driven Tool Mapping)
+#
+# Usage:
+#   python eval_helper.py --config eval_config.yaml discover --project /path/to/project
+#
+# To discover unmapped tools:
+#   python eval_helper.py audit
+
+tool_mappings:
+  # ==========================================================================
+  # Filesystem Operations (fs-mcp)
+  # ==========================================================================
+  
+  # Read file contents
+  fs.read:
+    - "tools_gsd-lite-fs_read_files"
+    - "tools_gsd-lite-fs_read_files"
+    - "tools_home-fs_read_files"
+    - "remote-fs-mcp_read_files"
+  
+  # Search/grep file contents
+  fs.grep:
+    - "tools_gsd-lite-fs_grep_content"
+    - "tools_gsd-lite-fs_grep_content"
+    - "tools_home-fs_grep_content"
+    - "remote-fs-mcp_grep_content"
+  
+  # Propose file edits (review workflow)
+  fs.edit:
+    - "tools_gsd-lite-fs_propose_and_review"
+    - "tools_gsd-lite-fs_propose_and_review"
+    - "tools_home-fs_propose_and_review"
+    - "remote-fs-mcp_propose_and_review"
+  
+  # Commit reviewed edits
+  fs.commit:
+    - "tools_gsd-lite-fs_commit_review"
+    - "tools_gsd-lite-fs_commit_review"
+    - "tools_home-fs_commit_review"
+    - "remote-fs-mcp_commit_review"
+  
+  # List directory contents
+  fs.list:
+    - "tools_gsd-lite-fs_list_directory_with_sizes"
+    - "tools_gsd-lite-fs_list_directory_with_sizes"
+    - "tools_home-fs_list_directory_with_sizes"
+    - "tools_gsd-lite-fs_directory_tree"
+    - "tools_home-fs_directory_tree"
+  
+  # List allowed directories (fingerprinting source)
+  fs.allowed:
+    - "tools_gsd-lite-fs_list_allowed_directories"
+    - "tools_gsd-lite-fs_list_allowed_directories"
+    - "tools_home-fs_list_allowed_directories"
+  
+  # Search for files by pattern
+  fs.search:
+    - "tools_gsd-lite-fs_search_files"
+    - "tools_gsd-lite-fs_search_files"
+    - "tools_home-fs_search_files"
+  
+  # Get file metadata
+  fs.info:
+    - "tools_gsd-lite-fs_get_file_info"
+    - "tools_gsd-lite-fs_get_file_info"
+    - "tools_home-fs_get_file_info"
+  
+  # Query JSON files
+  fs.query_json:
+    - "tools_gsd-lite-fs_query_json"
+    - "tools_home-fs_query_json"
+  
+  # Query YAML files
+  fs.query_yaml:
+    - "tools_gsd-lite-fs_query_yaml"
+    - "tools_home-fs_query_yaml"
+
+  # ==========================================================================
+  # Web Operations
+  # ==========================================================================
+  
+  web.fetch:
+    - "mcp_webfetch"
+    - "tools_mmcp_url_to_markdown__md"
+    - "tools_mmcp_url_to_markdown__html"
+
+  # ==========================================================================
+  # GitHub Operations
+  # ==========================================================================
+  
+  github.file:
+    - "tools_mmcp_github__get_file_contents"
+  
+  github.commits:
+    - "tools_mmcp_github__list_commits"
+    - "tools_mmcp_github__get_commit"
+  
+  github.issues:
+    - "tools_mmcp_github__list_issues"
+    - "tools_mmcp_github__issue_read"
+    - "tools_mmcp_github__issue_write"
+    - "tools_mmcp_github__search_issues"
+  
+  github.prs:
+    - "tools_mmcp_github__list_pull_requests"
+    - "tools_mmcp_github__pull_request_read"
+    - "tools_mmcp_github__search_pull_requests"
+  
+  github.branches:
+    - "tools_mmcp_github__list_branches"
+  
+  github.search:
+    - "tools_mmcp_github__search_code"
+    - "tools_mmcp_github__search_repositories"
+
+  # ==========================================================================
+  # BigQuery Operations
+  # ==========================================================================
+  
+  bq.query:
+    - "tools_mmcp_bigquery__execute_sql"
+  
+  bq.catalog:
+    - "tools_mmcp_bigquery__search_catalog"
+    - "tools_mmcp_bigquery__list_dataset_ids"
+    - "tools_mmcp_bigquery__list_table_ids"
+  
+  bq.metadata:
+    - "tools_mmcp_bigquery__get_dataset_info"
+    - "tools_mmcp_bigquery__get_table_info"
+
+  # ==========================================================================
+  # Search/Grounding Operations
+  # ==========================================================================
+  
+  search.general:
+    - "tools_mmcp_google_grounding__search_with_grounding"
+  
+  search.docs:
+    - "tools_mmcp_google_grounding__search_documentation"
+    - "tools_mmcp_google_grounding__search_developer_resources"
+  
+  search.reddit:
+    - "tools_mmcp_google_grounding__search_reddit"
+
+  # ==========================================================================
+  # GSD-Lite Specific
+  # ==========================================================================
+  
+  gsd.analyze:
+    - "tools_gsd-lite-fs_analyze_gsd_work_log"
+    - "tools_home-fs_analyze_gsd_work_log"
+  
+  # ==========================================================================
+  # Opencode default tools
+  # ==========================================================================
+  
+  default.todo:
+    - "todowrite"
+  
+  default.bash:
+    - "bash"

@@ -1,0 +1,58 @@
+name: Publish @gsd-lite/reader to npm
+
+on:
+  push:
+    tags:
+      - 'reader-v*'  # Trigger on tags like reader-v0.1.0, reader-v1.0.0
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: 'Dry run (skip actual publish)'
+        required: false
+        default: false
+        type: boolean
+
+permissions:
+  id-token: write   # Required for OIDC trusted publishing
+  contents: read
+
+jobs:
+  publish:
+    name: Build and publish to npm
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: plugins/reader-vite
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          registry-url: 'https://registry.npmjs.org'
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build
+        run: pnpm build
+
+      - name: Verify package contents
+        run: npm pack --dry-run
+
+      - name: Publish to npm (trusted publishing)
+        if: ${{ !inputs.dry_run }}
+        run: npm publish --access public
+        # No NODE_AUTH_TOKEN needed - uses OIDC from trusted publisher config
+
+      - name: Dry run notice
+        if: ${{ inputs.dry_run }}
+        run: echo "🏃 Dry run - skipped actual publish"

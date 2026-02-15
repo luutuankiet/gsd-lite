@@ -488,4 +488,43 @@ User chose Option 2 (Social) on 2026-01-23. Extended interface to include `bio`,
 
 ---
 
+### [LOOP-005] - Dark/Light Theme Toggle for Worklog Reader - Status: Open
+**Created:** 2026-02-15 | **Source:** READER-002a scaffold | **Origin:** User
+**Context:** During initial Vite scaffold, switched from dark to light theme per user preference. User asked if toggle exists.
+**Details:** Currently theme is hardcoded in CSS variables. Options:
+1. CSS toggle button + localStorage persistence
+2. System preference detection via `prefers-color-scheme`
+3. Both (toggle + default to system)
+**Resolution:** Defer to READER-002c or later polish phase. Light mode works for now.
+
+---
+
+### [LOOP-006] - Mobile Distribution Strategy for Worklog Reader - Status: Open
+**Created:** 2026-02-15 | **Source:** READER-002e build completion | **Origin:** User
+
+**Context:**
+Build succeeded for `plugins/reader-vite/` — we now have a static `dist/` folder with `index.html` + bundled assets. User wants to port this to mobile for private reading of WORK.md logs.
+
+**Details:**
+The current reader fetches `WORK.md` via HTTP (`fetch('/path/to/WORK.md')`). On mobile, this creates a distribution challenge:
+
+| Approach | How it works | Tradeoff |
+|----------|--------------|----------|
+| **PWA (Progressive Web App)** | Serve `dist/` from local/remote server, access via mobile browser | Needs network OR service worker for offline |
+| **Native wrapper (Capacitor/Tauri)** | Bundle `dist/` into iOS/Android app, load WORK.md from device filesystem | More setup, true offline + file system access |
+| **Local dev server** | Run `pnpm preview` on laptop, access from phone on same WiFi | Quick hack, but laptop must be on |
+
+**Open Questions:**
+1. **Use case clarity** — Read-only viewer? Offline access? Edit capability?
+2. **WORK.md location** — Synced from desktop (iCloud/Dropbox)? Git pull on device? Manual copy?
+3. **Privacy model** — "Private read" suggests no cloud hosting. How does WORK.md get to device?
+4. **Offline requirement** — Must work on airplane? Or WiFi-only acceptable?
+
+**Why this matters:**
+The distribution strategy determines technical approach. A PWA is simpler but requires networking setup. A native wrapper is more effort but gives true filesystem access for reading local WORK.md.
+
+**Resolution:** _(pending — requires discussion to clarify use case)_
+
+---
+
 *Review active loops before each phase promotion. Resolve or carry forward intentionally.*
