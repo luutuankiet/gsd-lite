@@ -9,14 +9,14 @@ execution
 </current_mode>
 
 <active_task>
-Task: READER-002 - GSD-Lite Worklog Reader (Node/TypeScript + Vite Hot Reload)
-Status: EXECUTION - Hot Reload & Error DX Complete (LOG-050)
-Key insight: Custom Vite plugin watches external WORK.md. "Agent-First" Error Panel aggregates Mermaid errors for easy fixing.
-Next: READER-002f — Implement Pan/Zoom for Mermaid diagrams
+Task: READER-003 - Reader Distribution (Lightweight CLI with Native File Watching)
+Status: DECISION LOGGED (LOG-056) - Architecture B selected, documentation updated
+Key insight: Reader runs on remote server (same machine as WORK.md) so chokidar can use native file watching. Lightweight CLI (~2MB) vs shipping Vite runtime (~50MB).
+Next: Implementation phase — READER-003a (create cli.js), READER-003b (update package.json), READER-003c (WebSocket client)
 
 ---
-**Parked (resume after READER-002):**
-- TASK-EVAL-002d: Vertex AI integration (resume after READER-002)
+**Parked (resume after READER-003):**
+- TASK-EVAL-002d: Vertex AI integration (resume after reader distribution)
 </active_task>
 
 <parked_tasks>
@@ -111,10 +111,8 @@ None - POC complete and working.
 
 <next_action>
 Fork paths (choose one):
-1. Continue execution → READER-002f (Pan/Zoom for diagrams)
-2. Continue execution → READER-002g (Syntax highlighting)
-3. Build static version → READER-002e (pnpm build)
-4. Pivot to evaluation → Resume TASK-EVAL-002d (Vertex AI integration)
+1. Build static version → READER-002e (`pnpm build`)
+2. Pivot to evaluation → Resume TASK-EVAL-002d (Vertex AI integration)
 </next_action>
 
 ---
@@ -130,6 +128,7 @@ Fork paths (choose one):
 | LOG-017 | VISION | HOUSEKEEPING | Housekeeping Agent: Automated Coherence Detection for Dense Worklogs |
 | LOG-020 | DISCOVERY | PROTOCOL-DOCS | 10k token budget as CI gate; HTML comments invisible to grep-first |
 | **LOG-028** | **DECISION** | **CI-FRAMEWORK** | **⭐ Constitutional Knowledge + Three-Layer CI (Structural → Constitutional → Behavioral)** |
+| LOG-053 | DISCOVERY | READER-002 | The Node Distribution Model: npm Registry vs pnpm Efficiency |
 
 
 ## 3. Atomic Session Log (Chronological)
@@ -9801,7 +9800,6 @@ Next: READER-002a — Scaffold pnpm + Vite + TypeScript project structure
 </active_task>
 ```
 
----
 
 ### [LOG-050] - [EXEC] - The Hot Reload Loop & Error DX: Vite Plugin + Mermaid Error Aggregator - Task: READER-002d
 
@@ -9966,4 +9964,489 @@ graph TD
         PLUGIN -->|"Emits HMR"| CLIENT[main.ts]
         CLIENT -->|"Catches Errors"| PANEL[Error Panel]
     end
+```
+
+### [LOG-051] - [EXEC] - Reader UX Enhancements: Pan/Zoom Overlay & Semantic Light Theme - Task: READER-002f, READER-002g
+
+#### 1. Executive Summary
+
+**The Milestone:** We have significantly improved the reading experience for dense worklogs. Complex dependency graphs are now explorable via a pan/zoom overlay, and code blocks are finally readable thanks to a semantic light theme that avoids the "dark-on-dark" contrast failure.
+
+**Key Findings:**
+- **The "False" Problem:** Auto-detecting syntax for prose/pseudocode is harmful. It misclassifies plain text as SQL/Code, applying random colors that confuse the reader.
+- **Contrast Failure:** Dark themes are fragile. A dark syntax theme on a page with dark code block backgrounds resulted in near-zero visibility.
+- **The Solution:** A "Semantic Light Theme" (One Light inspired) with explicit language tagging only. Plain text stays plain.
+
+---
+
+#### 2. Implementation: Pan/Zoom Overlay (READER-002f)
+
+**The Challenge:** Mermaid diagrams (especially large dependency graphs) are unreadable on small screens or when deeply nested.
+
+**The Solution:** Implemented a GitHub-style overlay viewer:
+- **Interaction:** Clicking any diagram opens a fullscreen modal.
+- **Controls:** Zoom (+/-), Reset (⟲), and Pan (click-and-drag).
+- **Mobile:** Supports touch gestures (pinch-to-zoom, drag-to-pan).
+- **Architecture:** Zero dependencies. Pure DOM manipulation with CSS transforms (`translate` + `scale`).
+
+```typescript
+// plugins/reader-vite/src/diagram-overlay.ts
+export function openDiagramOverlay(svgContent: string): void {
+  // ... creates overlay DOM ...
+  svgWrapper.innerHTML = svgContent;
+  updateTransform(); // Applies pan/zoom state
+}
+```
+
+---
+
+#### 3. Implementation: Semantic Syntax Highlighting (READER-002g)
+
+**The Journey:**
+1. **Attempt 1 (Highlight.js Default):** Resulted in "dark on dark" unreadable text because `index.html` enforced a dark background on `<pre>` blocks.
+2. **Attempt 2 (Dark Theme):** Still had contrast issues and lacked semantic variety (everything looked blue).
+3. **Attempt 3 (The Fix):** 
+   - **Forced Light Theme:** Used `!important` to override page styles.
+   - **Disabled Auto-Detect:** Only highlight blocks with explicit language tags (`json`, `yaml`, `sql`, `ts`).
+   - **Semantic Palette:** Implemented a "One Light" inspired palette with distinct colors for Keys (Purple), Strings (Green), and Booleans (Red).
+
+**The Palette (One Light Inspired):**
+
+| Token Type | Color | Hex |
+|------------|-------|-----|
+| Keywords   | Purple| `#a626a4` |
+| Strings    | Green | `#50a14f` |
+| Booleans   | Red   | `#e45649` |
+| Functions  | Blue  | `#4078f2` |
+| Numbers    | Orange| `#986801` |
+
+---
+
+#### 4. Next Steps
+
+- **READER-002e:** Build static version (`pnpm build`) for distribution.
+- **TASK-EVAL-002d:** Resume Vertex AI integration now that the Reader is stable.
+
+---
+
+### [LOG-052] - [EXEC] - Static Build Complete: TypeScript Fixes for Production - Task: READER-002e
+**Timestamp:** 2026-02-15
+
+**The Task:** Run `pnpm build` to create production-ready static assets.
+
+**Initial State:** Build failed with 8 TypeScript errors:
+1. `import.meta.hot` not recognized (3 errors in `main.ts`)
+2. DOM elements possibly null (5 errors in `renderer.ts`)
+
+**Root Cause Analysis:**
+
+| Error Type | Cause | Fix |
+|------------|-------|-----|
+| `Property 'hot' does not exist on ImportMeta` | Missing Vite client type declarations | Created `src/vite-env.d.ts` with `/// <reference types="vite/client" />` |
+| `'outline' is possibly 'null'` | TypeScript strict mode doesn't understand early-return guards in nested functions | Added non-null assertions (`!`) for DOM elements already validated at parent scope |
+
+**The Fix:**
+
+```typescript
+// src/vite-env.d.ts (NEW FILE)
+/// <reference types="vite/client" />
+
+// src/renderer.ts (toggleOutline function)
+function toggleOutline(): void {
+  if (window.innerWidth >= 768) {
+    outline!.classList.toggle('hidden');  // Non-null assertion
+    content!.classList.toggle('full-width');
+  } else {
+    outline!.classList.toggle('open');
+    overlay!.classList.toggle('visible');
+  }
+}
+```
+
+**Output:** `dist/` folder with:
+- `index.html` — Shell that loads bundled assets
+- `assets/` — Hashed JS/CSS bundles
+
+**Status:** ✅ Complete
+
+**Next:** LOOP-006 captured — Mobile distribution strategy needs discussion before proceeding.
+
+---
+### [LOG-053] - [DISCOVERY] - The Node Distribution Model: npm Registry vs pnpm Efficiency - Task: READER-002
+**Timestamp:** 2026-02-15
+
+**The Context:** Exploring distribution options for the Reader plugin. Coming from a Python background (`PyPI`, `pip`, `uv`), we need to map the Node ecosystem (`npm`, `pnpm`, `npx`) to understand registry mechanics and disk efficiency.
+
+**1. The Mental Model Mapping (Python → Node)**
+
+| Python Concept | Node/JS Equivalent | Notes |
+| :--- | :--- | :--- |
+| **PyPI** | **npm Registry** | The central database of packages. |
+| `pip install` | `npm install` | The classic (slow, disk-heavy) installer. |
+| `uv pip install` | **`pnpm install`** | The modern, fast, disk-efficient installer. |
+| `pyproject.toml` | **`package.json`** | Defines metadata, dependencies, scripts. |
+| `uvx tool` | **`npx tool`** | Download & run a CLI tool ephemerally. |
+| `dist/` (wheel) | `dist/` (tarball) | The build artifact you upload. |
+
+**2. The Registry Mechanism**
+The **npm Registry** (registry.npmjs.org) is build-tool agnostic. It receives a tarball (`.tgz`) containing the code and `package.json`.
+- It does **not** care if you built with `npm`, `yarn`, or `pnpm`.
+- You authenticate (`npm login`), build (`vite build`), and publish (`npm publish` or `pnpm publish`).
+- The registry serves that static artifact to the world.
+
+**3. The Disk Space Reality**
+
+*   **`npm` (Classic):** Creates nested `node_modules` in every project. If 100 projects use React, you have 100 copies of React on disk. Massive duplication.
+*   **`pnpm` (Modern):** Uses a **Content-Addressable Store**. It saves *one* copy of React globally (`~/.local/share/pnpm/store`). Project `node_modules` contain **hard links** to this store. Disk usage is near zero for subsequent projects.
+*   **`npx` (Runner):** Uses the **npm cache**, not the pnpm store. Running `npx gsd-reader` downloads to `~/.npm/_npx/...`, potentially duplicating what's in your pnpm store.
+*   **`pnpm dlx` (Efficient Runner):** The `uvx` equivalent. Fetches the tool, executes it, but leverages the efficient pnpm store cache.
+
+**4. The Publishing Workflow**
+Since we use `pnpm` locally, the workflow is streamlined:
+
+1.  **Configure `package.json`**:
+    ```json
+    {
+      "name": "@gsd-lite/reader",
+      "bin": { "gsd-read": "./dist/cli.js" }, // Entry point
+      "files": ["dist"],                      // Artifacts to upload
+      "scripts": { "prepublishOnly": "pnpm build" }
+    }
+    ```
+2.  **Publish**: `pnpm publish --access public`
+
+**Conclusion:** We will proceed with publishing to the npm registry. Users can choose their runner: `npx` for universality, `pnpm dlx` for efficiency. The distribution channel is standard, robust, and decouples the Reader tool from the core Python GSD-Lite package.
+
+---
+### [LOG-054] - [FIX] - Indented Code Block Rendering in Reader - Task: READER-002
+**Timestamp:** 2026-02-15
+
+**The Context:** User reported that indented fenced code blocks (commonly used inside list items, e.g., LOG-053) were not rendering as code blocks in the Vite reader app. They appeared as raw text with backticks.
+
+**The Root Cause:**
+The custom markdown parser (`renderer.ts` and `parser.ts`) used a strict check for code fences:
+```typescript
+if (line.startsWith('```')) { ... }
+```
+This failed for any indented block (e.g., `    ```json`), causing the parser to treat the line as a regular paragraph.
+
+**The Fix:**
+Updated both `parser.ts` (for log splitting) and `renderer.ts` (for HTML generation) to allow leading whitespace:
+```typescript
+const trimmedLine = line.trim();
+if (trimmedLine.startsWith('```') || trimmedLine.startsWith('~~~')) { ... }
+```
+This ensures indented blocks are correctly recognized as code fences while preserving the indentation of the inner content (as `codeBuffer` captures the raw line).
+
+**Outcome:**
+Code blocks nested in lists (like the `package.json` example in LOG-053) now render correctly as syntax-highlighted blocks.
+
+---
+### [LOG-055] - [FIX] - Default Badge Readability in Reader - Task: READER-002
+**Timestamp:** 2026-02-15
+
+**The Context:** User reported that the `[FIX]` tag was rendering as white text on a white background (invisible) because it lacked a specific CSS class.
+
+**The Fix:**
+Updated `plugins/reader-vite/index.html` to set a default background color (`#666`) on both `.badge` (outline) and `.log-type` (card view) classes.
+
+**Why Not Specific Logic?**
+Instead of adding `.badge-FIX` (and chasing every future tag), we implemented a fallback style. Any tag without a specific `.badge-TYPE` override will now render as a readable dark grey badge. This aligns with the "robust by default" philosophy and avoids "semantic disasters" like hardcoding red for generic fixes.
+
+**Outcome:**
+`[FIX]` and any other custom tags now appear clearly as neutral gray badges without requiring code changes.
+
+---
+### [LOG-056] - [DECISION] - Reader Distribution: Lightweight CLI with Native File Watching - Task: READER-003
+**Timestamp:** 2026-02-15
+
+#### 1. Executive Summary
+
+**The Problem:** The GSD-Lite Worklog Reader (`plugins/reader-vite/`) works beautifully in development (`pnpm dev`), but has no distribution story. Users can't run it from arbitrary projects — especially remote servers where `gsd-lite/WORK.md` lives on a different machine than the browser.
+
+**The Decision:** Publish `@gsd-lite/reader` to npm with a lightweight CLI (`cli.js`) that uses chokidar for file watching and WebSocket for live reload. No Vite runtime dependency. The reader runs **on the same machine as WORK.md** (typically remote), with HTTP port-forwarded to local browser.
+
+**Key Insight:** Since `gsd-lite install --local` already runs on the remote server, the reader should too. This makes chokidar work (local filesystem access) and keeps the architecture simple.
+
+---
+
+#### 2. The Remote-First Constraint
+
+##### 2.1 The Deployment Reality
+
+GSD-Lite projects often live on **remote servers** (e.g., a dbt project on a data platform VM). The engineer's workflow:
+
+```mermaid
+graph LR
+    subgraph "Local Machine"
+        A[OpenCode from ~/]
+        B[Browser localhost:3000]
+        C[Browser localhost:8124]
+    end
+    
+    subgraph "Remote Server"
+        D[fs-mcp :8124]
+        E["@gsd-lite/reader :3000"]
+        F[gsd-lite/WORK.md]
+    end
+    
+    A -->|"SSH tunnel :8124"| D
+    B -->|"SSH tunnel :3000"| E
+    D -->|"read/write"| F
+    E -->|"chokidar watch"| F
+```
+
+##### 2.2 Why Chokidar Works
+
+Chokidar uses OS-level file system events (`inotify` on Linux, `FSEvents` on macOS). It can only watch files **on the same machine**. 
+
+| Scenario | Chokidar Works? | Reason |
+|----------|-----------------|--------|
+| Reader local, WORK.md local | ✅ Yes | Same filesystem |
+| Reader local, WORK.md remote | ❌ No | No cross-network inotify |
+| Reader remote, WORK.md remote | ✅ Yes | Same filesystem |
+
+**Decision:** Reader runs on remote. User port-forwards HTTP to local browser. This is consistent with the existing fs-mcp pattern.
+
+---
+
+#### 3. Architecture: Lightweight CLI (No Vite Runtime)
+
+##### 3.1 Why Not Ship Vite?
+
+Two architectures were considered:
+
+| Architecture | Dependencies | Install Size | Maintenance |
+|--------------|--------------|--------------|-------------|
+| **A: Ship Vite** | vite, esbuild, rollup | ~50MB+ | Track Vite major versions |
+| **B: Custom CLI** | chokidar, ws | ~2MB | Stable, minimal surface |
+
+**Decision:** Architecture B. The reader doesn't need Vite's module HMR — it just needs "file changed → re-render". A WebSocket ping achieves this in ~80 lines of code.
+
+##### 3.2 The Implementation
+
+**Package structure after implementation:**
+```
+plugins/reader-vite/
+├── package.json          ← Updated for npm publishing
+│   ├── name: "@gsd-lite/reader"
+│   ├── bin: { "gsd-reader": "./cli.js" }
+│   ├── files: ["cli.js", "dist/"]
+│   └── dependencies: { "chokidar": "^4.x", "ws": "^8.x" }
+├── cli.js                ← NEW: npx entry point (~80 lines)
+├── dist/                 ← Static build (from Vite, but Vite not shipped)
+│   ├── index.html
+│   └── assets/
+├── src/                  ← Development source (uses Vite)
+│   ├── main.ts           ← Modified: WebSocket client instead of import.meta.hot
+│   └── ...
+└── vite.config.ts        ← For development only, not shipped
+```
+
+##### 3.3 The CLI (`cli.js`)
+
+```javascript
+#!/usr/bin/env node
+const http = require('http');
+const fs = require('fs');
+const path = require('path');
+const { WebSocketServer } = require('ws');
+const chokidar = require('chokidar');
+
+const PORT = parseInt(process.env.PORT || process.argv.find(a => a.startsWith('--port='))?.split('=')[1] || '3000');
+const WORKLOG = process.argv[2] && !process.argv[2].startsWith('--') 
+  ? process.argv[2] 
+  : './gsd-lite/WORK.md';
+
+const DIST = path.join(__dirname, 'dist');
+
+// Serve static files + /_worklog endpoint
+const server = http.createServer((req, res) => {
+  if (req.url === '/_worklog') {
+    try {
+      res.setHeader('Content-Type', 'text/plain; charset=utf-8');
+      res.end(fs.readFileSync(path.resolve(WORKLOG), 'utf-8'));
+    } catch (err) {
+      res.statusCode = 404;
+      res.end(`WORK.md not found: ${WORKLOG}`);
+    }
+    return;
+  }
+  
+  // Serve static files from dist/
+  let filePath = path.join(DIST, req.url === '/' ? 'index.html' : req.url);
+  // ... standard static file serving logic
+});
+
+// WebSocket for live reload
+const wss = new WebSocketServer({ server });
+
+// Watch WORK.md with chokidar
+chokidar.watch(path.resolve(WORKLOG)).on('change', () => {
+  console.log('[gsd-reader] WORK.md changed, notifying clients...');
+  wss.clients.forEach(ws => ws.send('reload'));
+});
+
+server.listen(PORT, () => {
+  console.log(`[gsd-reader] Serving: http://localhost:${PORT}`);
+  console.log(`[gsd-reader] Watching: ${path.resolve(WORKLOG)}`);
+});
+```
+
+##### 3.4 Client-Side Change
+
+Replace Vite's HMR with WebSocket:
+
+```typescript
+// OLD (Vite HMR - development only)
+if (import.meta.hot) {
+  import.meta.hot.on('worklog-update', () => loadAndRender());
+}
+
+// NEW (WebSocket - works in production CLI)
+function connectWebSocket(): void {
+  const protocol = location.protocol === 'https:' ? 'wss:' : 'ws:';
+  const ws = new WebSocket(`${protocol}//${location.host}`);
+  
+  ws.onmessage = (event) => {
+    if (event.data === 'reload') {
+      console.log('[gsd-reader] WORK.md changed, reloading...');
+      loadAndRender();
+    }
+  };
+  
+  ws.onclose = () => {
+    // Reconnect after 2 seconds if connection lost
+    setTimeout(connectWebSocket, 2000);
+  };
+}
+
+// Initialize
+loadAndRender();
+connectWebSocket();
+```
+
+---
+
+#### 4. User Experience
+
+##### 4.1 Installation & Usage
+
+```bash
+# On remote server (SSH'd in)
+cd ~/my-dbt-project
+
+# Step 1: Install GSD-Lite artifacts (already documented)
+uvx gsd-lite@latest install --local
+
+# Step 2: Start fs-mcp (already doing this)
+uvx fs-mcp@latest --port 8124 &
+
+# Step 3: Start reader (NEW)
+npx @gsd-lite/reader
+# Or with explicit path/port:
+npx @gsd-lite/reader ./gsd-lite/WORK.md --port 3001
+```
+
+```bash
+# On local machine — add port forward
+ssh -L 3000:localhost:3000 -L 8124:localhost:8124 remote-server
+
+# Open browser
+open http://localhost:3000
+```
+
+##### 4.2 The Complete Remote Workflow
+
+```mermaid
+sequenceDiagram
+    participant Local as Local Browser
+    participant SSH as SSH Tunnel
+    participant Reader as @gsd-lite/reader
+    participant FS as Filesystem
+    participant Agent as OpenCode + fs-mcp
+
+    Note over Local,Agent: Setup Phase
+    Agent->>FS: Write to WORK.md
+    
+    Note over Local,Agent: Reader Running
+    Reader->>FS: chokidar.watch(WORK.md)
+    Local->>SSH: GET localhost:3000
+    SSH->>Reader: Forward request
+    Reader->>Local: Serve index.html + assets
+    Local->>Reader: WebSocket connect
+    
+    Note over Local,Agent: Live Reload Loop
+    Agent->>FS: Append LOG-057 to WORK.md
+    FS-->>Reader: inotify: file changed
+    Reader->>Local: WebSocket: "reload"
+    Local->>Reader: GET /_worklog
+    Reader->>FS: Read WORK.md
+    Reader->>Local: Return content
+    Local->>Local: Re-render UI
+```
+
+---
+
+#### 5. Development vs Production
+
+The reader maintains **two modes**:
+
+| Mode | Command | File Watching | Live Reload | Use Case |
+|------|---------|---------------|-------------|----------|
+| **Development** | `pnpm dev` | Vite plugin | Vite HMR | Developing the reader itself |
+| **Production** | `npx @gsd-lite/reader` | chokidar | WebSocket | Using the reader on any project |
+
+**Key:** Vite is a **dev dependency**, not shipped. The `dist/` folder contains pre-built static assets. The `cli.js` serves these assets and handles live reload independently.
+
+---
+
+#### 6. Publishing Workflow
+
+```bash
+# In plugins/reader-vite/
+pnpm build                      # Build static assets to dist/
+pnpm publish --access public    # Publish to npm
+
+# Users can then:
+npx @gsd-lite/reader
+# Or for efficiency (uses pnpm store):
+pnpm dlx @gsd-lite/reader
+```
+
+**Note:** Requires `@gsd-lite` npm organization. If unavailable, fallback to unscoped `gsd-reader`.
+
+---
+
+#### 7. Implementation Tasks
+
+| Task ID | Description | Status |
+|---------|-------------|--------|
+| READER-003a | Create `cli.js` with HTTP server + chokidar + WebSocket | Pending |
+| READER-003b | Update `package.json` for npm publishing (bin, files, deps) | Pending |
+| READER-003c | Modify `main.ts` to use WebSocket instead of `import.meta.hot` | Pending |
+| READER-003d | Update ARCHITECTURE.md with plugins section | Pending |
+| READER-003e | Update PROJECT.md with Reader context | Pending |
+| READER-003f | Test end-to-end: build → npx → live reload | Pending |
+
+---
+
+#### 8. Dependencies
+
+| Log ID | Relationship | Summary |
+|--------|--------------|---------|
+| LOG-047 | Foundation | Vision for mobile-first worklog reader — defines UX requirements |
+| LOG-050 | Builds on | Vite plugin + hot reload loop — the dev experience we're preserving |
+| LOG-051 | Builds on | Reader UX enhancements (pan/zoom, light theme) — features to ship |
+| LOG-052 | Builds on | Static build complete — `dist/` folder ready for distribution |
+| LOG-053 | Builds on | npm registry mechanics — publishing workflow understood |
+
+**Dependency DAG:**
+```mermaid
+graph TD
+    LOG047[LOG-047: Reader Vision] --> LOG050[LOG-050: Vite Plugin HMR]
+    LOG050 --> LOG051[LOG-051: UX Enhancements]
+    LOG051 --> LOG052[LOG-052: Static Build]
+    LOG053[LOG-053: npm Registry] --> LOG056[LOG-056: Distribution Decision]
+    LOG052 --> LOG056
 ```

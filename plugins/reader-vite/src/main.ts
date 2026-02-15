@@ -11,6 +11,8 @@
 
 import { parseWorklog } from './parser';
 import { renderWorklog, initializeInteractions } from './renderer';
+import { initDiagramOverlays } from './diagram-overlay';
+import { highlightCodeBlocks } from './syntax-highlight';
 
 // Endpoint served by vite-plugin-worklog
 const WORKLOG_ENDPOINT = '/_worklog';
@@ -49,6 +51,12 @@ async function loadAndRender(): Promise<void> {
 
     // Initialize Mermaid diagrams (this populates mermaidErrors)
     await initMermaid();
+
+    // Initialize diagram overlay click handlers (pan/zoom viewer)
+    initDiagramOverlays();
+
+    // Apply syntax highlighting to code blocks
+    highlightCodeBlocks();
 
     // Show error panel if there are errors
     showErrorPanel();

@@ -176,7 +176,8 @@ function renderMarkdown(content: string, startLine: number = 1): string {
     const anchor = `id="line-${lineNum}"`;
     
     // Handle code fences
-    if (line.startsWith('```') || line.startsWith('~~~')) {
+    const trimmedLine = line.trim();
+    if (trimmedLine.startsWith('```') || trimmedLine.startsWith('~~~')) {
       if (!inCodeFence) {
         // Close any open structures
         if (inTable) {
@@ -189,7 +190,7 @@ function renderMarkdown(content: string, startLine: number = 1): string {
         }
         
         inCodeFence = true;
-        codeLang = line.slice(3).trim();
+        codeLang = trimmedLine.slice(3).trim();
         codeBuffer = [];
       } else {
         inCodeFence = false;
@@ -434,11 +435,11 @@ export function initializeInteractions(): void {
   // ===== OUTLINE TOGGLE =====
   function toggleOutline(): void {
     if (window.innerWidth >= 768) {
-      outline.classList.toggle('hidden');
-      content.classList.toggle('full-width');
+      outline!.classList.toggle('hidden');
+      content!.classList.toggle('full-width');
     } else {
-      outline.classList.toggle('open');
-      overlay.classList.toggle('visible');
+      outline!.classList.toggle('open');
+      overlay!.classList.toggle('visible');
     }
   }
   
@@ -520,6 +521,7 @@ export function initializeInteractions(): void {
     let startScrollY = 0;
     
     function updateThumbPosition(): void {
+      if (!scrollThumb) return;
       const scrollTop = window.scrollY;
       const docHeight = document.documentElement.scrollHeight - window.innerHeight;
       const thumbTrack = window.innerHeight - 120;

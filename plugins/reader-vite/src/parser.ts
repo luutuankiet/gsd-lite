@@ -57,7 +57,8 @@ export function parseWorklog(markdown: string): WorklogAST {
     const lineNumber = lineNum + 1; // 1-indexed for display
 
     // Toggle code fence state (``` or ~~~)
-    if (line.startsWith('```') || line.startsWith('~~~')) {
+    const trimmedLine = line.trim();
+    if (trimmedLine.startsWith('```') || trimmedLine.startsWith('~~~')) {
       inCodeFence = !inCodeFence;
       // Still capture content for logs even in code fences
       if (currentLog) {

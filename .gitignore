@@ -5,3 +5,4 @@ eval
 .opencode
 gsd-lite/template
 node_modules
+dist
