@@ -603,87 +603,96 @@ export function initializeInteractions(): void {
   
   // ===== SCROLL SYNC: BREADCRUMB + OUTLINE HIGHLIGHTING =====
   const breadcrumbText = breadcrumb?.querySelector('.breadcrumb-text');
-  
+
   // Find all trackable sections (log entries and sections with data-section-title)
   const trackableSections = document.querySelectorAll('[data-section-title]');
-  
+
   if (trackableSections.length > 0 && breadcrumbText) {
     // Track which section is currently visible
     let currentSectionId: string | null = null;
-    
-    // IntersectionObserver to detect which section is in view
-    const observer = new IntersectionObserver(
-      (entries: IntersectionObserverEntry[]) => {
-        // Find the topmost visible section
-        let topmostEntry: IntersectionObserverEntry | null = null;
-        let topmostY = Infinity;
-        
-        entries.forEach(entry => {
-          if (entry.isIntersecting) {
-            const rect = entry.boundingClientRect;
-            // Prefer sections closer to the top of the viewport
-            if (rect.top < topmostY && rect.top >= -100) {
-              topmostY = rect.top;
-              topmostEntry = entry;
-            }
+    // Offset from top of viewport to consider as the "reading line"
+    // Matches the sticky header area (top bar 50px + breadcrumb 36px + small buffer)
+    const READING_LINE_OFFSET = 96;
+
+    function updateCurrentSection() {
+      // Find the last section whose top has scrolled past the reading line.
+      // This is the section the user is currently reading, regardless of scroll direction.
+      let activeElement: HTMLElement | null = null;
+
+      for (let i = 0; i < trackableSections.length; i++) {
+        const el = trackableSections[i] as HTMLElement;
+        const rect = el.getBoundingClientRect();
+        if (rect.top <= READING_LINE_OFFSET) {
+          activeElement = el;
+        } else {
+          // Sections are in document order; once one is below the reading line,
+          // all subsequent ones will be too, so stop early.
+          break;
+        }
+      }
+
+      // Fall back to the first section if nothing has scrolled past yet (top of page)
+      if (!activeElement && trackableSections.length > 0) {
+        activeElement = trackableSections[0] as HTMLElement;
+      }
+
+      if (!activeElement) return;
+
+      const sectionId = activeElement.id;
+      if (sectionId === currentSectionId) return;
+
+      currentSectionId = sectionId;
+      const sectionTitle = activeElement.dataset.sectionTitle || 'GSD-Lite Worklog';
+
+      // Update breadcrumb
+      breadcrumbText!.textContent = sectionTitle;
+
+      // Update outline highlighting
+      document.querySelectorAll('.outline-link').forEach(link => {
+        link.classList.remove('active');
+      });
+
+      // Find the outline link for this section
+      const outlineLink = document.querySelector(`.outline-link[href="#${sectionId}"]`);
+      if (outlineLink) {
+        outlineLink.classList.add('active');
+
+        // Ensure parent items are expanded so active item is visible
+        let parent = outlineLink.closest('.outline-item');
+        while (parent) {
+          const parentItem = parent.parentElement?.closest('.outline-item');
+          if (parentItem) {
+            parentItem.classList.remove('collapsed');
           }
-        });
-        
-        if (topmostEntry !== null) {
-          const target = (topmostEntry as IntersectionObserverEntry).target as HTMLElement;
-          const sectionTitle = target.dataset.sectionTitle || 'GSD-Lite Worklog';
-          const sectionId = target.id;
-          
-          // Only update if section changed
-          if (sectionId !== currentSectionId) {
-            currentSectionId = sectionId;
-            
-            // Update breadcrumb
-            breadcrumbText.textContent = sectionTitle;
-            
-            // Update outline highlighting
-            document.querySelectorAll('.outline-link').forEach(link => {
-              link.classList.remove('active');
-            });
-            
-            // Find the outline link for this section
-            const outlineLink = document.querySelector(`.outline-link[href="#${sectionId}"]`);
-            if (outlineLink) {
-              outlineLink.classList.add('active');
-              
-              // Ensure parent items are expanded so active item is visible
-              let parent = outlineLink.closest('.outline-item');
-              while (parent) {
-                const parentItem = parent.parentElement?.closest('.outline-item');
-                if (parentItem) {
-                  parentItem.classList.remove('collapsed');
-                }
-                parent = parentItem ?? null;
-              }
-              
-              // Scroll outline to show active item (smooth, if not visible)
-              const outlineContent = document.querySelector('.outline-content');
-              if (outlineContent && outlineLink) {
-                const linkRect = outlineLink.getBoundingClientRect();
-                const outlineRect = outlineContent.getBoundingClientRect();
-                
-                if (linkRect.top < outlineRect.top || linkRect.bottom > outlineRect.bottom) {
-                  outlineLink.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                }
-              }
-            }
+          parent = parentItem ?? null;
+        }
+
+        // Scroll outline to show active item (smooth, if not visible)
+        const outlineContent = document.querySelector('.outline-content');
+        if (outlineContent && outlineLink) {
+          const linkRect = outlineLink.getBoundingClientRect();
+          const outlineRect = outlineContent.getBoundingClientRect();
+
+          if (linkRect.top < outlineRect.top || linkRect.bottom > outlineRect.bottom) {
+            outlineLink.scrollIntoView({ behavior: 'smooth', block: 'center' });
           }
         }
-      },
-      {
-        root: null,
-        // Observe when section enters top 30% of viewport
-        rootMargin: '-10% 0px -70% 0px',
-        threshold: 0,
       }
-    );
-    
-    // Observe all trackable sections
-    trackableSections.forEach(section => observer.observe(section));
+    }
+
+    // Use rAF-throttled scroll listener for snappy, direction-agnostic tracking
+    let scrollTicking = false;
+    window.addEventListener('scroll', () => {
+      if (!scrollTicking) {
+        scrollTicking = true;
+        requestAnimationFrame(() => {
+          updateCurrentSection();
+          scrollTicking = false;
+        });
+      }
+    }, { passive: true });
+
+    // Run once on load to set initial state
+    updateCurrentSection();
   }
 }
