@@ -24,6 +24,10 @@ const zlib = require('zlib');
 const tar = require('tar');
 const readline = require('readline');
 
+// Get version from package.json
+const pkg = require('./package.json');
+console.log(`[GSD-Lite Reader] v${pkg.version}`);
+
 // =============================================================================
 // Argument Parsing
 // =============================================================================
@@ -258,9 +262,9 @@ function commandServe() {
 
   // MIME types for static file serving
   const MIME_TYPES = {
-    '.html': 'text/html',
-    '.js': 'application/javascript',
-    '.css': 'text/css',
+    '.html': 'text/html; charset=utf-8',
+    '.js': 'application/javascript; charset=utf-8',
+    '.css': 'text/css; charset=utf-8',
     '.json': 'application/json',
     '.png': 'image/png',
     '.jpg': 'image/jpeg',

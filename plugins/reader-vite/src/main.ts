@@ -47,7 +47,10 @@ async function loadAndRender(): Promise<void> {
     
     if ((window as any).__WORKLOG_CONTENT_B64__) {
       // Static mode: content was injected during dump as Base64
-      markdown = atob((window as any).__WORKLOG_CONTENT_B64__);
+      // Use TextDecoder to properly handle UTF-8 (atob alone corrupts multi-byte chars like em-dash)
+      const binaryString = atob((window as any).__WORKLOG_CONTENT_B64__);
+      const bytes = Uint8Array.from(binaryString, c => c.charCodeAt(0));
+      markdown = new TextDecoder('utf-8').decode(bytes);
       console.log('[GSD-Lite Reader] Using embedded content (static mode)');
     } else if ((window as any).__WORKLOG_CONTENT__) {
       // Legacy: plain text injection (kept for backwards compatibility)
