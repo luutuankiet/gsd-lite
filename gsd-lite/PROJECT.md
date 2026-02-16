@@ -60,7 +60,7 @@ SESSION 2 (tokens: 0 → fresh start)
 - Distributed as pip-installable package (`uvx gsd-lite@latest install`)
 - Templates bundled in `src/gsd_lite/template/`
 - Designed for synergy with fs-mcp (grep-first file reading)
-- **Worklog Reader plugin** (`plugins/reader-vite/`): TypeScript/Vite app for interactive WORK.md viewing with live reload. Distributed separately via npm (`npx @luutuankiet/gsd-reader`). See ARCHITECTURE.md [Plugins section](./ARCHITECTURE.md#plugins) for details.
+- **Worklog Reader plugin** (`plugins/reader-vite/`): TypeScript/Vite app for interactive WORK.md viewing with live reload. Distributed separately via npm (`npx @luutuankiet/gsd-reader`). See ARCHITECTURE.md [Plugins section](./ARCHITECTURE.md#plugins) for details. **Critical:** If modifying the parser, read the "Line Number Alignment" section in ARCHITECTURE.md first — incorrect line handling breaks deep linking.
 
 **Prior work:**
 - Evolved from "Data Engineering Copilot Patterns" knowledge base project

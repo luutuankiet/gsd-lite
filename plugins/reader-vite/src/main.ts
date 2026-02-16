@@ -89,10 +89,14 @@ async function loadAndRender(): Promise<void> {
 
     // Restore scroll position AFTER all async rendering is complete
     // Use requestAnimationFrame to ensure browser has painted
-    requestAnimationFrame(() => {
-      window.scrollTo(0, savedScrollY);
-      console.log(`[GSD-Lite Reader] Restored scroll to ${savedScrollY}px`);
-    });
+    // Only restore if savedScrollY > 0 (i.e., this is a reload, not initial load)
+    // This prevents snapping back to top if user navigated during async init
+    if (savedScrollY > 0) {
+      requestAnimationFrame(() => {
+        window.scrollTo(0, savedScrollY);
+        console.log(`[GSD-Lite Reader] Restored scroll to ${savedScrollY}px`);
+      });
+    }
 
     console.log(`[GSD-Lite Reader] Loaded ${ast.metadata.totalLogs} logs in ${ast.metadata.parseTime}ms`);
   } catch (error) {

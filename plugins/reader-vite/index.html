@@ -357,8 +357,39 @@
     .section-content h1 { font-size: 24px; margin: 20px 0 12px; border-bottom: 2px solid #333; padding-bottom: 8px; }
     .section-content h2 { font-size: 20px; margin: 18px 0 10px; color: #1a1a2e; }
     .section-content h3 { font-size: 17px; margin: 14px 0 8px; color: #333; }
-    .section-content h4 { font-size: 15px; margin: 12px 0 6px; color: #555; }
-    .section-content h5 { font-size: 13px; margin: 10px 0 4px; color: #666; }
+    
+    /* H4-H6: Colored top bars with left-aligned level tags for visual hierarchy */
+    .section-content h4,
+    .section-content h5,
+    .section-content h6 {
+      position: relative;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-weight: 600;
+      color: #333;
+    }
+    
+    .section-content h4 {
+      font-size: 15px;
+      margin: 24px 0 10px 0;
+      padding: 8px 0 6px 0;
+      border-top: 3px solid #7c3aed;
+    }
+    
+    .section-content h5 {
+      font-size: 14px;
+      margin: 20px 0 8px 0;
+      padding: 6px 0 4px 0;
+      border-top: 2px solid #14b8a6;
+    }
+    
+    .section-content h6 {
+      font-size: 13px;
+      margin: 16px 0 6px 0;
+      padding: 4px 0 4px 0;
+      border-top: 2px dashed #f59e0b;
+    }
     .section-content p { margin: 6px 0; }
     .section-content pre {
       background: #1a1a2e;
@@ -495,8 +526,55 @@
     .log-content h1 { font-size: 24px; margin: 20px 0 12px; border-bottom: 2px solid #333; padding-bottom: 8px; }
     .log-content h2 { font-size: 20px; margin: 18px 0 10px; color: #1a1a2e; }
     .log-content h3 { font-size: 17px; margin: 14px 0 8px; color: #333; }
-    .log-content h4 { font-size: 15px; margin: 12px 0 6px; color: #555; }
-    .log-content h5 { font-size: 13px; margin: 10px 0 4px; color: #666; }
+    
+    /* H4-H6: Colored top bars with left-aligned level tags for visual hierarchy */
+    .log-content h4,
+    .log-content h5,
+    .log-content h6 {
+      position: relative;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-weight: 600;
+      color: #333;
+    }
+    
+    .log-content h4 {
+      font-size: 15px;
+      margin: 24px 0 10px 0;
+      padding: 8px 0 6px 0;
+      border-top: 3px solid #7c3aed;
+    }
+    
+    .log-content h5 {
+      font-size: 14px;
+      margin: 20px 0 8px 0;
+      padding: 6px 0 4px 0;
+      border-top: 2px solid #14b8a6;
+    }
+    
+    .log-content h6 {
+      font-size: 13px;
+      margin: 16px 0 6px 0;
+      padding: 4px 0 4px 0;
+      border-top: 2px dashed #f59e0b;
+    }
+    
+    /* Header level tags (H4, H5, H6 pills) */
+    .header-level-tag {
+      font-size: 9px;
+      font-weight: 700;
+      color: white;
+      padding: 2px 6px;
+      border-radius: 3px;
+      flex-shrink: 0;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    
+    .header-level-tag.level-4 { background: #7c3aed; }
+    .header-level-tag.level-5 { background: #14b8a6; }
+    .header-level-tag.level-6 { background: #f59e0b; }
     
     .log-content p { margin: 6px 0; }
     
@@ -653,7 +731,198 @@
         display: none;
       }
     }
-    
+
+    /* ===== MOBILE BOTTOM SHEET ===== */
+    .outline-sheet {
+      position: fixed;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: white;
+      border-radius: 16px 16px 0 0;
+      box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.15);
+      z-index: 1002;
+      transform: translateY(100%);
+      transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      max-height: 85vh;
+      display: flex;
+      flex-direction: column;
+      /* Hidden on desktop */
+      display: none;
+    }
+
+    /* Sheet snap states */
+    .outline-sheet.snap-half {
+      transform: translateY(50%);
+    }
+
+    .outline-sheet.snap-full {
+      transform: translateY(15%);
+    }
+
+    .outline-sheet.snap-collapsed {
+      transform: translateY(100%);
+    }
+
+    /* Peek handle - always visible at bottom edge when sheet is collapsed */
+    .sheet-peek-handle {
+      position: fixed;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      height: 20px;
+      background: linear-gradient(to top, rgba(26, 26, 46, 0.9), rgba(26, 26, 46, 0.7));
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      z-index: 1001;
+      cursor: grab;
+      touch-action: none;
+      user-select: none;
+      transition: opacity 0.3s ease, transform 0.3s ease;
+      /* Hidden on desktop */
+      display: none;
+    }
+
+    .sheet-peek-handle:active {
+      cursor: grabbing;
+      background: linear-gradient(to top, rgba(26, 26, 46, 1), rgba(26, 26, 46, 0.85));
+    }
+
+    .sheet-peek-handle .peek-bar {
+      width: 40px;
+      height: 4px;
+      background: rgba(255, 255, 255, 0.6);
+      border-radius: 2px;
+    }
+
+    /* Hide peek handle when sheet is open */
+    .sheet-peek-handle.hidden {
+      opacity: 0;
+      pointer-events: none;
+      transform: translateY(100%);
+    }
+
+    /* Show peek handle only on mobile */
+    @media (max-width: 767px) {
+      .sheet-peek-handle {
+        display: flex;
+      }
+    }
+
+    /* Drag handle */
+    .sheet-drag-handle {
+      padding: 12px 0 8px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      cursor: grab;
+      touch-action: none;
+      user-select: none;
+      flex-shrink: 0;
+    }
+
+    .sheet-drag-handle:active {
+      cursor: grabbing;
+    }
+
+    .sheet-drag-bar {
+      width: 40px;
+      height: 4px;
+      background: #d0d0d0;
+      border-radius: 2px;
+    }
+
+    .sheet-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 0 16px 12px;
+      border-bottom: 1px solid #eee;
+      flex-shrink: 0;
+    }
+
+    .sheet-title {
+      font-weight: 600;
+      font-size: 15px;
+      color: #333;
+    }
+
+    .sheet-header-buttons {
+      display: flex;
+      gap: 8px;
+    }
+
+    .sheet-close-btn {
+      background: none;
+      border: none;
+      font-size: 18px;
+      color: #666;
+      cursor: pointer;
+      padding: 4px 8px;
+    }
+
+    /* Sheet content area */
+    .sheet-content {
+      flex: 1;
+      overflow-y: auto;
+      overflow-x: hidden;
+      padding: 8px 0;
+      -webkit-overflow-scrolling: touch;
+    }
+
+    /* Mobile outline items - remove truncation */
+    .outline-sheet .outline-item {
+      white-space: normal;
+    }
+
+    .outline-sheet .outline-link {
+      white-space: normal;
+      line-height: 1.4;
+    }
+
+    .outline-sheet .log-title {
+      white-space: normal;
+      overflow: visible;
+      text-overflow: unset;
+    }
+
+    /* Dimmed overlay when sheet is open */
+    .sheet-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0, 0, 0, 0.3);
+      z-index: 1001;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.3s ease;
+    }
+
+    .sheet-overlay.visible {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    /* Show sheet only on mobile */
+    @media (max-width: 767px) {
+      .outline-sheet {
+        display: flex;
+      }
+      
+      /* Hide the sidebar outline on mobile - use sheet instead */
+      .outline {
+        display: none !important;
+      }
+      
+      /* Remove sticky positioning for section titles in sheet - let them scroll normally */
+      .outline-sheet .outline-section-title {
+        position: static;
+      }
+    }
+
     /* ===== STATS FOOTER ===== */
     .stats-footer {
       text-align: center;

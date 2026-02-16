@@ -79,13 +79,13 @@ export function parseWorklog(markdown: string): WorklogAST {
     // Try LOG entry first (H3 with specific format)
     const logMatch = line.match(LOG_HEADER_PATTERN);
     if (logMatch) {
-      // Save previous log's content
+      // Save previous log's content (trimEnd only - preserve leading lines for anchor alignment)
       if (currentLog) {
-        currentLog.content = currentContent.join('\n').trim();
+        currentLog.content = currentContent.join('\n').trimEnd();
       }
       // Save previous section's content
       if (currentSection) {
-        currentSection.content = currentContent.join('\n').trim();
+        currentSection.content = currentContent.join('\n').trimEnd();
         currentSection = null;
       }
 
@@ -136,13 +136,13 @@ export function parseWorklog(markdown: string): WorklogAST {
 
       // H2 sections are top-level (outside logs)
       if (level === 2) {
-        // Save previous log's content
+        // Save previous log's content (trimEnd only - preserve leading lines for anchor alignment)
         if (currentLog) {
-          currentLog.content = currentContent.join('\n').trim();
+          currentLog.content = currentContent.join('\n').trimEnd();
         }
         // Save previous section's content
         if (currentSection) {
-          currentSection.content = currentContent.join('\n').trim();
+          currentSection.content = currentContent.join('\n').trimEnd();
         }
         sections.push(section);
         sectionStack = [{ level: 2, node: section }];
@@ -156,7 +156,7 @@ export function parseWorklog(markdown: string): WorklogAST {
       if (level === 3 && currentLog === null) {
         // Save previous section's content
         if (currentSection) {
-          currentSection.content = currentContent.join('\n').trim();
+          currentSection.content = currentContent.join('\n').trimEnd();
         }
         sections.push(section);
         sectionStack = [{ level: 3, node: section }];
@@ -167,7 +167,7 @@ export function parseWorklog(markdown: string): WorklogAST {
 
       // H3 non-log breaks current log
       if (level === 3 && currentLog !== null && !logMatch) {
-        currentLog.content = currentContent.join('\n').trim();
+        currentLog.content = currentContent.join('\n').trimEnd();
         sections.push(section);
         sectionStack = [{ level: 3, node: section }];
         currentLog = null;
@@ -205,12 +205,15 @@ export function parseWorklog(markdown: string): WorklogAST {
   }
 
   // Don't forget last log's content
+  // Note: We preserve leading newlines to maintain line number alignment between
+  // parser (which tracks absolute file line numbers for children) and renderer
+  // (which calculates lineNum = startLine + index). Trimming breaks anchor navigation.
   if (currentLog) {
-    currentLog.content = currentContent.join('\n').trim();
+    currentLog.content = currentContent.join('\n').trimEnd(); // Only trim trailing whitespace
   }
   // Don't forget last section's content
   if (currentSection) {
-    currentSection.content = currentContent.join('\n').trim();
+    currentSection.content = currentContent.join('\n').trimEnd();
   }
 
   const parseTime = Math.round(performance.now() - startTime);

@@ -94,7 +94,7 @@ function renderOutlineItem(item: LogEntry | Section, isLog: boolean = false): st
           <a href="#${anchor}" class="outline-link">
             <span class="badge badge-${log.type}">${log.type}</span>
             <span class="log-id">${log.id}</span>
-            <span class="log-title">${escapeHtml(truncate(log.title, 40))}</span>
+            <span class="log-title">${escapeHtml(log.title)}</span>
           </a>
         </div>
         ${childrenHtml}
@@ -114,7 +114,7 @@ function renderOutlineItem(item: LogEntry | Section, isLog: boolean = false): st
       <li class="outline-item section-item ${indentClass}${collapsedClass}">
         <div class="outline-row">
           ${toggleBtn}
-          <a href="#${anchor}" class="outline-link">${escapeHtml(truncate(section.title, 50))}</a>
+          <a href="#${anchor}" class="outline-link">${escapeHtml(section.title)}</a>
         </div>
         ${childrenHtml}
       </li>
@@ -148,6 +148,43 @@ function renderOutline(ast: WorklogAST): string {
         <ul class="outline-list">${logsHtml}</ul>
       </div>
     </nav>
+  `;
+}
+
+/**
+ * Render the mobile bottom sheet (shares content structure with outline)
+ */
+function renderBottomSheet(ast: WorklogAST): string {
+  // Sections
+  const sectionsHtml = ast.sections.map(s => renderOutlineItem(s, false)).join('');
+  
+  // Logs in reverse order (newest first for navigation)
+  const logsHtml = [...ast.logs].reverse().map(log => renderOutlineItem(log, true)).join('');
+  
+  return `
+    <div class="sheet-overlay" id="sheetOverlay"></div>
+    <!-- Peek handle: always visible at bottom edge when sheet is collapsed -->
+    <div class="sheet-peek-handle" id="sheetPeekHandle">
+      <div class="peek-bar"></div>
+    </div>
+    <div class="outline-sheet snap-collapsed" id="outlineSheet">
+      <div class="sheet-drag-handle" id="sheetDragHandle">
+        <div class="sheet-drag-bar"></div>
+      </div>
+      <div class="sheet-header">
+        <span class="sheet-title">📋 Outline</span>
+        <div class="sheet-header-buttons">
+          <button class="expand-all-btn" id="sheetExpandAllBtn" title="Expand/Collapse All">⊞</button>
+          <button class="sheet-close-btn" id="sheetClose">✕</button>
+        </div>
+      </div>
+      <div class="sheet-content">
+        <h3 class="outline-section-title">Sections</h3>
+        <ul class="outline-list">${sectionsHtml}</ul>
+        <h3 class="outline-section-title">Logs (${ast.logs.length})</h3>
+        <ul class="outline-list">${logsHtml}</ul>
+      </div>
+    </div>
   `;
 }
 
@@ -218,8 +255,8 @@ function renderMarkdown(content: string, startLine: number = 1): string {
       continue;
     }
     
-    // Headers (H1-H5)
-    const headerMatch = line.match(/^(#{1,5}) (.+)$/);
+    // Headers (H1-H6)
+    const headerMatch = line.match(/^(#{1,6}) (.+)$/);
     if (headerMatch) {
       if (inTable) {
         htmlLines.push('</tbody></table>');
@@ -231,8 +268,14 @@ function renderMarkdown(content: string, startLine: number = 1): string {
       }
       
       const level = headerMatch[1].length;
-      const text = formatInline(escapeHtml(headerMatch[2]));
-      htmlLines.push(`<h${level} ${anchor}>${text}</h${level}>`);
+      const rawText = headerMatch[2];
+      const text = formatInline(escapeHtml(rawText));
+      // Add data-section-title for scroll sync tracking (H4+ inside logs)
+      const sectionAttr = level >= 4 ? ` data-section-title="${escapeHtml(rawText)}"` : '';
+      
+      // Add level tag for H4-H6 (sub-headers inside log content) for visual hierarchy
+      const levelTag = level >= 4 ? `<span class="header-level-tag level-${level}">H${level}</span>` : '';
+      htmlLines.push(`<h${level} ${anchor}${sectionAttr}>${levelTag}${text}</h${level}>`);
       continue;
     }
     
@@ -373,6 +416,21 @@ function renderSection(section: Section): string {
  * Render a single log entry card
  */
 function renderLogEntry(log: LogEntry): string {
+  // Content may have been trimmed, losing leading empty lines.
+  // We need to adjust startLine to account for this.
+  // The parser stores children lineNumbers as absolute file lines,
+  // so rendered line IDs must match those for anchor navigation to work.
+  // 
+  // Calculate offset: if original content had N leading empty lines that were trimmed,
+  // startLine should be log.lineNumber + 1 + N (not just + 1)
+  //
+  // Since we don't have access to pre-trimmed content, we use a heuristic:
+  // The first non-empty line of content should match log.lineNumber + 1 if no trimming.
+  // But if content is trimmed, the actual file line is higher.
+  // 
+  // For now, we'll assume content starts right after the log header (line + 1).
+  // If children don't align, the outline links won't work. This is a known limitation
+  // that requires parser changes to fully fix.
   const content = renderMarkdown(log.content, log.lineNumber + 1);
   const supersededClass = log.superseded ? ' superseded' : '';
   
@@ -401,6 +459,7 @@ function renderLogEntry(log: LogEntry): string {
  */
 export function renderWorklog(ast: WorklogAST): string {
   const outline = renderOutline(ast);
+  const bottomSheet = renderBottomSheet(ast);
   
   // Combine sections and logs, sort by line number for correct document order
   type ContentItem = { type: 'section' | 'log'; lineNumber: number; item: Section | LogEntry };
@@ -434,10 +493,13 @@ export function renderWorklog(ast: WorklogAST): string {
       <span class="breadcrumb-text">GSD-Lite Worklog</span>
     </nav>
     
-    <!-- Outline Panel -->
+    <!-- Outline Panel (Desktop) -->
     ${outline}
     
-    <!-- Overlay (mobile) -->
+    <!-- Bottom Sheet (Mobile) -->
+    ${bottomSheet}
+    
+    <!-- Overlay (mobile - for desktop sidebar) -->
     <div class="overlay" id="overlay"></div>
     
     <!-- Main Content -->
@@ -476,19 +538,61 @@ export function initializeInteractions(): void {
   
   let allExpanded = false;
   
-  // ===== OUTLINE TOGGLE =====
+  // ===== SCROLL OUTLINE TO ACTIVE ITEM =====
+  // Reusable function to scroll the outline (sidebar or sheet) to show the currently active item
+  function scrollOutlineToActive(): void {
+    // On mobile, scroll the sheet; on desktop, scroll the sidebar
+    const isMobile = window.innerWidth < 768;
+    
+    // Find the active link in the appropriate container
+    // Note: Sheet uses .sheet-content, sidebar uses .outline-content
+    const container = isMobile 
+      ? document.querySelector('#outlineSheet .sheet-content') as HTMLElement | null
+      : document.querySelector('#outline') as HTMLElement | null;
+    
+    if (!container) return;
+    
+    const activeLink = container.querySelector('.outline-link.active') as HTMLElement | null;
+    if (!activeLink) return;
+
+    // Ensure parent items are expanded so active item is visible
+    let parent = activeLink.closest('.outline-item');
+    while (parent) {
+      const parentItem = parent.parentElement?.closest('.outline-item');
+      if (parentItem) {
+        parentItem.classList.remove('collapsed');
+      }
+      parent = parentItem ?? null;
+    }
+
+    // Scroll the active link into view within the container
+    // Mobile: use 'start' since sheet is only 50% height, 'center' would be hidden
+    // Desktop: use 'center' for better context
+    setTimeout(() => {
+      const block = isMobile ? 'start' : 'center';
+      activeLink.scrollIntoView({ behavior: 'instant', block });
+    }, 50);
+  }
+
+  // ===== OUTLINE TOGGLE (Desktop only - mobile uses bottom sheet) =====
   function toggleOutline(): void {
+    // Desktop: toggle sidebar
     if (window.innerWidth >= 768) {
+      const wasHidden = outline!.classList.contains('hidden');
       outline!.classList.toggle('hidden');
       content!.classList.toggle('full-width');
       breadcrumb?.classList.toggle('full-width');
-    } else {
-      outline!.classList.toggle('open');
-      overlay!.classList.toggle('visible');
+      
+      // If sidebar just became visible, scroll to active item
+      // Wait for CSS transition to complete (300ms) before scrolling
+      if (wasHidden) {
+        setTimeout(() => scrollOutlineToActive(), 350);
+      }
     }
+    // Mobile: handled by bottom sheet below
   }
   
-  outlineToggle?.addEventListener('click', toggleOutline);
+  // Desktop sidebar toggle (📋 button handled specially for mobile below)
   outlineClose?.addEventListener('click', toggleOutline);
   overlay?.addEventListener('click', toggleOutline);
   
@@ -600,6 +704,162 @@ export function initializeInteractions(): void {
     window.addEventListener('scroll', updateThumbPosition);
     updateThumbPosition();
   }
+
+  // ===== MOBILE BOTTOM SHEET =====
+  const outlineSheet = document.getElementById('outlineSheet');
+  const sheetOverlay = document.getElementById('sheetOverlay');
+  const sheetDragHandle = document.getElementById('sheetDragHandle');
+  const sheetClose = document.getElementById('sheetClose');
+  const sheetExpandAllBtn = document.getElementById('sheetExpandAllBtn');
+
+  // Get peek handle element
+  const sheetPeekHandle = document.getElementById('sheetPeekHandle');
+
+  if (outlineSheet && sheetOverlay && sheetDragHandle) {
+    type SheetState = 'collapsed' | 'half' | 'full';
+    let currentSheetState: SheetState = 'collapsed';
+    let sheetAllExpanded = false;
+
+    function setSheetState(state: SheetState): void {
+      const wasCollapsed = currentSheetState === 'collapsed';
+      currentSheetState = state;
+      outlineSheet!.classList.remove('snap-collapsed', 'snap-half', 'snap-full');
+      outlineSheet!.classList.add(`snap-${state}`);
+      sheetOverlay!.classList.toggle('visible', state !== 'collapsed');
+      
+      // Show/hide peek handle based on sheet state
+      // Peek handle should be visible only when sheet is collapsed
+      if (sheetPeekHandle) {
+        sheetPeekHandle.classList.toggle('hidden', state !== 'collapsed');
+      }
+      
+      // If sheet just became visible, scroll to active item
+      // Wait for CSS transition to complete (300ms) before scrolling
+      if (wasCollapsed && state !== 'collapsed') {
+        setTimeout(() => scrollOutlineToActive(), 350);
+      }
+    }
+
+    // Close button
+    sheetClose?.addEventListener('click', () => setSheetState('collapsed'));
+
+    // Overlay tap closes sheet
+    sheetOverlay.addEventListener('click', () => setSheetState('collapsed'));
+
+    // Expand/collapse all in sheet
+    sheetExpandAllBtn?.addEventListener('click', () => {
+      const items = outlineSheet!.querySelectorAll('.outline-item.has-children');
+      if (sheetAllExpanded) {
+        items.forEach(item => item.classList.add('collapsed'));
+        sheetExpandAllBtn.textContent = '⊞';
+      } else {
+        items.forEach(item => item.classList.remove('collapsed'));
+        sheetExpandAllBtn.textContent = '⊟';
+      }
+      sheetAllExpanded = !sheetAllExpanded;
+    });
+
+    // Touch gesture handling for drag
+    let sheetDragStartY = 0;
+    let sheetDragCurrentY = 0;
+    let isSheetDragging = false;
+
+    sheetDragHandle.addEventListener('touchstart', (e) => {
+      isSheetDragging = true;
+      sheetDragStartY = e.touches[0].clientY;
+      sheetDragCurrentY = sheetDragStartY;
+      outlineSheet!.style.transition = 'none';
+    });
+
+    // Peek handle: swipe up from bottom edge to open sheet
+    // Uses the same drag state as sheetDragHandle for consistency
+    if (sheetPeekHandle) {
+      sheetPeekHandle.addEventListener('touchstart', (e) => {
+        isSheetDragging = true;
+        sheetDragStartY = e.touches[0].clientY;
+        sheetDragCurrentY = sheetDragStartY;
+        outlineSheet!.style.transition = 'none';
+        // Immediately show the sheet starting to rise
+        outlineSheet!.style.transform = 'translateY(95%)';
+      });
+      
+      // Also support simple tap to open (not just swipe)
+      sheetPeekHandle.addEventListener('click', () => {
+        if (currentSheetState === 'collapsed') {
+          setSheetState('half');
+        }
+      });
+    }
+
+    document.addEventListener('touchmove', (e) => {
+      if (!isSheetDragging) return;
+      sheetDragCurrentY = e.touches[0].clientY;
+      
+      // Calculate how much to offset based on drag direction
+      const deltaY = sheetDragCurrentY - sheetDragStartY;
+      
+      // Get current base position based on state
+      let baseTranslateY: number;
+      switch (currentSheetState) {
+        case 'collapsed': baseTranslateY = 100; break;
+        case 'half': baseTranslateY = 50; break;
+        case 'full': baseTranslateY = 15; break;
+      }
+      
+      // Apply drag offset (constrained between 15% and 100%)
+      const dragPercent = (deltaY / window.innerHeight) * 100;
+      const newTranslateY = Math.max(15, Math.min(100, baseTranslateY + dragPercent));
+      outlineSheet!.style.transform = `translateY(${newTranslateY}%)`;
+    });
+
+    document.addEventListener('touchend', () => {
+      if (!isSheetDragging) return;
+      isSheetDragging = false;
+      
+      // Re-enable transitions
+      outlineSheet!.style.transition = '';
+      outlineSheet!.style.transform = '';
+      
+      const deltaY = sheetDragCurrentY - sheetDragStartY;
+      const threshold = 50; // pixels needed to trigger state change
+      
+      if (deltaY < -threshold) {
+        // Swiped up - expand
+        if (currentSheetState === 'collapsed') {
+          setSheetState('half');
+        } else if (currentSheetState === 'half') {
+          setSheetState('full');
+        }
+      } else if (deltaY > threshold) {
+        // Swiped down - collapse
+        if (currentSheetState === 'full') {
+          setSheetState('half');
+        } else if (currentSheetState === 'half') {
+          setSheetState('collapsed');
+        }
+      }
+    });
+
+    // Keep sheet open on link click for continued navigation
+    // User can close manually via X button, overlay tap, or swipe down
+
+    // Toggle button: opens sheet on mobile, toggles sidebar on desktop
+    if (outlineToggle) {
+      outlineToggle.addEventListener('click', () => {
+        if (window.innerWidth < 768) {
+          // Mobile: toggle bottom sheet
+          if (currentSheetState === 'collapsed') {
+            setSheetState('half');
+          } else {
+            setSheetState('collapsed');
+          }
+        } else {
+          // Desktop: toggle sidebar
+          toggleOutline();
+        }
+      });
+    }
+  }
   
   // ===== SCROLL SYNC: BREADCRUMB + OUTLINE HIGHLIGHTING =====
   const breadcrumbText = breadcrumb?.querySelector('.breadcrumb-text');
@@ -642,19 +902,36 @@ export function initializeInteractions(): void {
       if (sectionId === currentSectionId) return;
 
       currentSectionId = sectionId;
-      const sectionTitle = activeElement.dataset.sectionTitle || 'GSD-Lite Worklog';
+      
+      // For breadcrumb: Always show the parent LOG entry, not sub-headers
+      // This provides stable context ("I'm in LOG-063") while reading sub-sections
+      let breadcrumbTitle = activeElement.dataset.sectionTitle || 'GSD-Lite Worklog';
+      
+      // Check if this is a child element inside a log-entry
+      const parentLogEntry = activeElement.closest('.log-entry') as HTMLElement | null;
+      if (parentLogEntry && parentLogEntry !== activeElement) {
+        // We're inside a log but on a sub-header - use the log's title for breadcrumb
+        breadcrumbTitle = parentLogEntry.dataset.sectionTitle || breadcrumbTitle;
+      }
 
-      // Update breadcrumb
-      breadcrumbText!.textContent = sectionTitle;
+      // Update breadcrumb with parent log context
+      breadcrumbText!.textContent = breadcrumbTitle;
 
-      // Update outline highlighting
+      // Update outline highlighting in BOTH sidebar and sheet
       document.querySelectorAll('.outline-link').forEach(link => {
         link.classList.remove('active');
       });
 
-      // Find the outline link for this section
-      const outlineLink = document.querySelector(`.outline-link[href="#${sectionId}"]`);
-      if (outlineLink) {
+      // Try to find outline link for the exact section first
+      let outlineLinks = document.querySelectorAll(`.outline-link[href="#${sectionId}"]`);
+      
+      // If no outline link for this exact section (e.g., sub-header not in outline),
+      // fall back to the parent log entry's outline link
+      if (outlineLinks.length === 0 && parentLogEntry) {
+        const parentId = parentLogEntry.id;
+        outlineLinks = document.querySelectorAll(`.outline-link[href="#${parentId}"]`);
+      }
+      outlineLinks.forEach(outlineLink => {
         outlineLink.classList.add('active');
 
         // Ensure parent items are expanded so active item is visible
@@ -666,15 +943,23 @@ export function initializeInteractions(): void {
           }
           parent = parentItem ?? null;
         }
+      });
 
-        // Scroll outline to show active item (smooth, if not visible)
-        const outlineContent = document.querySelector('.outline-content');
-        if (outlineContent && outlineLink) {
-          const linkRect = outlineLink.getBoundingClientRect();
-          const outlineRect = outlineContent.getBoundingClientRect();
+      // Scroll outline to show active item (smooth, only if visible and out of view)
+      // Only scroll the currently visible outline container
+      // Note: Sidebar uses #outline (scrollable), sheet uses .sheet-content (scrollable)
+      const sidebarContainer = document.querySelector('#outline:not(.hidden)') as HTMLElement | null;
+      const sheetContainer = document.querySelector('#outlineSheet:not(.snap-collapsed) .sheet-content') as HTMLElement | null;
+      
+      const visibleOutlineContainer = sidebarContainer || sheetContainer;
+      if (visibleOutlineContainer) {
+        const activeLink = visibleOutlineContainer.querySelector('.outline-link.active') as HTMLElement | null;
+        if (activeLink) {
+          const linkRect = activeLink.getBoundingClientRect();
+          const containerRect = visibleOutlineContainer.getBoundingClientRect();
 
-          if (linkRect.top < outlineRect.top || linkRect.bottom > outlineRect.bottom) {
-            outlineLink.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          if (linkRect.top < containerRect.top || linkRect.bottom > containerRect.bottom) {
+            activeLink.scrollIntoView({ behavior: 'smooth', block: 'center' });
           }
         }
       }
