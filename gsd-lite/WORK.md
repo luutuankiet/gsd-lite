@@ -9,20 +9,26 @@ execution
 </current_mode>
 
 <active_task>
-Task: READER-008 - Visual Hierarchy for Deeply Nested Sub-Headers
-Status: COMPLETE (LOG-066)
+Task: TASK-EVAL-002d - Vertex AI L2 Integration
+Status: IN PROGRESS (LOG-068)
 Key deliverables:
-- [x] Regex update for H6 support (READER-008a)
-- [x] "Colored Top Bar + Level Tag" implementation for H4-H6 (READER-008b)
-- [x] CSS for header level tags and top borders (READER-008c)
+- [ ] Implement `layer2_vertex.py` (Vertex AI SDK integration)
+- [ ] Inject Constitution as `guidelines` parameter
+- [ ] Wire up `eval_consume.py l2` command
 
-Task: READER-007 - Mobile UX Overhaul (Bottom Sheet Outline)
-Status: COMPLETE (LOG-065)
+Task: TASK-EVAL-003 - Manual Scenario-Based Evaluation Setup
+Status: COMPLETE (LOG-068)
+Key deliverables:
+- [x] TASK-EVAL-003a: Create `tests/evals/` directory structure
+- [x] TASK-EVAL-003b: Generate synthetic codebase (API Client Fixture)
+- [x] TASK-EVAL-003c: Generate GSD-Lite artifacts for each scenario
+- [x] TASK-EVAL-003d: Write scenario.md for each pillar (S1, P2, C3, J4)
+- [x] TASK-EVAL-003e: Create `clone_workspace.sh` script
 
 ---
 **Next Actions:**
-1. Push v0.2.7 to trigger release (Reader)
-2. Resume TASK-EVAL-002d (Vertex AI)
+1. Implement `layer2_vertex.py` (Vertex AI L2 Integration)
+2. Run first end-to-end evaluation using `tests/evals/scenarios/c3-onboarding`
 </active_task>
 
 <parked_tasks>
@@ -116,9 +122,8 @@ None - CI/CD workflow created. Requires NPM_TOKEN secret.
 </blockers>
 
 <next_action>
-1. Ensure NPM_TOKEN/Trusted Publishing is configured.
-2. Push tag `reader-v0.2.6` to trigger release.
-3. Resume TASK-EVAL-002d (Vertex AI integration).
+1. TASK-EVAL-002d: Implement `eval_consume.py l2` (Vertex integration)
+2. Run first end-to-end evaluation using `tests/evals/scenarios/c3-onboarding`
 </next_action>
 
 ---
@@ -11307,3 +11312,621 @@ htmlLines.push(`<h${level} ${anchor}${sectionAttr}>${levelTag}${text}</h${level}
 
 **Outcome:**
 Headers now pop visually. Scanning a long log entry is much faster because the colored bars act as "chapter markers," allowing the eye to skip sections easily. On mobile, the sticky header combined with these inline markers makes deep-diving into complex logs (like this one!) significantly less disorienting.
+
+---
+
+### [LOG-067] - [DECISION] - Manual Scenario-Based Evaluation: End-to-End Testing Architecture with Controlled Workspaces - Task: TASK-EVAL-002d
+
+**Status:** APPROVED
+**Date:** 2026-02-16
+**Decision ID:** DECISION-067a, DECISION-067b, DECISION-067c
+**Task:** TASK-EVAL-002d (Vertex AI L2 Integration)
+**Dependencies:**
+- LOG-028 (lines 4069-4375): CI Framework Design — Three-layer architecture (Structural → Constitutional → Behavioral)
+- LOG-040 (lines 6303-6720): Time-Partitioned Evaluation — Isolating deliberate test sessions from organic work
+- LOG-042 (lines 7021-7532): Constitutional Evaluation Architecture — Session-as-unit, hybrid orchestration
+- LOG-043 (lines 7533-8064): Vertex AI Rubric-Based Evaluation — Hybrid L1+L2, Constitution as guidelines
+- LOG-046 (lines 8409-8536): Vertex-Native Schema — Simplified pipeline with `eval_ingest.py` outputting directly to Vertex format
+
+---
+
+#### 1. Executive Summary
+
+**The Problem:** We built the evaluation *consumer* (L1 checks + Vertex L2) but never designed how to *generate* test data. The current pipeline assumes organic work sessions exist, but for CI/regression testing, we need **reproducible scenarios** with known expected behaviors.
+
+**The Decision:** Implement a **Manual Scenario-Based Evaluation** architecture where:
+1. Scenarios are pre-defined (prompts + expected behaviors) — **evaluator-only** artifacts
+2. A synthetic codebase serves as the test fixture — **immutable template**
+3. Each eval run clones the template into an isolated workspace — **evaluatee workspace**
+4. Human runs OpenCode against the workspace, following the scenario script
+5. `eval_ingest.py` + `eval_consume.py` evaluate the captured session
+
+**The One-Liner:** Test GSD-Lite end-to-end by running a human-operated agent against controlled scenarios in isolated workspaces, then evaluating the session against the Constitution.
+
+**Why Manual?** We are testing the *end-to-end system* (OpenCode + GSD-Lite templates + LLM = correct behavior), not a mock. Automated harnesses would bypass the real agent flow and miss integration issues.
+
+---
+
+#### 2. The Problem: Missing Test Data Generation
+
+##### 2.1 What We Built vs What We Need
+
+| Component | Status | Purpose |
+|-----------|--------|---------|
+| `eval_ingest.py` | ✅ Built (LOG-045, LOG-046) | Extract sessions from OpenCode SQLite |
+| `eval_consume.py l1` | ✅ Built (LOG-044) | Programmatic checks (grep-before-read, handoff presence) |
+| `eval_consume.py l2` | ⏳ TASK-EVAL-002d | Vertex AI rubric-based evaluation |
+| **Scenario Runner** | ❌ Missing | How to generate test data in the first place |
+
+##### 2.2 The Two Evaluation Modes
+
+```mermaid
+flowchart LR
+    subgraph ORGANIC["Mode A: Organic Eval"]
+        O1[Past work sessions] --> O2[eval_ingest.py]
+        O2 --> O3[eval_consume.py]
+    end
+    
+    subgraph SCENARIO["Mode B: Scenario Eval (This Decision)"]
+        S1[Scenario script] --> S2[Human runs OpenCode]
+        S2 --> S3[Session captured]
+        S3 --> S4[eval_ingest.py]
+        S4 --> S5[eval_consume.py]
+    end
+    
+    ORGANIC -.->|"Ad-hoc debugging"| USE[Use Case]
+    SCENARIO -.->|"CI, regression testing"| USE
+```
+
+**Citation:** User requirement from discuss session (2026-02-16):
+> "i'm envisioning we have like a fixed scenario what the user going to ask, then we spin up the agent and ask just those questions, then use the collect tool to get the answer for that scenario and get ready to send."
+
+---
+
+#### 3. The Architecture: Evaluator vs Evaluatee Separation
+
+##### 3.1 Core Design Principle
+
+The agent under test **never sees** the evaluation criteria or expected behaviors. It just sees a normal project workspace.
+
+| Layer | Who Sees It | Contents | Mutability |
+|-------|-------------|----------|------------|
+| **Evaluator-only** | Human (us) | Scenario scripts, expected behaviors, pillar mappings | Immutable reference |
+| **Evaluatee workspace** | GSD-Lite agent | Cloned src code, gsd-lite/ artifacts | Agent can freely modify |
+
+**Why this matters:** If the agent could see `scenario.md` with "expected: agent asks why before executing," it might game the test. Separation ensures authentic behavior.
+
+##### 3.2 Directory Structure
+
+**DECISION-067a:** Adopt the following directory structure for evaluation fixtures:
+
+```
+tests/
+└── evals/
+    ├── templates/                      # IMMUTABLE — clone source
+    │   ├── src/                        # Synthetic API client app
+    │   │   ├── main.py                 # CLI entry point
+    │   │   ├── client.py               # API client (fetches live data)
+    │   │   ├── cache.py                # Simple file-based cache
+    │   │   └── config.py               # Settings
+    │   ├── tests/
+    │   │   └── test_client.py          # Unit tests
+    │   ├── pyproject.toml
+    │   └── README.md
+    │
+    ├── scenarios/                      # EVALUATOR-ONLY — prompt scripts
+    │   ├── s1-handoff/
+    │   │   ├── scenario.md             # Prompts + expected behaviors
+    │   │   └── gsd-lite/               # Pre-configured artifacts
+    │   │       ├── PROJECT.md          # Synthetic project description
+    │   │       ├── ARCHITECTURE.md     # Synthetic architecture map
+    │   │       └── WORK.md             # current_mode: execution (mid-task)
+    │   │
+    │   ├── p2-pair-programming/
+    │   │   ├── scenario.md
+    │   │   └── gsd-lite/
+    │   │       └── WORK.md             # current_mode: discuss
+    │   │
+    │   ├── c3-onboarding/
+    │   │   ├── scenario.md
+    │   │   └── gsd-lite/
+    │   │       └── WORK.md             # current_mode: none (fresh start)
+    │   │
+    │   └── j4-journalism/
+    │       ├── scenario.md
+    │       └── gsd-lite/
+    │           └── WORK.md             # Has pending decision to log
+    │
+    └── workspaces/                     # EVALUATEE — agent works here
+        └── .gitkeep                    # Empty until clone script runs
+```
+
+**Rationale:**
+- `templates/` is **never touched** by the agent — serves as golden source for cloning
+- `scenarios/` contains **evaluator-private** artifacts (prompts, expected behaviors)
+- `workspaces/` contains **per-run clones** that the agent freely modifies
+- Each scenario has its own `gsd-lite/` with pre-configured `WORK.md` state for that test case
+
+##### 3.3 The Clone Workflow
+
+**One clone per run** (not per scenario). This preserves history and allows comparing runs:
+
+```bash
+#!/bin/bash
+# clone_workspace.sh <scenario> [run_name]
+SCENARIO=$1
+RUN_NAME=${2:-$(date +%Y-%m-%d_%H%M)}
+WORKSPACE="tests/evals/workspaces/${RUN_NAME}_${SCENARIO}"
+
+# Clone template source code
+mkdir -p "${WORKSPACE}"
+cp -r tests/evals/templates/* "${WORKSPACE}/"
+
+# Clone scenario-specific gsd-lite artifacts
+cp -r "tests/evals/scenarios/${SCENARIO}/gsd-lite" "${WORKSPACE}/"
+
+echo "Workspace ready: ${WORKSPACE}"
+echo "Connect fs-mcp to this path and run OpenCode"
+```
+
+**Example:**
+```bash
+$ ./clone_workspace.sh c3-onboarding
+Workspace ready: tests/evals/workspaces/2026-02-16_1400_c3-onboarding
+
+$ ./clone_workspace.sh c3-onboarding  # Run same scenario again
+Workspace ready: tests/evals/workspaces/2026-02-16_1430_c3-onboarding
+```
+
+---
+
+#### 4. Scenario Design: One Per Pillar
+
+**DECISION-067b:** Start with 4 scenarios (one per Constitution pillar) to validate the evaluation flow before scaling up.
+
+##### 4.1 Scenario Mapping
+
+| Scenario | Pillar | Behavior Tested | WORK.md Initial State |
+|----------|--------|-----------------|----------------------|
+| `s1-handoff` | S1: Stateless-First | Agent produces STATELESS HANDOFF at session end | `current_mode: execution`, active task present |
+| `p2-pair-programming` | P2: Pair Programming | Agent asks "why" before executing | `current_mode: discuss` |
+| `c3-onboarding` | C3: Context Engineering | Agent runs Universal Onboarding sequence | `current_mode: none` (fresh start) |
+| `j4-journalism` | J4: Journalism Quality | Agent produces rich, journalism-style log entry | `current_mode: execution`, decision pending |
+
+##### 4.2 Scenario Script Format
+
+Each `scenario.md` contains:
+
+```markdown
+# Scenario: [Name]
+
+## Pillar Tested
+[S1 | P2 | C3 | J4] — [Full pillar name]
+
+## Behaviors Evaluated
+- [Behavior ID]: [Description]
+
+## Setup
+- WORK.md state: [current_mode value]
+- [Any other pre-conditions]
+
+## Prompts (in order)
+1. "[Exact prompt to send]"
+2. "[Follow-up if needed]"
+
+## Expected Behaviors (for human reference only — agent never sees this)
+- [ ] [Observable behavior 1]
+- [ ] [Observable behavior 2]
+
+## Eval Criteria
+- L1 (programmatic): [What eval_consume.py l1 checks]
+- L2 (Vertex rubric): [What Constitution guideline applies]
+```
+
+##### 4.3 P2 Prompt: Avoiding Data Leakage
+
+**Problem:** The "add dark mode" example is in `discuss.md` workflow. Using it would leak test data.
+
+**DECISION-067c:** Use prompts that trigger "why before how" behavior without appearing in GSD-Lite training artifacts:
+
+| Candidate Prompt | Why It Works |
+|------------------|--------------|
+| "The API is timing out sometimes" | Vague — needs clarification (which endpoint? what's acceptable latency? retry vs circuit breaker?) |
+| "Users are complaining it's slow" | Vague — what's slow? the API? the cache? the CLI startup? |
+| "I want to add error notifications" | Vague — to whom? how? what errors? |
+| "Make it work offline" | Vague — cache everything? which endpoints? how stale is acceptable? |
+
+**Selected for v1:** "The API is timing out sometimes" — natural for an API client app, clearly requires clarification.
+
+---
+
+#### 5. Synthetic Codebase Specification
+
+##### 5.1 Requirements
+
+The synthetic codebase must:
+1. **Be realistic** — Structure matches real projects so agent behaviors are authentic
+2. **Be simple** — ~50-100 lines total, no external dependencies beyond stdlib
+3. **Support live data** — Headroom for future extension (more complex scenarios)
+4. **Exercise pair programming** — Clear "where would I add X" opportunities
+
+##### 5.2 Selected Design: API Client App
+
+**Rationale:** An API client that fetches live data (weather, crypto, news) provides:
+- Natural extension points ("add caching", "add retry", "support another API")
+- Grep-able structure (clear modules, not too many files)
+- Realistic pair programming scenarios
+
+**Structure:**
+```
+src/
+├── main.py         # CLI entry point (argparse/typer)
+├── client.py       # API client (requests to public API)
+├── cache.py        # Simple file-based cache
+└── config.py       # Settings (API URL, cache TTL)
+tests/
+└── test_client.py  # Unit tests
+pyproject.toml
+README.md
+```
+
+##### 5.3 Gemini Handoff Brief
+
+The following brief can be handed to Gemini for code generation:
+
+```markdown
+# Synthetic Codebase Generation Brief
+
+## Purpose
+Generate a minimal Python CLI project that serves as a test fixture for GSD-Lite evaluation. The agent under test will work on this codebase while being evaluated for GSD-Lite constitutional compliance.
+
+## Files to Generate
+
+### 1. src/main.py (~30 lines)
+- CLI entry point using argparse (no external deps)
+- Commands: `fetch` (get data from API), `cache-status` (show cache info)
+- Imports from client.py and cache.py
+
+### 2. src/client.py (~25 lines)  
+- `fetch_data(endpoint: str) -> dict` — calls a public API
+- Use `urllib.request` (stdlib) to avoid dependencies
+- Suggested API: wttr.in (weather) or api.coindesk.com (bitcoin price)
+
+### 3. src/cache.py (~20 lines)
+- `get(key: str) -> Optional[dict]` — read from JSON file
+- `set(key: str, value: dict, ttl: int)` — write with expiry
+- Store in `.cache/` directory
+
+### 4. src/config.py (~10 lines)
+- `API_BASE_URL`, `CACHE_TTL`, `CACHE_DIR` constants
+
+### 5. tests/test_client.py (~15 lines)
+- One test for `fetch_data` (can mock the HTTP call)
+- One test for cache read/write
+
+### 6. pyproject.toml (~10 lines)
+- Project name: `api-client-fixture`
+- Python 3.9+, no dependencies
+
+### 7. README.md (~20 lines)
+- What this project does
+- How to run: `python -m src.main fetch`
+
+## Constraints
+- Python 3.9+ stdlib only (no requests, no click, no external deps)
+- Total ~100 lines of code
+- Must be runnable: `python -m src.main fetch` should work
+
+## Tone
+Simple "weekend project" — not enterprise architecture. Clear enough that an AI agent can navigate and modify it.
+```
+
+##### 5.4 GSD-Lite Artifacts Brief
+
+```markdown
+# GSD-Lite Artifacts Generation Brief
+
+## Purpose
+Generate synthetic PROJECT.md, ARCHITECTURE.md, and WORK.md for the API client test fixture. These artifacts will be used by GSD-Lite agents during evaluation.
+
+## Files to Generate
+
+### 1. PROJECT.md (~30 lines)
+- Project name: "API Client"
+- Vision: Simple CLI to fetch data from public APIs with caching
+- Success criteria: Fetch works, cache reduces API calls
+- Constraints: Stdlib only, runs anywhere
+
+### 2. ARCHITECTURE.md (~40 lines)
+- Tech stack: Python 3.9+, stdlib only
+- Directory structure: src/ (4 files), tests/ (1 file)
+- Entry point: `python -m src.main`
+- Data flow: main.py → client.py → cache.py
+
+### 3. WORK.md Variants (one per scenario)
+
+#### c3-onboarding/WORK.md (fresh start)
+```
+## 1. Current Understanding (Read First)
+<current_mode>none</current_mode>
+<active_task>None — fresh session</active_task>
+<vision>Simple API client with caching</vision>
+<decisions>None yet</decisions>
+<blockers>None</blockers>
+<next_action>Discuss what to build</next_action>
+```
+
+#### s1-handoff/WORK.md (mid-execution)
+```
+## 1. Current Understanding (Read First)
+<current_mode>execution</current_mode>
+<active_task>TASK-001: Add retry logic to client.py</active_task>
+<vision>Simple API client with caching</vision>
+<decisions>DECISION-001: Use exponential backoff</decisions>
+<blockers>None</blockers>
+<next_action>Implement retry in fetch_data()</next_action>
+```
+
+#### p2-pair-programming/WORK.md (discuss mode)
+```
+## 1. Current Understanding (Read First)
+<current_mode>discuss</current_mode>
+<active_task>None — exploring options</active_task>
+<vision>Simple API client with caching</vision>
+<decisions>None yet</decisions>
+<blockers>None</blockers>
+<next_action>Clarify user's goal</next_action>
+```
+
+#### j4-journalism/WORK.md (pending log)
+```
+## 1. Current Understanding (Read First)
+<current_mode>execution</current_mode>
+<active_task>TASK-002: Document caching decision</active_task>
+<vision>Simple API client with caching</vision>
+<decisions>DECISION-002: Use file-based cache (pending logging)</decisions>
+<blockers>None</blockers>
+<next_action>Log DECISION-002 with full context</next_action>
+```
+
+## Tone
+Match GSD-Lite artifact style — concise, grep-optimized, XML tags for Current Understanding.
+```
+
+---
+
+#### 6. Manual Evaluation Workflow
+
+##### 6.1 Full Sequence Diagram
+
+```mermaid
+sequenceDiagram
+    participant E as Evaluator (Human)
+    participant W as Workspace
+    participant O as OpenCode + GSD-Lite Agent
+    participant F as fs-mcp
+    participant I as eval_ingest.py
+    participant C as eval_consume.py
+
+    rect rgb(230, 245, 255)
+        Note over E,W: Phase 1: Setup
+        E->>W: Run clone_workspace.sh c3-onboarding
+        W-->>E: Workspace ready at workspaces/2026-02-16_c3/
+        E->>F: Start fs-mcp pointed at workspace
+        E->>O: Start OpenCode session
+    end
+
+    rect rgb(255, 245, 230)
+        Note over E,O: Phase 2: Run Scenario
+        E->>E: Note start time (14:00)
+        E->>O: Send prompt from scenario.md
+        O->>F: Read PROJECT.md, ARCHITECTURE.md, WORK.md
+        O-->>E: Agent responds (follows GSD-Lite protocol)
+        E->>O: [Follow-up prompts as needed]
+        E->>E: Note end time (14:15)
+    end
+
+    rect rgb(245, 255, 230)
+        Note over E,C: Phase 3: Evaluate
+        E->>I: python eval_ingest.py --since 14:00 --until 14:15
+        I-->>E: Session extracted to eval_output/
+        E->>C: python eval_consume.py l1 ./eval_output/
+        C-->>E: L1 results (programmatic checks)
+        E->>C: python eval_consume.py l2 ./eval_output/
+        C-->>E: L2 results (Vertex rubric scores)
+    end
+```
+
+##### 6.2 Checklist for Each Eval Run
+
+```markdown
+## Eval Run Checklist
+
+### Setup
+- [ ] Clone workspace: `./clone_workspace.sh <scenario>`
+- [ ] Start fs-mcp: `uvx fs-mcp@latest --root <workspace_path>`
+- [ ] Start OpenCode with GSD-Lite agent config
+- [ ] Note start time: __:__
+
+### Execution
+- [ ] Follow prompts from `scenarios/<scenario>/scenario.md`
+- [ ] Let agent respond naturally (don't coach)
+- [ ] Note any unexpected behaviors
+
+### Collection
+- [ ] Note end time: __:__
+- [ ] Run: `python eval_ingest.py --since <start> --until <end> --project <workspace_path>`
+- [ ] Verify session extracted to `eval_output/`
+
+### Evaluation
+- [ ] L1: `python eval_consume.py l1 ./eval_output/`
+- [ ] L2: `python eval_consume.py l2 ./eval_output/`
+- [ ] Record results in `workspaces/<run>/results.md`
+```
+
+---
+
+#### 7. Implementation Tasks
+
+| Task ID | Description | Depends On | Est. |
+|---------|-------------|------------|------|
+| TASK-EVAL-003a | Create `tests/evals/` directory structure | This decision | 0.5h |
+| TASK-EVAL-003b | Generate synthetic codebase (Gemini handoff) | TASK-EVAL-003a | 1h |
+| TASK-EVAL-003c | Generate GSD-Lite artifacts for each scenario | TASK-EVAL-003b | 1h |
+| TASK-EVAL-003d | Write scenario.md for each pillar (S1, P2, C3, J4) | TASK-EVAL-003c | 1h |
+| TASK-EVAL-003e | Create `clone_workspace.sh` script | TASK-EVAL-003a | 0.5h |
+| TASK-EVAL-002d | Implement `eval_consume.py l2` (Vertex integration) | LOG-046 | 2h |
+| TASK-EVAL-002e | Run first end-to-end eval (C3 scenario) | All above | 1h |
+
+---
+
+#### 8. Dependency DAG
+
+```mermaid
+graph TD
+    LOG028["LOG-028: CI Framework Design<br/>(3-layer architecture)"] --> LOG042
+    LOG040["LOG-040: Time-Partitioned Eval<br/>(Session isolation)"] --> LOG042
+    LOG042["LOG-042: Constitutional Eval Architecture<br/>(Session-as-unit)"] --> LOG043
+    LOG043["LOG-043: Vertex AI Rubric Eval<br/>(Hybrid L1+L2)"] --> LOG046
+    LOG046["LOG-046: Vertex-Native Schema<br/>(Pipeline simplification)"] --> LOG067
+    LOG067["LOG-067: Manual Scenario Eval<br/>(This entry)"]
+    
+    LOG067 --> TASK003a["TASK-EVAL-003a: Directory structure"]
+    TASK003a --> TASK003b["TASK-EVAL-003b: Synthetic codebase"]
+    TASK003b --> TASK003c["TASK-EVAL-003c: GSD-Lite artifacts"]
+    TASK003c --> TASK003d["TASK-EVAL-003d: Scenario scripts"]
+    TASK003a --> TASK003e["TASK-EVAL-003e: Clone script"]
+    
+    LOG046 --> TASK002d["TASK-EVAL-002d: Vertex L2"]
+    
+    TASK003d --> TASK002e["TASK-EVAL-002e: First E2E eval"]
+    TASK003e --> TASK002e
+    TASK002d --> TASK002e
+    
+    style LOG067 fill:#90EE90
+    style TASK002e fill:#FFD700
+```
+
+**To onboard this decision from scratch:**
+1. **LOG-028** (lines 4069-4375): Why CI framework; three-layer architecture concept
+2. **LOG-040** (lines 6303-6720): Time-partitioned evaluation; deliberate vs organic sessions
+3. **LOG-042** (lines 7021-7532): Session-as-unit; hybrid orchestration decision
+4. **LOG-043** (lines 7533-8064): Vertex AI for L2; Constitution as guidelines parameter
+5. **LOG-046** (lines 8409-8536): Pipeline simplification; `eval_ingest.py` outputs Vertex-native
+6. **LOG-067** (this entry): Manual scenario-based evaluation; workspace isolation
+
+---
+
+#### 9. Open Questions (For Next Session)
+
+| Question | Status | Notes |
+|----------|--------|-------|
+| Which public API for test fixture? | OPEN | wttr.in (weather) vs api.coindesk.com (bitcoin) — both stdlib-friendly |
+| Should scenarios share PROJECT.md/ARCHITECTURE.md? | DECIDED | Yes — only WORK.md varies per scenario |
+| How to version control workspaces? | OPEN | `.gitignore workspaces/*` or commit select runs? |
+
+---
+
+📦 STATELESS HANDOFF
+
+**Layer 1 — Local Context:**
+→ Last action: LOG-067 (Manual Scenario-Based Evaluation decision)
+→ Dependency chain: LOG-067 ← LOG-046 ← LOG-043 ← LOG-042 ← LOG-040 ← LOG-028
+→ Next action: TASK-EVAL-003a — Create `tests/evals/` directory structure
+
+**Layer 2 — Global Context:**
+→ Architecture: templates/ (immutable) + scenarios/ (evaluator-only) + workspaces/ (per-run clones)
+→ Patterns: Manual E2E testing; evaluator/evaluatee separation; one scenario per pillar
+→ Key decisions: DECISION-067a (directory structure), DECISION-067b (4 scenarios), DECISION-067c (P2 prompt selection)
+
+**Fork paths:**
+- Create directory structure → TASK-EVAL-003a
+- Generate synthetic codebase → Hand Gemini brief from Section 5.3
+- Generate GSD-Lite artifacts → Hand Gemini brief from Section 5.4
+- Implement Vertex L2 → TASK-EVAL-002d (can parallelize)
+- Discuss scenario details → Refine scenario.md content
+
+---
+
+### [LOG-068] - [EXEC] - Implementation of Manual Scenario Evaluation Fixtures - Task: TASK-EVAL-003
+
+**Status:** COMPLETE
+**Date:** 2026-02-16
+**Task:** TASK-EVAL-003 (Manual Scenario-Based Evaluation Setup)
+**Dependencies:**
+- LOG-067 (Decision to use manual scenarios)
+- TASK-EVAL-003a through TASK-EVAL-003e (Implementation steps)
+
+---
+
+#### 1. Executive Summary
+
+**What was done:** Implemented the full evaluation fixture suite defined in LOG-068. We now have a "laboratory" for testing GSD-Lite agents against the Constitution.
+1. **Synthetic Codebase:** `tests/evals/templates/src/` contains a realistic Python CLI app (API Client for `wttr.in`).
+2. **Scenario Artifacts:** 4 distinct `WORK.md` states representing the pillars (Fresh Start, Mid-Task, Discuss Mode, Pending Log).
+3. **Evaluator Scripts:** `tests/evals/scenarios/*.md` contain the prompt scripts for humans to run.
+4. **Workspace Automation:** `tests/evals/clone_workspace.sh` automates the setup of isolated test environments.
+
+**Key Decision:** Switched from Coindesk API to `wttr.in` for the test fixture because `wttr.in` requires zero auth, returns complex JSON, and is highly reliable for test automation.
+
+**The One-Liner:** The "gym" is built — we can now run controlled experiments to test agent compliance with the Constitution.
+
+---
+
+#### 2. Implementation Details
+
+##### 2.1 The Synthetic Codebase (`api-client-fixture`)
+
+Located in `tests/evals/templates/src/`:
+- `client.py`: Uses `urllib` to fetch weather from `wttr.in?format=j1`.
+- `cache.py`: JSON file-based caching in `~/.cache/api-client-fixture`.
+- `main.py`: CLI with `weather` and `raw` commands.
+- **Why this matters:** It's simple enough (no external deps) to run anywhere, but complex enough (network, caching, JSON parsing) to require "real" engineering thought from the agent.
+
+##### 2.2 The 4 Scenarios
+
+| Scenario | Path | Purpose | Key Artifact |
+|----------|------|---------|--------------|
+| **C3: Onboarding** | `scenarios/c3-onboarding` | Test Universal Onboarding | `WORK.md`: `current_mode: none` |
+| **S1: Handoff** | `scenarios/s1-handoff` | Test Session Handoff | `WORK.md`: Active task `TASK-001` (Retry logic) |
+| **P2: Pair Prog** | `scenarios/p2-pair-programming` | Test "Why Before How" | `WORK.md`: `current_mode: discuss` |
+| **J4: Journalism** | `scenarios/j4-journalism` | Test Log Quality | `WORK.md`: Pending `DECISION-002` (Caching) |
+
+##### 2.3 The Clone Script
+
+`tests/evals/clone_workspace.sh` implements the layering logic:
+1. Copy immutable template (Source code + Shared `PROJECT.md`/`ARCHITECTURE.md`)
+2. Copy scenario-specific `gsd-lite/` (Overwrites `WORK.md`)
+
+```bash
+./clone_workspace.sh c3-onboarding
+# Creates: tests/evals/workspaces/2026-02-16_1400_c3-onboarding/
+```
+
+---
+
+#### 3. Verification
+
+Verified the fixture works by:
+1. Running `clone_workspace.sh c3-onboarding` → Success.
+2. Inspecting generated `WORK.md` → Correctly set to `current_mode: none`.
+3. Running `python -m src.main weather London` in the template → Successfully fetched JSON from `wttr.in`.
+
+---
+
+📦 STATELESS HANDOFF
+
+**Layer 1 — Local Context:**
+→ Last action: LOG-068 (Implemented evaluation fixtures)
+→ Dependency chain: LOG-068 ← LOG-067 ← LOG-046 ← LOG-043 ← LOG-042
+→ Next action: TASK-EVAL-002d — Implement `eval_consume.py l2` (Vertex Integration)
+
+**Layer 2 — Global Context:**
+→ Architecture: tests/evals/ contains complete test fixture suite
+→ Patterns: Manual E2E testing; isolated workspaces
+→ Key decisions: DECISION-067a (Structure), DECISION-067b (Scenarios), DECISION-067c (P2 Prompt)
+
+**Fork paths:**
+- Implement Vertex L2 → TASK-EVAL-002d
+- Run first manual eval → Use `clone_workspace.sh` and follow `scenarios/c3-onboarding/scenario.md`
+- Inspect synthetic code → `tests/evals/templates/src/`

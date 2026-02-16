@@ -79,6 +79,11 @@ SESSION 2 (tokens: 0 → fresh start)
 - 26+ rich log entries demonstrating the pattern
 - PR descriptions generated directly from WORK.md logs
 
+**Evaluation Laboratory:**
+- Manual Scenario-Based Evaluation (LOG-067)
+- Synthetic codebase (`api-client-fixture`) for controlled testing
+- Isolated workspaces for safe, side-effect-free agent evaluation
+
 ## The Logging Standard
 
 When logging findings, use this prompt pattern:

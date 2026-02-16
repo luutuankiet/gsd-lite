@@ -94,6 +94,49 @@ This is documented in LOG-033 (Fingerprinting) and LOG-034 (Schema).
 
 ---
 
+## Evaluation Laboratory
+
+*Established: 2026-02-16 (LOG-067)*
+
+GSD-Lite includes a "clean room" laboratory for testing agents against the Constitution. This ensures we can validate behaviors (like "Why Before How") in a controlled environment without risking production data.
+
+### Directory Structure
+
+```
+tests/evals/
+├── templates/                      # IMMUTABLE Source Code
+│   ├── src/                        # Synthetic API client app (wttr.in)
+│   └── gsd-lite/                   # Shared artifacts (PROJECT, ARCHITECTURE)
+│
+├── scenarios/                      # EVALUATOR-ONLY Scripts
+│   ├── c3-onboarding/              # Test Case: Universal Onboarding
+│   ├── s1-handoff/                 # Test Case: Session Handoff
+│   ├── p2-pair-programming/        # Test Case: "Why Before How"
+│   └── j4-journalism/              # Test Case: Log Quality
+│
+└── workspaces/                     # EVALUATEE Sandboxes
+    └── 2026-02-16_c3/              # Per-run clones (agent modifies freely)
+```
+
+### The Separation of Concerns
+
+The architecture enforces strict separation between the **Evaluator** (human/script) and the **Evaluatee** (agent).
+
+| Layer | Component | Visibility | Mutability |
+|-------|-----------|------------|------------|
+| **Evaluator** | `scenarios/*.md` | Human Only | Immutable |
+| **Template** | `templates/src/` | Read-Only | Immutable |
+| **Evaluatee** | `workspaces/*/` | Agent | Mutable (Sandbox) |
+
+### The Workflow
+
+1. **Clone:** `tests/evals/clone_workspace.sh <scenario>` creates an isolated workspace.
+2. **Run:** Human connects OpenCode + fs-mcp to the workspace and follows the scenario script.
+3. **Collect:** `eval_ingest.py` extracts the session data.
+4. **Judge:** `eval_consume.py` runs programmatic (L1) and Constitutional (L2) checks.
+
+---
+
 ## Plugins
 
 ### Worklog Reader (`plugins/reader-vite/`)
