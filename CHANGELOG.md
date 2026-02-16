@@ -2,6 +2,14 @@
 
 <!-- version list -->
 
+## v1.17.0 (2026-02-16)
+
+### Features
+
+- Enhance reader experience with header markers and mobile bottom sheet
+  ([`2bd828a`](https://github.com/luutuankiet/gsd-lite/commit/2bd828ac03283ca6142720a0166a28d24381de33))
+
+
 ## v1.16.0 (2026-02-15)
 
 
