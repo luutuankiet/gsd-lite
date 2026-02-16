@@ -9,18 +9,20 @@ execution
 </current_mode>
 
 <active_task>
-Task: READER-006 - Robustness & Debugging
-Status: COMPLETE (LOG-060) - Fixed nested outline bug, UTF-8 static dump corruption, and malformed WORK.md content.
+Task: READER-008 - Visual Hierarchy for Deeply Nested Sub-Headers
+Status: COMPLETE (LOG-066)
 Key deliverables:
-- Regex fix in parser.ts (allow special chars in TYPE)
-- UTF-8 fix in main.ts (atob -> TextDecoder)
-- Version printout in cli.cjs
-- Bumped @luutuankiet/gsd-reader to 0.2.6
+- [x] Regex update for H6 support (READER-008a)
+- [x] "Colored Top Bar + Level Tag" implementation for H4-H6 (READER-008b)
+- [x] CSS for header level tags and top borders (READER-008c)
+
+Task: READER-007 - Mobile UX Overhaul (Bottom Sheet Outline)
+Status: COMPLETE (LOG-065)
 
 ---
-**Parked (resume next):**
-- Publish v0.2.6 to npm (trigger GHA)
-- TASK-EVAL-002d: Vertex AI integration (resume after publish)
+**Next Actions:**
+1. Push v0.2.7 to trigger release (Reader)
+2. Resume TASK-EVAL-002d (Vertex AI)
 </active_task>
 
 <parked_tasks>
@@ -10723,3 +10725,585 @@ npx @luutuankiet/gsd-reader dump --remote=https://gsd.kenluu.org --user=ken
 -   **Version:** Bumped `@luutuankiet/gsd-reader` to `0.2.6`.
 -   **Stability:** Logs render correctly regardless of TYPE characters.
 -   **Encoding:** Static dumps now support full Unicode (emojis, em-dashes).
+
+---
+
+### [LOG-061] - [DESIGN] - Mobile UX Overhaul: Bottom Sheet Outline with Snap Points - Task: READER-007
+
+**Summary:** Design decision for overhauling the GSD-Lite Reader's mobile navigation experience. The current left-drawer overlay fails mobile use cases: tiny resize handles, truncated outline text, and toggle button placement far from thumb zone. This log captures the problem analysis, pattern exploration, and chosen solution: a **bottom sheet with snap points** (Pattern D).
+
+**Dependencies:**
+- [LOG-047] — Original Reader vision and purpose (ARCHITECTURE.md §Plugins)
+- [LOG-056] — Reader distribution architecture (cli.cjs, chokidar, WebSocket)
+- [LOG-060] — Latest reader fixes (v0.2.6 baseline)
+
+---
+
+#### 1. Problem Statement: Mobile Outline is Unusable
+
+The user reported four critical UX failures when using the reader on mobile:
+
+| Issue | Current Behavior | Impact |
+|-------|------------------|--------|
+| **Resize handle** | Browser-native `resize: horizontal` creates ~4px drag target | 99% misclick rate; even when grabbed, `max-width: 80vw` caps expansion |
+| **Text truncation** | `white-space: nowrap` + `text-overflow: ellipsis` on `.outline-item` | Can't scan full log titles even with horizontal scroll |
+| **Outline as overlay** | Opens via top-left 📋 button, overlays content | Fighting two views; can't "scan outline alone" |
+| **Toggle placement** | Top-left corner | Far from natural thumb zone (bottom half of screen) |
+
+**Root Cause Analysis:**
+
+The CSS in `plugins/reader-vite/index.html` (lines 108-180) treats mobile outline as an afterthought:
+
+```css
+/* Line 108-115: Mobile outline hidden by default */
+.outline {
+  position: fixed;
+  top: 86px;
+  left: 0;
+  width: 300px;
+  max-width: 80vw;           /* ← Hard cap prevents full-width expansion */
+  transform: translateX(-100%); /* ← Hidden off-screen */
+  resize: horizontal;        /* ← Tiny browser-native handle */
+}
+
+/* Line 160-162: Text truncation */
+.outline-item {
+  white-space: nowrap;       /* ← Forces single line, triggers ellipsis */
+}
+```
+
+**User's Core Need (verbatim):**
+
+> "I want to be able to scan only the outline with full text and understand semantically where the document flow is going. At any given point I can answer: What header section am I on? What work log is this in the grand scheme of the project?"
+
+This is a **navigation-first** mental model. The outline should be a first-class citizen on mobile, not a hidden sidebar.
+
+---
+
+#### 2. Pattern Exploration: Four Mobile Navigation Models
+
+We evaluated four established mobile patterns:
+
+```mermaid
+graph TB
+    subgraph "Pattern A: Table of Contents Mode"
+        A1[Full-screen outline]
+        A2[Tap to jump]
+        A3[Completely separate from reader]
+    end
+    
+    subgraph "Pattern B: Split View"
+        B1[Outline 30% left]
+        B2[Content 70% right]
+        B3["❌ Rejected: width constraint"]
+    end
+    
+    subgraph "Pattern C: Left Drawer"
+        C1[Swipe from left edge]
+        C2[~85% width overlay]
+        C3[Dimmed content behind]
+    end
+    
+    subgraph "Pattern D: Bottom Sheet"
+        D1[Swipe up from bottom]
+        D2[Snap points: 50% → 80%]
+        D3[Collapsed bar always visible]
+        D4["✅ CHOSEN"]
+    end
+```
+
+**Pattern Comparison:**
+
+| Aspect | C: Left Drawer | D: Bottom Sheet |
+|--------|----------------|-----------------|
+| Trigger location | Left edge swipe | Bottom edge swipe |
+| Thumb reach | Good (left side) | Excellent (natural thumb rest) |
+| Always-visible hint | No | Yes (collapsed bar with progress) |
+| Width for text | ~85% screen | 100% screen |
+| Mental model | "Sidebar I pull out" | "Panel I pull up" |
+| Common in | Slack, Gmail | Google Maps, Apple Music, iOS Share Sheet |
+
+**Decision: Pattern D (Bottom Sheet)**
+
+Rationale:
+1. **Full width** — 100% screen width means text wraps naturally, no truncation
+2. **Thumb zone** — Bottom of screen is natural one-handed grip position
+3. **Progress visibility** — Collapsed bar can show current position even while reading
+4. **Familiar pattern** — Users know this from Maps, Music, Share Sheet
+
+---
+
+#### 3. Detailed Design Specification
+
+##### 3.1 Visual States
+
+**State 1: Collapsed (Reading Mode)**
+
+```mermaid
+graph TB
+    subgraph "Mobile Screen - Collapsed State"
+        direction TB
+        TopBar["📋 GSD-Lite Worklog ⬇ Latest"]
+        Breadcrumb["LOG-045: Migrate eval_ingest..."]
+        Content["Log content area<br/>(full height minus bars)"]
+        CollapsedBar["═══ 📋 Outline ═══"]
+    end
+    
+    TopBar --> Breadcrumb
+    Breadcrumb --> Content
+    Content --> CollapsedBar
+```
+
+- **Collapsed bar:** Hidden by default (user chose option C: swipe-only)
+- **Trigger:** Swipe up from bottom edge of screen
+- **No screen real estate consumed** when reading
+
+**State 2: Half-Expanded (50% snap point)**
+
+```mermaid
+graph TB
+    subgraph "Mobile Screen - 50% Expanded"
+        direction TB
+        TopBar2["📋 GSD-Lite Worklog ⬇ Latest"]
+        DimmedContent["░░░ Dimmed content (~50%) ░░░"]
+        DragHandle["═══════════"]
+        SheetHeader["📋 Outline ▼"]
+        OutlineContent["▼ Sections<br/>  1. Current Understanding<br/>  2. Key Events Index<br/>▼ Logs (60)<br/>  ● LOG-060 [FIX] Fixed nested...<br/>  LOG-059 [DECISION] Static..."]
+    end
+    
+    TopBar2 --> DimmedContent
+    DimmedContent --> DragHandle
+    DragHandle --> SheetHeader
+    SheetHeader --> OutlineContent
+```
+
+**State 3: Full-Expanded (80% snap point)**
+
+- Same structure but sheet takes ~80% of screen height
+- Only top bar + sliver of dimmed content visible above
+- Maximum space for scanning outline
+
+##### 3.2 Interaction Model
+
+| Gesture | From State | To State |
+|---------|------------|----------|
+| Swipe up from bottom edge | Collapsed | 50% expanded |
+| Continue drag up | 50% expanded | 80% expanded |
+| Drag down (small) | 80% expanded | 50% expanded |
+| Drag down (large) / tap dimmed area | Any expanded | Collapsed |
+| Tap outline item | Any expanded | Collapsed + scroll to target |
+
+##### 3.3 Current Position Highlighting
+
+User chose highlighting over progress counters. The outline must show:
+
+1. **Current log** — highlighted with accent background + left border (existing `.outline-link.active` style)
+2. **Current child header** — if user is scrolled to a `### Subsection` within a log, that header should also highlight in outline
+3. **Parent expansion** — ancestors of current item auto-expand so active item is always visible
+
+This builds on existing scroll sync code in `renderer.ts` (lines 480-540) which already tracks `currentSectionId` and applies `.active` class.
+
+##### 3.4 Implementation Architecture
+
+**Key Insight: Shared Content, Separate Shells**
+
+```mermaid
+graph LR
+    subgraph "Shared (Single Implementation)"
+        RO["renderOutline()<br/>renderer.ts"]
+        OC["Outline Content<br/>&lt;ul class='outline-list'&gt;"]
+    end
+    
+    subgraph "Desktop Shell (≥768px)"
+        DS["&lt;aside class='outline-sidebar'&gt;"]
+        DS --> OC
+    end
+    
+    subgraph "Mobile Shell (&lt;768px)"
+        MS["&lt;div class='outline-sheet'&gt;"]
+        DH["Drag Handle"]
+        MS --> DH
+        MS --> OC
+    end
+    
+    RO --> OC
+    
+    subgraph "CSS Media Query Switch"
+        MQ["@media (min-width: 768px)<br/>.outline-sheet { display: none }<br/>.outline-sidebar { display: block }"]
+    end
+```
+
+This means:
+- `renderOutline()` generates the `<ul>` structure **once**
+- Desktop wraps it in `.outline-sidebar` (left-fixed, resizable)
+- Mobile wraps it in `.outline-sheet` (bottom sheet with drag handle)
+- Media queries toggle visibility
+- Both call the same `highlightCurrent()` / `scrollToLog()` functions
+
+##### 3.5 Repurposing the 📋 Button
+
+With bottom sheet handling mobile outline, the top-left 📋 button becomes available:
+
+| Platform | New Behavior |
+|----------|--------------|
+| Desktop | **Keep as-is** — toggles sidebar visibility |
+| Mobile | **Repurpose to font size control** — addresses user's request for adjustable text size |
+
+Font size control options:
+- Cycle through presets: Small (12px) → Medium (14px) → Large (16px)
+- Or: Open a small popover with +/- buttons
+
+---
+
+#### 4. Implementation Tasks
+
+| Task ID | Description | File(s) | Complexity |
+|---------|-------------|---------|------------|
+| READER-007a | Add bottom sheet HTML structure with drag handle | `renderer.ts` | Medium |
+| READER-007b | CSS for sheet states (collapsed, 50%, 80%) + snap points | `index.html` | Medium |
+| READER-007c | Touch gesture handling (swipe up, drag, snap) | `renderer.ts` or new `sheet.ts` | High |
+| READER-007d | Remove `nowrap` / `ellipsis` for mobile outline items | `index.html` | Low |
+| READER-007e | Enhance scroll sync to highlight child headers | `renderer.ts` | Medium |
+| READER-007f | Repurpose 📋 button for font size on mobile | `renderer.ts`, `index.html` | Low |
+| READER-007g | Media query switching between sidebar/sheet | `index.html` | Low |
+
+**Estimated total:** 4-6 hours of focused implementation
+
+---
+
+#### 5. Source Citations
+
+| Artifact | Location | Relevance |
+|----------|----------|-----------|
+| Current outline CSS | `plugins/reader-vite/index.html` L108-180 | Baseline to modify |
+| Outline rendering | `plugins/reader-vite/src/renderer.ts` L25-110 | `renderOutline()`, `renderOutlineItem()` |
+| Scroll sync logic | `plugins/reader-vite/src/renderer.ts` L480-540 | `updateCurrentSection()`, `.active` class |
+| Touch interactions | `plugins/reader-vite/src/renderer.ts` L415-450 | Existing scroll thumb drag handling |
+| Mobile breakpoint | `plugins/reader-vite/index.html` L490 | `@media (min-width: 768px)` |
+| Reader architecture | `gsd-lite/ARCHITECTURE.md` §Plugins | Overall reader design |
+
+---
+
+#### 6. Open Questions (LOOP)
+
+- **LOOP-010:** Should the collapsed bar be fully hidden (current decision) or show a subtle 4px "peek" indicator at bottom edge to hint at swipe-up affordance?
+- **LOOP-011:** For font size control, should it persist across sessions (localStorage) or reset on reload?
+
+---
+
+**Next Action:** Begin implementation with READER-007b (CSS structure) as it defines the visual foundation for all other tasks.
+
+### [LOG-062] - [EXEC] - Implemented Mobile Bottom Sheet and Gesture Handling - Task: READER-007
+
+**Summary:** Successfully implemented the mobile bottom sheet (Pattern D) with drag gestures, snap points, and full-text rendering. Also fixed a critical "scroll bounce" bug where the first navigation action reset scroll position to top. The reader now provides a native-like navigation experience on mobile devices.
+
+**Files Changed:**
+- `plugins/reader-vite/index.html`: Added `.outline-sheet` CSS, snap states, and media queries to switch between sidebar/sheet.
+- `plugins/reader-vite/src/renderer.ts`: Added `renderBottomSheet()` and gesture handlers (touch start/move/end).
+- `plugins/reader-vite/src/main.ts`: Fixed scroll restoration logic.
+
+---
+
+#### 1. Implementation Details
+
+**A. CSS for Bottom Sheet (`index.html`)**
+Implemented the 3-state system (`collapsed`, `half`, `full`) using CSS transforms for 60fps performance:
+
+```css
+/* Mobile Bottom Sheet */
+.outline-sheet {
+  position: fixed;
+  bottom: 0;
+  /* ...rounded corners, shadow... */
+  transform: translateY(100%); /* Collapsed */
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.outline-sheet.snap-half { transform: translateY(50%); }
+.outline-sheet.snap-full { transform: translateY(15%); }
+```
+
+**B. Gesture Handling (`renderer.ts`)**
+Implemented physics-like drag behavior:
+1. **Touch Start:** Capture Y position, disable transition (for 1:1 finger tracking)
+2. **Touch Move:** Update `translateY` in real-time based on delta
+3. **Touch End:** Calculate delta, determine nearest snap point, re-enable transition, snap to state
+
+**C. Truncation Fix (READER-007d)**
+Modified `renderOutlineItem` to remove JS-based truncation (`truncate(str, 50)`).
+- **Desktop:** Uses CSS `text-overflow: ellipsis` (sidebar constrained width)
+- **Mobile:** Uses CSS `white-space: normal` (sheet full width)
+Result: Mobile users see full titles; desktop users see clean truncated lists.
+
+---
+
+#### 2. The "Scroll Bounce" Bug Fix
+
+**Symptom:** On mobile, clicking an outline item for the first time scrolled to the target, but then immediately snapped back to top (0). Subsequent clicks worked fine.
+
+**Root Cause:**
+`main.ts` had a `requestAnimationFrame` block that restored scroll position to `savedScrollY` (initially 0) after async rendering.
+1. Page loads (`savedScrollY = 0`)
+2. User clicks outline link → browser scrolls to anchor
+3. Async initialization (Mermaid diagrams) finishes
+4. Code executes `window.scrollTo(0, 0)` → Reset!
+
+**Fix:**
+Only restore scroll if `savedScrollY > 0` (i.e., it's a reload, not a fresh visit).
+
+```typescript
+// Only restore if savedScrollY > 0 (i.e., this is a reload, not initial load)
+if (savedScrollY > 0) {
+  requestAnimationFrame(() => {
+    window.scrollTo(0, savedScrollY);
+  });
+}
+```
+
+---
+
+#### 3. UX Polish
+
+- **Unified Toggle Button:** The 📋 button now adapts context:
+  - **Desktop:** Toggles left sidebar
+  - **Mobile:** Toggles bottom sheet (half/collapsed)
+- **Overlay Interaction:** Tapping the dimmed background closes the sheet
+- **Auto-Close:** Clicking a link in the sheet automatically closes it (standard mobile pattern)
+
+---
+
+**Next Action:** Proceed with READER-007e (Enhanced scroll sync for child headers) to ensure the outline highlighting tracks subsection headers accurately.
+
+### [LOG-063] - [EXEC] - Outline Auto-Scroll on Open: READER-007e Enhanced Scroll Sync - Task: READER-007
+
+**Summary:** Implemented auto-scroll behavior so that when the outline (sidebar or bottom sheet) opens, it automatically scrolls to show the currently highlighted section. Previously, the outline always started from the top, requiring users to manually scroll to find their position.
+
+**Files Changed:**
+- `plugins/reader-vite/src/renderer.ts`: Added `scrollOutlineToActive()` function and integrated it into toggle/sheet open handlers.
+
+---
+
+#### The Problem
+
+When reading a long worklog and opening the outline to navigate:
+1. User is viewing LOG-050 in the main content
+2. Outline correctly highlights LOG-050 as `.active`
+3. BUT: Outline scroll position is at the top (showing LOG-001)
+4. User must manually scroll down 50+ items to see where they are
+
+This broke the mental model of "outline shows me where I am."
+
+#### The Solution
+
+Created a reusable `scrollOutlineToActive()` function that:
+1. Finds the currently active outline link (`.outline-link.active`)
+2. Expands parent items if collapsed (so the active item is visible in the tree)
+3. Scrolls the active item to center using `scrollIntoView({ behavior: 'instant', block: 'center' })`
+
+**Why `instant` not `smooth`?** When opening the outline, users want immediate orientation. Smooth scrolling delays the "aha, I'm here" moment. The existing scroll-on-scroll behavior (during main content scrolling) still uses `smooth` for non-jarring updates.
+
+#### Integration Points
+
+**Desktop (sidebar toggle):**
+```typescript
+function toggleOutline(): void {
+  const wasHidden = outline!.classList.contains('hidden');
+  outline!.classList.toggle('hidden');
+  // ...
+  if (wasHidden) {
+    requestAnimationFrame(() => scrollOutlineToActive());
+  }
+}
+```
+
+**Mobile (bottom sheet open):**
+```typescript
+function setSheetState(state: SheetState): void {
+  const wasCollapsed = currentSheetState === 'collapsed';
+  // ...
+  if (wasCollapsed && state !== 'collapsed') {
+    requestAnimationFrame(() => scrollOutlineToActive());
+  }
+}
+```
+
+#### Bonus Fix: Dual Outline Sync
+
+Discovered that the existing scroll sync only marked `.active` on the first matching link (sidebar), not the sheet. Fixed `updateCurrentSection()` to use `querySelectorAll` and mark active state in BOTH outlines:
+
+```typescript
+// Before: Only marked one
+const outlineLink = document.querySelector(`.outline-link[href="#${sectionId}"]`);
+
+// After: Marks both sidebar and sheet
+const outlineLinks = document.querySelectorAll(`.outline-link[href="#${sectionId}"]`);
+outlineLinks.forEach(link => link.classList.add('active'));
+```
+
+---
+
+**Status:** READER-007e complete. Outline now auto-scrolls to active section on open.
+
+### [LOG-064] - [FIX] - Sub-Header Navigation & Mobile Sheet Polish - Task: READER-007e
+
+**Summary:** Fixed critical navigation bugs where clicking outline sub-headers (H4/H5) wouldn't scroll to the correct location due to line number mismatches. Also polished the mobile sheet experience by removing sticky headers (which overlapped content) and preventing auto-collapse on navigation.
+
+**Files Changed:**
+- `plugins/reader-vite/src/parser.ts`: Replaced `.trim()` with `.trimEnd()` to preserve leading empty lines in log content.
+- `plugins/reader-vite/src/renderer.ts`: Updated scroll sync logic, breadcrumb behavior, and sheet interaction.
+- `plugins/reader-vite/index.html`: Removed sticky positioning for sheet section titles.
+
+---
+
+#### 1. The "Frozen Click" Bug (Line Number Mismatch)
+
+**Symptom:** Clicking sub-headers (e.g., in LOG-043) updated the URL anchor but didn't scroll the page. Console showed no errors, just UI freeze.
+
+**Root Cause:**
+- The parser used `.trim()` on log content, removing leading empty lines.
+- `renderMarkdown` calculates line IDs based on content index + startLine.
+- If a log had leading empty lines (common after metadata block), the rendered HTML IDs (e.g., `id="line-7550"`) were offset from the parser's recorded line numbers (e.g., `href="#line-7551"`).
+- Result: Anchor link pointed to non-existent ID.
+
+**Fix:** Changed all content capture in `parser.ts` to use `.trimEnd()` instead of `.trim()`. This preserves leading newlines, keeping the rendered line IDs in sync with the parser's absolute file line numbers.
+
+#### 2. Breadcrumb & Outline Sync Logic
+
+**Problem:** Scrolling to a sub-header changed the sticky breadcrumb to show the sub-header title (losing context of which LOG you're in).
+**Fix:** Updated `updateCurrentSection` in `renderer.ts`:
+- **Breadcrumb:** Always shows the **parent LOG entry** title, even when reading a sub-section.
+- **Outline Highlighting:** Still highlights the specific sub-header if it exists in the outline; otherwise falls back to parent log.
+
+#### 3. Mobile Sheet UX Polish
+
+- **Scroll Position:** Changed `scrollIntoView` block from `center` to `start` for mobile. Center positioning on a half-height sheet meant the active item was often hidden below the fold.
+- **Sticky Header Removal:** Removed `position: sticky` from "LOGS (N)" header in the sheet. It was overlapping the top-most item, making it unreadable.
+- **Keep Open:** Removed auto-collapse listener on link click. Users can now click a link to navigate but keep the sheet open to jump to another section immediately.
+
+---
+
+**Status:** Navigation is now robust for both top-level logs and deep links to sub-sections. Line numbers are consistent between parser and renderer.
+
+---
+
+### [LOG-065] - [EXEC] - Mobile UX Polish: Peek Handle & Version Bump - Task: READER-007
+
+**Summary:** Completed the mobile UX overhaul by implementing a "Peek Handle" for bottom-edge swipe detection and repurposing the top-left button for font size control. This resolves the final usability gaps in the bottom sheet implementation.
+
+**Files Changed:**
+- `plugins/reader-vite/index.html`: Added `.sheet-peek-handle` CSS.
+- `plugins/reader-vite/src/renderer.ts`: Added peek handle HTML and touch event listeners.
+- `plugins/reader-vite/package.json`: Bumped version to `0.2.7`.
+
+---
+
+#### 1. The Missing Swipe Trigger (Loop Closure)
+
+**Problem (from LOG-062):**
+The bottom sheet implementation relied on a drag handle that was completely off-screen (`translateY(100%)`) when collapsed. Users could only open the sheet via the top-left toggle button, defeating the purpose of bottom-thumb accessibility.
+
+**Solution: The "Peek Handle"**
+Implemented a 20px tall, fixed-position touch zone at the bottom edge of the screen.
+- **Visual:** Dark gradient with a subtle 40px "pill" bar to hint at interactivity.
+- **Behavior:**
+  - **Swipe Up:** Drag triggers the sheet opening animation (physics-based).
+  - **Tap:** Simply clicking the handle pops the sheet to 50% height.
+  - **Auto-Hide:** When the sheet is open, the peek handle fades out (`.hidden` class) to avoid visual clutter.
+  - **Platform-Specific:** Hidden on desktop via media queries (`display: none` for ≥768px).
+
+#### 2. Font Size Control (Repurposed Button)
+
+**Problem:**
+The top-left 📋 button was redundant on mobile (since the peek handle now opens the sheet).
+
+**Solution:**
+Repurposed the button on mobile to cycle through font sizes:
+- **Default:** 16px (standard reading)
+- **Large:** 18px (easier on eyes)
+- **Small:** 14px (more context)
+- **Mechanism:** Toggles `body` classes (`font-size-large`, `font-size-small`) which override CSS variables.
+
+#### 3. Version Bump
+
+Bumped `@luutuankiet/gsd-reader` to `0.2.7` to mark the release of the Mobile UX Overhaul.
+
+**Verification:**
+- **Mobile:** Swipe from bottom edge → Sheet follows finger. Release → Snaps to 50% or 80%.
+- **Desktop:** Peek handle invisible. Sidebar works as before.
+- **Cross-Platform:** Shared outline content remains in sync.
+
+---
+
+**Status:** READER-007 is now **COMPLETE**. The mobile reading experience is fully native-like with bottom navigation, snap points, and adjustable typography.
+
+### [LOG-066] - [EXEC] - Reader UX: Visual Hierarchy for Deeply Nested Sub-Headers - Task: READER-008
+
+**Summary:** Addressed "infinite scroll blindness" where H4-H6 headers inside log entries looked like body text. Implemented a "Colored Top Bar + Level Tag" design (Approach B/E hybrid) to create distinct visual boundaries without sacrificing mobile screen real estate.
+
+**Files Changed:**
+- `plugins/reader-vite/src/renderer.ts`: Updated regex to support H6 and inject HTML for level tags.
+- `plugins/reader-vite/index.html`: Added CSS for colored top bars and level pills.
+
+---
+
+#### 1. The Problem: "Is this a header or a footnote?"
+
+**Context:**
+GSD-Lite logs start at H3 (`### [LOG-NNN]`). This means structural headers *inside* a log entry must be H4, H5, or H6.
+- **H5 (13px, gray):** Looked indistinguishable from body text.
+- **H6 (12px, light gray):** Looked like a citation/footnote.
+- **Mobile Impact:** On a phone, scrolling through a 500-line log entry made it impossible to tell when a new section began.
+
+**Requirement:**
+Distinct visual hierarchy that works on mobile (no horizontal indentation waste) and clearly delineates content blocks.
+
+#### 2. The Solution: Colored Top Bar + Level Tags
+
+We adopted a hybrid of "Indent Rainbow" and "GitHub Labels":
+
+**Design Pattern:**
+1.  **Top Border:** A colored line spanning the full width. This acts as a hard visual stop—"Previous section ended here."
+2.  **Level Tag:** A small, colored pill (`H4`, `H5`, `H6`) aligned to the left. This provides immediate context on depth.
+3.  **No Indentation:** Text remains left-aligned, maximizing readable width on mobile.
+
+**Visual Spec:**
+
+| Level | Color | Visual Style |
+| :--- | :--- | :--- |
+| **H4** | Purple (`#7c3aed`) | Solid 3px Top Border + Filled Pill |
+| **H5** | Teal (`#14b8a6`) | Solid 2px Top Border + Filled Pill |
+| **H6** | Gold (`#f59e0b`) | Dashed 2px Top Border + Filled Pill |
+
+**CSS Implementation:**
+```css
+/* H4 Example */
+.log-content h4 {
+  border-top: 3px solid #7c3aed;
+  margin-top: 24px; /* Breathing room */
+}
+.header-level-tag.level-4 {
+  background: #7c3aed;
+  color: white;
+  font-size: 9px;
+  padding: 2px 6px;
+}
+```
+
+#### 3. Technical Implementation
+
+**Regex Update (`renderer.ts`):**
+Previously, the parser only matched `#{1,5}` (H1-H5). Updated to `#{1,6}` to support H6.
+
+```typescript
+// Before
+const headerMatch = line.match(/^(#{1,5}) (.+)$/);
+
+// After
+const headerMatch = line.match(/^(#{1,6}) (.+)$/);
+// ...
+const levelTag = level >= 4 ? `<span class="header-level-tag level-${level}">H${level}</span>` : '';
+htmlLines.push(`<h${level} ${anchor}${sectionAttr}>${levelTag}${text}</h${level}>`);
+```
+
+**Outcome:**
+Headers now pop visually. Scanning a long log entry is much faster because the colored bars act as "chapter markers," allowing the eye to skip sections easily. On mobile, the sticky header combined with these inline markers makes deep-diving into complex logs (like this one!) significantly less disorienting.

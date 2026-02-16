@@ -226,3 +226,48 @@ open http://localhost:3000
 | Light theme only | "False" syntax highlighting is worse than none; semantic colors need contrast | LOG-051 |
 | WebSocket for prod live reload | Avoids shipping Vite as runtime dep (~50MB → ~2MB) | LOG-056 §3 |
 | Reader runs on remote | Chokidar requires local filesystem access | LOG-056 §2 |
+| `trimEnd()` not `trim()` on content | Preserves leading empty lines for correct anchor line numbers | LOG-064 |
+
+#### Critical Implementation Details (For Future Agents)
+
+**Line Number Alignment (parser ↔ renderer)**
+
+The reader uses line numbers for deep linking (`#line-7551`). This requires strict alignment:
+
+1. **Parser (`parser.ts`)**: Records `lineNumber` as absolute file line (1-indexed) for each log and child section.
+2. **Renderer (`renderer.ts`)**: Calls `renderMarkdown(content, startLine)` where `startLine = log.lineNumber + 1`.
+3. **Content capture**: Uses `.trimEnd()` NOT `.trim()` — trimming leading lines breaks line number alignment.
+
+```
+# If LOG-043 header is at line 7534:
+# - Content starts at line 7535 (log.lineNumber + 1)
+# - H4 at file line 7551 must render with id="line-7551"
+# - Parser child has lineNumber: 7551, outline href="#line-7551"
+# - If content was .trim()'d, rendered ID would be off by N leading empty lines
+```
+
+**Mobile Bottom Sheet Architecture**
+
+| Component | File | Purpose |
+|-----------|------|---------|
+| Sheet HTML | `renderer.ts` → `renderBottomSheet()` | Generates `.outline-sheet` with drag handle |
+| Snap states | `index.html` CSS | `.snap-collapsed`, `.snap-half`, `.snap-full` |
+| Gesture handling | `renderer.ts` | Touch start/move/end on drag handle |
+| State machine | `setSheetState()` | Manages transitions, overlay visibility |
+
+**Scroll Sync System**
+
+The outline highlights the current section as you scroll the main content:
+
+1. `updateCurrentSection()`: Finds the last `[data-section-title]` element above the "reading line" (96px offset).
+2. Updates breadcrumb with **parent log title** (not sub-section — provides stable context).
+3. Marks `.active` on matching outline links in **both** sidebar and sheet.
+4. Auto-scrolls outline to show active item (smooth during scroll, instant on open).
+
+**Dual Outline Containers**
+
+Desktop and mobile have separate outline containers with identical content:
+- Desktop: `#outline` (sidebar, scrollable via `overflow-y: auto`)
+- Mobile: `#outlineSheet .sheet-content` (bottom sheet, scrollable)
+
+Both share the same `renderOutlineItem()` output but different CSS and interaction handlers.
