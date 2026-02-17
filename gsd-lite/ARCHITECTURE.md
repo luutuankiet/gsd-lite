@@ -42,6 +42,52 @@ graph TD
 - `pyproject.toml` - **Project Config**: Defines dependencies, scripts, and build targets.
 - `.planning/PROJECT.md` - **Vision**: Defines the "Why" and scope of the GSD-Lite project.
 
+---
+
+## Token Budget Architecture
+
+*Established: 2026-02-17 (LOG-073)*
+
+GSD-Lite is optimized for **minimal fixed cost, maximum work budget**.
+
+### The Token Budget Model
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│  100k context window                                         │
+├─────────────────────────────────────────────────────────────┤
+│  Fixed Cost (~2.4k)    │ Agent instruction (gsd-lite.md)    │
+├────────────────────────┼────────────────────────────────────┤
+│  JIT Context (~10-20k) │ Curated work logs (grep → read)    │
+├────────────────────────┼────────────────────────────────────┤
+│  Work Budget (~80k)    │ Actual pair programming            │
+└─────────────────────────────────────────────────────────────┘
+```
+
+### Template Token Costs
+
+| Component | Tokens | Loaded When |
+|-----------|--------|-------------|
+| `gsd-lite.md` | 2,414 | Always (agent instruction) |
+| `gsd-housekeeping.md` | 6,549 | Only when housekeeping |
+| `new-project.md` | 2,578 | Only when starting project |
+| `map-codebase.md` | 1,903 | Only when mapping codebase |
+| Templates (5 files) | 242 | Never loaded as instructions |
+
+**Design principle:** Templates are **structure only** — no examples. Examples bloat token cost and agents skip them during grep-first onboarding anyway.
+
+### The Lean Architecture (LOG-073)
+
+Consolidated from 36,982 tokens → ~2,400 token fixed cost:
+
+| Before | After |
+|--------|-------|
+| PROTOCOL.md (monolith) | `gsd-lite.md` (single agent file) |
+| 5 workflow files | 2 on-demand workflows |
+| CONSTITUTION.md | Deleted (practice over measurement) |
+| questioning.md reference | Embedded in agent file |
+| Templates with examples | Structure-only templates |
+
 ## The Two-Brain System
 
 ### Session vs. Filesystem Persistence
@@ -94,46 +140,46 @@ This is documented in LOG-033 (Fingerprinting) and LOG-034 (Schema).
 
 ---
 
-## Evaluation Laboratory
+## Protocol Craft Laboratory
 
-*Established: 2026-02-16 (LOG-067)*
+*Reframed: 2026-02-17 (LOG-072)*
 
-GSD-Lite includes a "clean room" laboratory for testing agents against the Constitution. This ensures we can validate behaviors (like "Why Before How") in a controlled environment without risking production data.
+GSD-Lite quality cannot be measured deterministically — the human is a confounding variable. Instead, we practice **Protocol Craft**: deliberate refinement through the Craft Cycle.
 
-### Directory Structure
+### The Craft Cycle
+
+```
+DESIGN → APPLY → NOTICE → REFINE → (repeat)
+```
+
+| Phase | Action | Example |
+|-------|--------|--------|
+| **Design** | Make a change to protocol/workflow | Cut 30% of discuss.md |
+| **Apply** | Use it for real sessions | 5 sessions over a week |
+| **Notice** | Observe what feels different | Did agents miss context? |
+| **Refine** | Adjust based on feel | Restore or cut more |
+
+### What We Measure (Proxies, Not Quality)
+
+| Measurable | What It Tells You |
+|------------|-------------------|
+| Token count | Is instruction bloated? |
+| Time to onboard | Can fresh agent get productive? |
+| Decision density | How many decisions per session? |
+| 48-hour cold read | Can YOU understand old logs? |
+
+### The Evaluation Laboratory (Historical)
+
+The `tests/evals/` directory contains synthetic fixtures for controlled testing:
 
 ```
 tests/evals/
-├── templates/                      # IMMUTABLE Source Code
-│   ├── src/                        # Synthetic API client app (wttr.in)
-│   └── gsd-lite/                   # Shared artifacts (PROJECT, ARCHITECTURE)
-│
-├── scenarios/                      # EVALUATOR-ONLY Scripts
-│   ├── c3-onboarding/              # Test Case: Universal Onboarding
-│   ├── s1-handoff/                 # Test Case: Session Handoff
-│   ├── p2-pair-programming/        # Test Case: "Why Before How"
-│   └── j4-journalism/              # Test Case: Log Quality
-│
-└── workspaces/                     # EVALUATEE Sandboxes
-    └── 2026-02-16_c3/              # Per-run clones (agent modifies freely)
+├── templates/        # Synthetic API client app
+├── scenarios/        # Test scripts (for reference)
+└── workspaces/       # Sandbox clones
 ```
 
-### The Separation of Concerns
-
-The architecture enforces strict separation between the **Evaluator** (human/script) and the **Evaluatee** (agent).
-
-| Layer | Component | Visibility | Mutability |
-|-------|-----------|------------|------------|
-| **Evaluator** | `scenarios/*.md` | Human Only | Immutable |
-| **Template** | `templates/src/` | Read-Only | Immutable |
-| **Evaluatee** | `workspaces/*/` | Agent | Mutable (Sandbox) |
-
-### The Workflow
-
-1. **Clone:** `tests/evals/clone_workspace.sh <scenario>` creates an isolated workspace.
-2. **Run:** Human connects OpenCode + fs-mcp to the workspace and follows the scenario script.
-3. **Collect:** `eval_ingest.py` extracts the session data.
-4. **Judge:** `eval_consume.py` runs programmatic (L1) and Constitutional (L2) checks.
+**Note:** Deterministic evaluation was deprioritized (LOG-072). The laboratory remains useful for **prototyping new workflows** in isolation, not for proving GSD-Lite "works."
 
 ---
 

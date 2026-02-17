@@ -630,30 +630,46 @@ def extract_trajectory(session: SessionMeta) -> dict:
                 "parts": [{"text": combined_text}]
             })
     
-    # Extract final response (last model turn)
-    final_response = ""
-    if contents and contents[-1]["role"] == "model":
-        final_response = contents[-1]["parts"][0]["text"]
+    # === Vertex AI Schema Parsing ===
+    # Per https://cloud.google.com/vertex-ai/generative-ai/docs/models/evaluation-dataset:
+    # - request.contents = conversation_history + current prompt (last user turn)
+    # - response.candidates = the model response being evaluated (last model turn)
+    # 
+    # The Gen AI Eval service auto-parses:
+    # - prompt: last user turn in request.contents
+    # - conversation_history: everything before the last user turn
+    # - response: from response.candidates
     
-    # Extract prompt (last user turn before final response)
+    # Find the last model turn (this is the response being evaluated)
+    final_response = ""
+    final_model_idx = -1
+    for i in range(len(contents) - 1, -1, -1):
+        if contents[i]["role"] == "model":
+            final_response = contents[i]["parts"][0]["text"]
+            final_model_idx = i
+            break
+    
+    # Find the last user turn (this is the prompt)
     prompt_for_eval = ""
+    last_user_idx = -1
     for i in range(len(contents) - 1, -1, -1):
         if contents[i]["role"] == "user":
             prompt_for_eval = contents[i]["parts"][0]["text"]
+            last_user_idx = i
             break
     
-    # Build conversation_history (all turns except the last user prompt)
-    conversation_history = []
-    if len(contents) > 1:
-        # Find the index of the last user message
-        last_user_idx = -1
-        for i in range(len(contents) - 1, -1, -1):
-            if contents[i]["role"] == "user":
-                last_user_idx = i
-                break
-        # Everything before the last user message is history
-        if last_user_idx > 0:
-            conversation_history = contents[:last_user_idx]
+    # Build request_contents: everything UP TO AND INCLUDING the last user turn
+    # (excludes the final model response - that goes in response.candidates)
+    if last_user_idx >= 0:
+        request_contents = contents[:last_user_idx + 1]
+    else:
+        request_contents = []
+    
+    # Build conversation_history: everything BEFORE the last user turn
+    if last_user_idx > 0:
+        conversation_history = contents[:last_user_idx]
+    else:
+        conversation_history = []
     
     return {
         "session_id": session.session_id,
@@ -661,8 +677,10 @@ def extract_trajectory(session: SessionMeta) -> dict:
         "title": session.title,
         
         # Vertex AI native format (for auto-parsing by Gen AI Eval)
+        # request.contents = history + prompt (excludes final model response)
+        # response.candidates = the model response being evaluated
         "request": {
-            "contents": contents
+            "contents": request_contents
         },
         "response": {
             "candidates": [{

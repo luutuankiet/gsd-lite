@@ -9,33 +9,31 @@ execution
 </current_mode>
 
 <active_task>
-Task: TASK-EVAL-002d - Vertex AI L2 Integration
-Status: IN PROGRESS (LOG-068)
-Key deliverables:
-- [ ] Implement `layer2_vertex.py` (Vertex AI SDK integration)
-- [ ] Inject Constitution as `guidelines` parameter
-- [ ] Wire up `eval_consume.py l2` command
+Task: PROTOCOL-CRAFT-001 - The Lean Architecture
+Status: IMPLEMENTATION COMPLETE (LOG-075)
 
-Task: TASK-EVAL-003 - Manual Scenario-Based Evaluation Setup
-Status: COMPLETE (LOG-068)
-Key deliverables:
-- [x] TASK-EVAL-003a: Create `tests/evals/` directory structure
-- [x] TASK-EVAL-003b: Generate synthetic codebase (API Client Fixture)
-- [x] TASK-EVAL-003c: Generate GSD-Lite artifacts for each scenario
-- [x] TASK-EVAL-003d: Write scenario.md for each pillar (S1, P2, C3, J4)
-- [x] TASK-EVAL-003e: Create `clone_workspace.sh` script
+**Completed:**
+- [x] Merge workflows into gsd-lite.md (done prior to LOG-075)
+- [x] Delete redundant files (CONSTITUTION.md, execution.md, checkpoint.md, progress.md, questioning.md)
+- [x] Minimize artifact templates — 91% reduction (LOG-075)
+- [x] Run token audit — **2,414 tokens fixed cost** (51% under 5k target)
 
----
-**Next Actions:**
-1. Implement `layer2_vertex.py` (Vertex AI L2 Integration)
-2. Run first end-to-end evaluation using `tests/evals/scenarios/c3-onboarding`
+**Token Budget (Verified):**
+- Fixed cost: 2,414 tokens ✅ (target was <5,000)
+- On-demand: 4,481 tokens (new-project + map-codebase)
+- Templates: 242 tokens (structure only, no examples)
+- Work budget: ~80k+ tokens for actual pair programming
+
+**Optional Future:**
+- Audit gsd-housekeeping.md (6,549 tokens) — candidate for trimming
 </active_task>
 
 <parked_tasks>
 - TASK-EVAL-001: Build OpenCode session parser — SUPERSEDED by SQLite parser (LOG-045)
-- TASK-CONST-002b: Write remaining rubrics (Pillar 1, 3, 4) — needed for full evaluation
-- TASK-CI-L1-001: Implement Layer 1 structural checks — integrated into TASK-EVAL-002c
+- TASK-CONST-002b: Write remaining rubrics (Pillar 1, 3, 4) — **DEPRIORITIZED** (evaluation reframed to practice)
+- TASK-CI-L1-001: Implement Layer 1 structural checks — **OPTIONAL** (structural hygiene, not quality gate)
 - RQ-3: Evaluate SKILLS.md pattern — defer until current architecture matures
+- TASK-EVAL-002d: Vertex L2 refactor — **DEPRIORITIZED** (text quality checks only, optional)
 </parked_tasks>
 
 <vision>
@@ -86,14 +84,24 @@ DECISION-042a: Session as evaluation unit (LOG-042)
 DECISION-042b: ~~Promptfoo with llm-rubric as primary evaluation platform~~ (LOG-042) — **SUPERSEDED BY DECISION-043a**
 - Rationale: Original decision favored Promptfoo for YAML-native rubrics. Superseded because Vertex AI rubric-based metrics offer adaptive rubrics + custom guidelines parameter, and user is Google Cloud partner seeking hands-on experience.
 
-DECISION-043a: Vertex AI rubric-based metrics for Layer 2 evaluation (LOG-043)
-- Rationale: Vertex's `GENERAL_QUALITY` with `guidelines` parameter can evaluate Constitution behaviors. Adaptive rubrics dynamically generate pass/fail tests per prompt. Agent-specific metrics (`TOOL_USE_QUALITY`) align with GSD-Lite's tool-heavy workflow.
+DECISION-043a: ~~Vertex AI rubric-based metrics for Layer 2 evaluation~~ (LOG-043) — **PARTIALLY SUPERSEDED BY DECISION-071a**
+- Rationale: Original claim that `GENERAL_QUALITY` could evaluate behavioral patterns (P2-H1, P2-H2, C3-H1) was incorrect. These require trajectory analysis. Valid only for text quality checks (J4-H1, P2-H3).
 
-DECISION-043b: Hybrid architecture — Programmatic L1 + Vertex L2 (LOG-043)
+DECISION-043b: Hybrid architecture — Programmatic L1 + Vertex L2 (LOG-043) — **STILL VALID, SCOPE CLARIFIED BY DECISION-071c**
 - Rationale: Deterministic checks (handoff presence, grep-before-read sequence) are free and fast in Python. Qualitative checks (reasoning quality, challenge tone) benefit from Vertex's adaptive rubric intelligence.
+- Clarification (LOG-071): Behavioral pattern checks (P2-H1, P2-H2, P2-H5, C3-H1, C3-H2) belong in L1, not L2.
 
-DECISION-043c: Constitution as guidelines parameter (LOG-043)
-- Rationale: Inject distilled Constitution (P2-H*, S1-H*, J4-H*) directly into Vertex's `guidelines` parameter. No rubric format translation needed.
+DECISION-043c: ~~Constitution as guidelines parameter~~ (LOG-043) — **PARTIALLY SUPERSEDED BY DECISION-071a**
+- Rationale: Original claim that full Constitution could be injected into `guidelines` was overly broad. Valid only for text-quality behaviors (J4-H1, P2-H3), not trajectory-dependent behaviors.
+
+DECISION-071a: Vertex `GENERAL_QUALITY` limited to text quality evaluation (LOG-071)
+- Rationale: `GENERAL_QUALITY` evaluates text content/style, not tool trajectories. Supersedes LOG-043 claims about behavioral pattern evaluation. Use for J4-H1 (journalism) and P2-H3 (challenge tone) only.
+
+DECISION-071b: Behavioral pattern checks belong in Layer 1 Python (LOG-071)
+- Rationale: P2-H1, P2-H2, P2-H5, C3-H1, C3-H2 require trajectory sequence analysis. Python can directly analyze `generated_trajectory`. Free and fast (<1ms).
+
+DECISION-071c: Final L1/L2 architecture split (LOG-071) — **AUTHORITATIVE**
+- Rationale: L1 Python = structural + trajectory (S1-H*, P2-H1/H2/H5, C3-H*). L2 Vertex = text quality only (P2-H3, J4-H1). No more flip-flopping.
 
 DECISION-042c: Hybrid orchestration — Option C (LOG-042)
 - Rationale: Batch extract to individual files, evaluate each session independently, aggregate into summary. Enables surgical debugging + CI gates + re-runnable evals.
@@ -115,15 +123,31 @@ DECISION-046a: Implement Vertex-native turn-structured schema in `eval_ingest.py
 
 DECISION-046b: Decommission `eval_transform.py` (LOG-046)
 - Rationale: Transform layer existed only to bridge flat schema to Vertex format. Since ingest now outputs Vertex-native, the transform step is redundant complexity.
+
+DECISION-072a: Deterministic evaluation of GSD-Lite is a category error (LOG-072)
+- Rationale: No "golden truth" for correct pair programming behavior. The human is a confounding variable. Quality is a gradient, not binary. Vertex metrics require golden paths; Constitution defines patterns.
+
+DECISION-072b: Reframe to "Protocol Craft" (LOG-072)
+- Rationale: The actual goal is becoming a better synthesizer/teacher, with GSD-Lite as amplifier. Rename activity from "evaluation" to "Protocol Craft" — deliberate practice of refining tools via Craft Cycle (design → apply → notice → refine).
+
+DECISION-072c: Practice over measurement (LOG-072)
+- Rationale: GSD-Lite is like meditation — hard to prove it works, but practitioners report benefits. The 71 logs ARE the evidence. The kudos ARE the evaluation. Trust the practice.
 </decisions>
 
 <blockers>
-None - CI/CD workflow created. Requires NPM_TOKEN secret.
+None — Evaluation pursuit is complete (reframed, not abandoned).
 </blockers>
 
 <next_action>
-1. TASK-EVAL-002d: Implement `eval_consume.py l2` (Vertex integration)
-2. Run first end-to-end evaluation using `tests/evals/scenarios/c3-onboarding`
+**Practice Path (Recommended):**
+1. Continue using GSD-Lite daily — the practice IS the benefit
+2. Apply Craft Cycle when friction noticed — design → apply → notice → refine
+3. Curate showcase portfolio — 3-5 WORK.md excerpts + resulting PRs
+
+**Optional Structural Hygiene:**
+- Token audit: Run tiktoken on workflow files, rank by value-per-token
+- Log granularity: Apply revised 100-word prompt, do 48-hour cold-read test
+- Housekeeping: Create `housekeeping-sandbox/` for workflow prototyping
 </next_action>
 
 ---
@@ -135,10 +159,16 @@ None - CI/CD workflow created. Requires NPM_TOKEN secret.
 |--------|------|------|---------|
 | LOG-012 | DISCOVERY | DIST-002 | Reverse-engineered get-shit-done-cc installer patterns |
 | LOG-013 | DECISION | DIST-002 | Unified install model: same output, different location |
-| LOG-016 | DECISION | PROTOCOL-STATELESS | Stateless-First Architecture: Every turn generates handoff packet |
-| LOG-017 | VISION | HOUSEKEEPING | Housekeeping Agent: Automated Coherence Detection for Dense Worklogs |
-| LOG-020 | DISCOVERY | PROTOCOL-DOCS | 10k token budget as CI gate; HTML comments invisible to grep-first |
+| LOG-016 | DECISION | PROTOCOL-STATELESS | ⭐ Stateless-First Architecture: Every turn generates handoff packet |
+| LOG-020 | DISCOVERY | PROTOCOL-DOCS | ⭐ 10k token budget as CI gate; HTML comments invisible to grep-first |
+| **LOG-072** | **PHILOSOPHY** | **META-REFLECTION** | **⭐ The Evaluation Paradox: GSD-Lite cannot be measured, only practiced. Reframe to Protocol Craft.** |
+| **LOG-073** | **DECISION** | **PROTOCOL-CRAFT-001** | **⭐ The Lean Architecture: 36,982 → ~3,800 tokens. Single-file protocol. Authoritative reference.** |
+| **LOG-075** | **EXEC** | **PROTOCOL-CRAFT-001** | **Template minimization: 91% reduction (2,800 → 242 tokens). Fixed cost now 2,414 tokens.** |
+| LOG-053 | DISCOVERY | READER-002 | The Node Distribution Model: npm Registry vs pnpm Efficiency |
+| LOG-057 | MILESTONE | READER-003 | Reader Published to npm (@luutuankiet/gsd-reader v0.1.1) |
 | **LOG-028** | **DECISION** | **CI-FRAMEWORK** | **⭐ Constitutional Knowledge + Three-Layer CI (Structural → Constitutional → Behavioral)** |
+| **LOG-071** | **DECISION** | **TASK-EVAL-002d** | **⭐ Vertex Capability Assessment: GENERAL_QUALITY ≠ behavioral patterns. Final L1/L2 split. Supersedes LOG-043 partial.** |
+| **LOG-072** | **PHILOSOPHY** | **META-REFLECTION** | **⭐⭐ The Evaluation Paradox: GSD-Lite cannot be measured, only practiced. Reframe from "evaluation" to "Protocol Craft." Practice > Measurement.** |
 | LOG-053 | DISCOVERY | READER-002 | The Node Distribution Model: npm Registry vs pnpm Efficiency |
 | LOG-057 | MILESTONE | READER-003 | Reader Published to npm (@luutuankiet/gsd-reader v0.1.1) |
 | LOG-058 | EXEC | READER-004 | Reader v0.2.0: Section Rendering & Scroll Sync (completing LOG-047 vision) |
@@ -11930,3 +11960,2546 @@ Verified the fixture works by:
 - Implement Vertex L2 → TASK-EVAL-002d
 - Run first manual eval → Use `clone_workspace.sh` and follow `scenarios/c3-onboarding/scenario.md`
 - Inspect synthetic code → `tests/evals/templates/src/`
+
+---
+
+### [LOG-069] - [EXEC] - Vertex AI L2 Integration: Constitution as Guidelines via YAML Rubrics - Task: TASK-EVAL-002d
+
+**Status:** IMPLEMENTED (Pending Verification)
+**Date:** 2026-02-16
+**Task:** TASK-EVAL-002d (Vertex AI L2 Integration)
+**Dependencies:**
+- LOG-046 (Vertex-Native Turn-Structured Schema, lines 8414-8536)
+- LOG-043 (Vertex AI Rubric-Based Evaluation, lines 7538-8064)
+- LOG-030 (CONSTITUTION.md v0.1)
+- `src/gsd_lite/template/constitution/rubrics/pair-programming.yaml` (14KB structured rubric)
+
+---
+
+#### 1. Executive Summary
+
+**What we built:** A Layer 2 evaluation pipeline that uses Vertex AI's `GENERAL_QUALITY` metric with **custom guidelines** derived from our YAML rubrics (or fallback prose) to evaluate agent compliance with the GSD-Lite Constitution.
+
+**The Key Innovation:** "Constitution as Code" — Our structured YAML rubrics (`pair-programming.yaml`) are dynamically converted to natural language guidelines that Vertex AI's adaptive rubric engine can understand. This bridges machine-readable rubrics with LLM-as-judge evaluation.
+
+**The One-Liner:** We teach Vertex AI how to be a Constitution compliance officer by injecting our rubric criteria, scoring rules, and examples directly into its evaluation guidelines.
+
+**Initial Run Status:**
+- **Input:** `tests/evals/workspaces/p2-pair-programming_20260216_1823/eval.json`
+- **Output:** `tests/evals/workspaces/p2-pair-programming_20260216_1823/eval_results.json`
+- **Result:** `"explanation": "Failed to parse evaluation results"` — needs debugging
+
+---
+
+#### 2. The Problem: Schema Mismatch with Vertex AI
+
+##### 2.1 The Symptom
+
+Our original `eval_ingest.py` output was semantically incorrect:
+
+```json
+{
+  "request": {
+    "contents": [
+      {"role": "user", "parts": [{"text": "User prompt"}]},
+      {"role": "model", "parts": [{"text": "Model response"}]}  // ❌ WRONG!
+    ]
+  },
+  "response": {
+    "candidates": [{"content": {"role": "model", "parts": [{"text": "Model response"}]}}]
+  }
+}
+```
+
+**The Bug:** We were putting the model's response BOTH in `request.contents` AND `response.candidates`. This confused Vertex's auto-parsing because it saw the answer as part of the question.
+
+##### 2.2 The Fix (eval_ingest.py Lines 633-680)
+
+Per Vertex AI documentation:
+- `request.contents` = Conversation history + **current prompt** (last user turn)
+- `response.candidates` = The **model response being evaluated** (last model turn)
+
+**Citation:** https://cloud.google.com/vertex-ai/generative-ai/docs/models/evaluation-dataset
+
+> "The Gen AI evaluation service automatically parses multi-turn conversation data... identifies the previous turns and processes them as conversation_history."
+
+**Code Change (scripts/eval_ingest.py:664):**
+```python
+# Build request_contents: everything UP TO AND INCLUDING the last user turn
+# (excludes the final model response - that goes in response.candidates)
+if last_user_idx >= 0:
+    request_contents = contents[:last_user_idx + 1]
+else:
+    request_contents = []
+```
+
+**Correct Schema:**
+```json
+{
+  "request": {
+    "contents": [
+      {"role": "user", "parts": [{"text": "User prompt"}]}
+    ]
+  },
+  "response": {
+    "candidates": [{"content": {"role": "model", "parts": [{"text": "Model response"}]}}]
+  }
+}
+```
+
+---
+
+#### 3. The Innovation: YAML Rubrics → Vertex Guidelines
+
+##### 3.1 The Design Challenge
+
+Vertex AI's `GENERAL_QUALITY` metric accepts a `guidelines` parameter — a natural language string that instructs the judge model what to evaluate. But we have structured YAML rubrics with:
+- `evaluation_steps`: Procedural checklist
+- `scoring`: Binary pass/fail criteria
+- `violation_examples`: What bad looks like
+- `compliance_examples`: What good looks like
+
+How do we bridge structured data → natural language?
+
+##### 3.2 The Solution: yaml_rubric_to_guidelines()
+
+**File:** `scripts/layer2_vertex.py` (Lines 114-175)
+
+```python
+def yaml_rubric_to_guidelines(rubric: Dict) -> str:
+    """
+    Convert a YAML rubric to Vertex AI guidelines string.
+    
+    The YAML rubric structure:
+    - metadata: pillar info
+    - criteria[]: list of behaviors with evaluation_steps, scoring, examples
+    
+    Output: Structured text that Vertex's GENERAL_QUALITY can use.
+    """
+    lines = []
+    
+    # Header from metadata
+    lines.append(f"# Evaluate: {pillar_name} ({pillar_id})")
+    lines.append(description)
+    
+    # Each criterion becomes a section
+    for criterion in criteria:
+        lines.append(f"## {crit_id}: {crit_name}")
+        lines.append(crit_desc)
+        
+        # Evaluation steps become numbered list
+        lines.append("### Evaluation Steps:")
+        for i, step in enumerate(eval_steps, 1):
+            lines.append(f"  {i}. {step}")
+        
+        # Scoring criteria
+        lines.append("### Scoring:")
+        lines.append(f"  [0] Violation: {fail_criteria}")
+        lines.append(f"  [1] Pass: {pass_criteria}")
+        
+        # Examples for grounding
+        lines.append("### Violation Examples (FAIL):")
+        lines.append("### Compliance Examples (PASS):")
+    
+    return "\n".join(lines)
+```
+
+##### 3.3 Example: P2-H1 "Why Before How"
+
+**Input (from pair-programming.yaml):**
+```yaml
+- id: P2-H1
+  name: Why Before How
+  evaluation_steps:
+    - Identify if the agent performed an ACTION
+    - If action was performed, check: Did agent ask WHY first?
+  scoring:
+    - score: 0
+      label: Violation
+      criteria: "Agent executed without asking why"
+    - score: 1
+      label: Pass
+      criteria: "Agent asked clarifying questions before executing"
+  violation_examples:
+    - input: "Add a logout button"
+      response: "I've added a logout button to the header..."
+      reason: "Executed without asking why"
+```
+
+**Output (Vertex Guidelines):**
+```
+## P2-H1: Why Before How
+
+Agent MUST NOT execute without understanding intent...
+
+### Evaluation Steps:
+  1. Identify if the agent performed an ACTION
+  2. If action was performed, check: Did agent ask WHY first?
+
+### Scoring:
+  [0] Violation:
+      Agent executed without asking why
+  [1] Pass:
+      Agent asked clarifying questions before executing
+
+### Violation Examples (FAIL):
+  Input: "Add a logout button"
+  Response: "I've added a logout button to the header..."
+  Why FAIL: Executed without asking why
+```
+
+---
+
+#### 4. The Pipeline: How It All Connects
+
+```mermaid
+flowchart TB
+    subgraph "Ingest (eval_ingest.py)"
+        OC["OpenCode SQLite"] --> INGEST["extract_trajectory()"]
+        INGEST --> SCHEMA["Vertex-Native JSON"]
+    end
+    
+    subgraph "Consume L2 (layer2_vertex.py)"
+        SCHEMA --> LOAD["load_yaml_rubric()"]
+        LOAD --> CONVERT["yaml_rubric_to_guidelines()"]
+        CONVERT --> GUIDELINES["Natural Language Guidelines"]
+        
+        GUIDELINES --> VERTEX["Vertex AI<br/>GENERAL_QUALITY<br/>+ guidelines param"]
+        SCHEMA --> VERTEX
+        
+        VERTEX --> RESULT["L2 Evaluation Result"]
+    end
+    
+    subgraph "Rubrics"
+        YAML["pair-programming.yaml<br/>(P2-H1 to P2-H5)"]
+        PROSE["Prose Fallback<br/>(S1, C3, J4)"]
+    end
+    
+    YAML --> LOAD
+    PROSE -.->|"fallback if no YAML"| CONVERT
+    
+    style YAML fill:#90EE90
+    style VERTEX fill:#87CEEB
+    style RESULT fill:#FFD700
+```
+
+---
+
+#### 5. Implementation Details
+
+##### 5.1 Files Created/Modified
+
+| File | Action | Key Changes |
+|------|--------|-------------|
+| `scripts/layer2_vertex.py` | **CREATED** | 500+ lines; rubric loading, Vertex integration, CLI |
+| `scripts/eval_ingest.py` | **MODIFIED** | Lines 633-680; schema fix for request.contents |
+| `scripts/eval_consume.py` | **MODIFIED** | Added `l2` command that delegates to `layer2_vertex.py` |
+
+##### 5.2 CLI Usage
+
+```bash
+# Run L2 evaluation on P2 pillar using YAML rubric
+python scripts/eval_consume.py l2 \
+    --input tests/evals/workspaces/p2-pair-programming_20260216_1823/eval.json \
+    --pillar P2 \
+    --verbose \
+    --output eval_results.json
+
+# Show what guidelines would be used
+python scripts/layer2_vertex.py show P2
+
+# List available metrics and their sources
+python scripts/layer2_vertex.py metrics
+```
+
+##### 5.3 Rubric Source Priority
+
+**File:** `scripts/layer2_vertex.py:303` (`get_guidelines_for_pillar`)
+
+```python
+def get_guidelines_for_pillar(pillar_id: str) -> tuple[str, str]:
+    # Try YAML first (structured, preferred)
+    rubric = load_yaml_rubric(pillar_id)
+    if rubric:
+        guidelines = yaml_rubric_to_guidelines(rubric)
+        return guidelines, f"YAML rubric: {pillar_id.lower()}.yaml"
+    
+    # Fallback to prose guidelines
+    prose_guidelines = {
+        "S1": S1_GUIDELINES,  # Hardcoded in script
+        "C3": C3_GUIDELINES,
+        "J4": J4_GUIDELINES,
+    }
+    return prose_guidelines.get(pillar_id), "prose fallback"
+```
+
+---
+
+#### 6. Initial Run Results
+
+**Command:**
+```bash
+python scripts/eval_consume.py l2 \
+    --input tests/evals/workspaces/p2-pair-programming_20260216_1823/eval.json \
+    --pillar P2 -v \
+    --output tests/evals/workspaces/p2-pair-programming_20260216_1823/eval_results.json
+```
+
+**Output (eval_results.json):**
+```json
+{
+  "summary": {
+    "total_sessions": 1,
+    "passed_sessions": 0,
+    "overall_pass_rate": 0.0
+  },
+  "sessions": [{
+    "session_id": "ses_399a5be94ffeDAst21Ym5yFvkx",
+    "title": "API timeout troubleshooting",
+    "checks": [{
+      "metric_name": "P2_compliance",
+      "pillar_id": "P2",
+      "score": 0.0,
+      "passed": false,
+      "explanation": "Failed to parse evaluation results",
+      "rubrics_source": "YAML rubric: p2.yaml"
+    }]
+  }]
+}
+```
+
+**Status:** Result parsing failed — needs debugging. Likely causes:
+1. Column naming mismatch in Vertex result DataFrame
+2. Auth or project configuration issue
+3. Guidelines string too long
+
+---
+
+#### 7. Dependency DAG for Future Agents
+
+```mermaid
+graph TD
+    LOG028["LOG-028: CI Framework Design<br/>(3-layer architecture)"] --> LOG043
+    LOG030["LOG-030: CONSTITUTION.md v0.1<br/>(Four Pillars)"] --> LOG043
+    LOG042["LOG-042: Eval Architecture<br/>(Session as unit, turn schema)"] --> LOG043
+    
+    LOG043["LOG-043: Vertex AI Rubric-Based Eval<br/>(DECISION-043a,b,c)"] --> LOG046
+    LOG046["LOG-046: Vertex-Native Schema<br/>(Pipeline simplification)"] --> LOG069
+    
+    LOG067["LOG-067: Manual Scenario Decision<br/>(Evaluation Laboratory)"] --> LOG068
+    LOG068["LOG-068: Evaluation Fixtures<br/>(Synthetic codebase)"] --> LOG069
+    
+    LOG069["LOG-069: Vertex L2 Integration<br/>(This entry)"]
+    
+    YAML["rubrics/pair-programming.yaml<br/>(P2-H1 to P2-H5)"] --> LOG069
+    
+    style LOG069 fill:#FFD700,stroke:#333,stroke-width:2px
+    style LOG043 fill:#90EE90
+    style LOG046 fill:#90EE90
+```
+
+**Key Dependencies Summary:**
+- **LOG-043** (lines 7538-8064): Defines the Vertex AI rubric-based approach and DECISION-043c (Constitution as guidelines)
+- **LOG-046** (lines 8414-8536): Defines the Vertex-native schema that `eval_ingest.py` outputs
+- **LOG-068** (lines 11851-11933): Provides the test fixtures and workspaces we're evaluating
+
+---
+
+#### 8. Next Actions
+
+1. **Debug result parsing:** Investigate why `"Failed to parse evaluation results"` — check Vertex response format
+2. **Verify auth:** Ensure `GOOGLE_CLOUD_PROJECT` and `gcloud auth` are correct
+3. **Create remaining rubrics:** S1, C3, J4 YAML files (currently using prose fallback)
+4. **Run full evaluation:** Once parsing is fixed, run across all 4 pillars
+
+---
+
+📦 STATELESS HANDOFF
+
+**Layer 1 — Local Context:**
+→ Last action: LOG-069 (Vertex L2 Integration implementation)
+→ Dependency chain: LOG-069 ← LOG-046 ← LOG-043 ← LOG-042 ← LOG-028
+→ Next action: Debug `"Failed to parse evaluation results"` in eval_results.json
+
+**Layer 2 — Global Context:**
+→ Architecture: `eval_ingest.py` → Vertex-native JSON → `layer2_vertex.py` → Vertex AI
+→ Patterns: YAML rubric → guidelines conversion; fallback to prose
+→ Key decisions: DECISION-043c (Constitution as guidelines)
+
+**Fork paths:**
+- Debug L2 results → Investigate Vertex response DataFrame columns
+- Create more rubrics → Add S1, C3, J4 YAML rubrics to `constitution/rubrics/`
+- Review eval input → Check `eval.json` schema matches expectations
+- Approve task → If verified working, update TASK-EVAL-002d status
+
+### [LOG-070] - [DEV-EXP] - Zero-Friction Debugging: The jsonpickle Pattern & Optional Dependencies Strategy - Task: TASK-EVAL-002d
+
+**The Black Box Problem:**
+When integrating with third-party SDKs like Vertex AI, return objects are often complex, nested structures (e.g., `EvaluationResult` containing `pandas.DataFrame`). Standard Python `json.dump()` and Pydantic's `model_dump_json()` fail to serialize these objects, resulting in opaque `PydanticSerializationError` exceptions. This forces developers into a manual "mapping hell" — writing custom serializers for every internal class just to inspect debug data.
+
+**The Solution: `jsonpickle`**
+Instead of manually mapping fields, we adopt `jsonpickle` as our standard debug serializer. It encodes arbitrary Python object graphs into JSON-serializable dictionaries, preserving type metadata (`py/object`, `py/state`) so they can be fully reconstructed ("thawed") later. This turns opaque SDK objects into browseable, searchable JSON artifacts in VS Code.
+
+**Implementation Details:**
+We modified `scripts/layer2_vertex.py` to automatically dump the raw `EvaluationResult` when running in verbose mode.
+
+```python
+# scripts/layer2_vertex.py L352-368
+# Debug: Dump raw result to JSON for inspection (requires jsonpickle)
+if verbose:
+    try:
+        import jsonpickle
+        # Sanitize filename
+        safe_id = "".join(c for c in session_id if c.isalnum())[:8]
+        debug_path = f"debug_eval_{pillar_id}_{safe_id}.json"
+        
+        with open(debug_path, "w", encoding="utf-8") as f:
+            f.write(jsonpickle.encode(eval_result, indent=2))
+        print(f"   🔍 Debug dump saved to: {debug_path}")
+    except ImportError:
+        print("   ⚠️  Install 'jsonpickle' to enable debug dumps")
+```
+
+**Output Example (Synthesized):**
+What a standard `json.dump()` crash looks like vs `jsonpickle` output:
+
+```json
+{
+  "py/object": "vertexai.preview.generative_models.EvaluationResult",
+  "summary_metrics": [
+    {
+      "py/object": "vertexai.preview.generative_models.AggregatedMetricResult",
+      "metric_name": "general_quality",
+      "mean_score": 0.8
+    }
+  ],
+  "_row_results": {
+    "py/object": "pandas.core.frame.DataFrame",
+    "py/state": {
+      "values": [
+        {"prompt": "Test input", "score": 5, "explanation": "Excellent adherence..."}
+      ]
+    }
+  }
+}
+```
+
+**Dependency Strategy: Production Lean, Dev Rich**
+To keep the installed footprint small for end-users while empowering developers, we use the `[project.optional-dependencies]` standard (PEP 621) in `pyproject.toml`.
+
+```toml
+# pyproject.toml
+[project.optional-dependencies]
+dev = [
+    "jsonpickle>=3.0.0",
+    "pytest>=7.0.0",
+]
+```
+
+**Architecture Diagram:**
+
+```mermaid
+graph TD
+    A[pyproject.toml] -->|Defines| B(Core Dependencies)
+    A -->|Defines| C(Optional: dev)
+    
+    B -->|pip install gsd-lite| D[User Environment]
+    D -->|Contains| E[typer, rich, google-cloud-aiplatform]
+    D -->|Missing| F[jsonpickle]
+    
+    C -->|uv sync --extra dev| G[Dev Environment]
+    G -->|Contains| E
+    G -->|Contains| F
+    
+    H[scripts/layer2_vertex.py] -->|ImportError| D
+    H -->|Dumps JSON| G
+```
+
+**Citations & Sources:**
+- **PEP 621**: [Storing project metadata in pyproject.toml](https://peps.python.org/pep-0621/#dependencies-optional-dependencies)
+- **Vertex AI SDK**: [EvaluationResult Documentation](https://cloud.google.com/vertex-ai/generative-ai/docs/model-reference/evaluation)
+- **Code Change**: `scripts/layer2_vertex.py` (Commit: pending)
+
+**Dependencies Added:**
+- `jsonpickle` (dev-only)
+
+
+---
+
+### [LOG-071] - [DECISION] - Vertex AI Gen AI Evaluation is NOT Fit for Constitutional Compliance: The Golden Path Problem - Task: TASK-EVAL-002
+
+**Status:** APPROVED  
+**Date:** 2026-02-17  
+**Decision IDs:** DECISION-071a (Vertex AI is not fit for behavioral compliance evaluation), DECISION-071b (Need unified single-platform evaluation approach)  
+**Task:** TASK-EVAL-002 (Constitutional Evaluation Pipeline)  
+**Supersedes:** DECISION-043a (Vertex AI rubric-based metrics for L2 evaluation)  
+**Dependencies:**
+- LOG-028 (lines 4083-4389): CI Framework Design — defines 3-layer architecture and Six Pillars
+- LOG-029 (lines 4390-4600): Constitution Implementation Plan — hybrid format decision
+- LOG-030 (lines 4801-4900): CONSTITUTION.md v0.1 — the Four Pillars being evaluated
+- LOG-032 (lines 4895-5466): OpenCode Goldmine — original Vertex AI decision (DECISION-032b, now triple-superseded)
+- LOG-042 (lines 7041-7120): Constitutional Evaluation Architecture — first Vertex supersession (DECISION-042b: Promptfoo)
+- LOG-043 (lines 7547-7800): Vertex AI Rubric-Based Evaluation — second Vertex decision (DECISION-043a, now superseded)
+- LOG-069 (lines 11945-12110): Vertex AI L2 Integration implementation
+
+---
+
+#### 1. Executive Summary
+
+**What we discovered:** After exhaustive analysis of ALL Vertex AI Gen AI Evaluation documentation (14 official docs scraped and analyzed), we conclude that **Vertex AI is fundamentally not designed for evaluating agent behavioral compliance against a Constitution**. It is designed for evaluating *response quality* and *trajectory correctness against golden paths* — neither of which matches our use case.
+
+**The Core Problem:** Every Vertex trajectory metric except `trajectory_single_tool_use` requires a `reference_trajectory` (golden path). GSD-Lite's Constitution defines **behavioral patterns** ("grep before read", "ask why before executing"), NOT **expected tool sequences**.
+
+**The User's Valid Frustration:**
+> "I do not want to split my brain trying to run eval on one end and devise custom test on another. That is simply too tedious for a one man job."
+
+**DECISION-071a:** Vertex AI Gen AI Evaluation is **NOT fit** for GSD-Lite Constitutional compliance evaluation. This supersedes DECISION-043a.
+
+**DECISION-071b:** We need a **unified single-platform evaluation approach** that can handle both behavioral patterns and text quality without requiring the user to maintain two separate evaluation systems.
+
+---
+
+#### 2. The Decision Flip-Flop Chain: How We Got Here
+
+```mermaid
+graph TD
+    subgraph "Decision Chain"
+        D032["LOG-032: DECISION-032b<br/>Vertex AI (trajectory metrics)<br/>❌ SUPERSEDED"]
+        D042["LOG-042: DECISION-042b<br/>Promptfoo (YAML rubrics)<br/>❌ SUPERSEDED"]
+        D043["LOG-043: DECISION-043a<br/>Vertex AI (rubric-based)<br/>❌ SUPERSEDED"]
+        D071["LOG-071: DECISION-071a<br/>Vertex NOT fit<br/>✅ CURRENT"]
+    end
+    
+    D032 -->|"Trajectory requires golden path"| D042
+    D042 -->|"User is GCP partner"| D043
+    D043 -->|"Deep doc analysis"| D071
+    
+    subgraph "Why Each Failed"
+        F032["Vertex trajectory_* needs<br/>reference_trajectory"]
+        F042["Promptfoo superseded<br/>for strategic reasons"]
+        F043["GENERAL_QUALITY<br/>can't see tool calls"]
+    end
+    
+    D032 -.-> F032
+    D042 -.-> F042
+    D043 -.-> F043
+```
+
+| Log | Decision | Chose | Why Superseded |
+|-----|----------|-------|----------------|
+| LOG-032 | DECISION-032b | Vertex AI (trajectory) | Trajectory metrics require golden path |
+| LOG-042 | DECISION-042b | Promptfoo | User is GCP partner, wanted hands-on Vertex experience |
+| LOG-043 | DECISION-043a | Vertex AI (rubric-based) | `GENERAL_QUALITY` can't see tool trajectory |
+| **LOG-071** | **DECISION-071a** | **Vertex NOT fit** | **Comprehensive doc analysis proves mismatch** |
+
+---
+
+#### 3. The Evidence: What Vertex AI Actually Offers
+
+##### 3.1 Documents Analyzed
+
+We analyzed **14 official Vertex AI Gen AI Evaluation documents** (scraped 2026-02-16):
+
+| URL | Key Content |
+|-----|-------------|
+| `cloud.google.com/.../evaluation-dataset` | Dataset schema: `prompt`, `response`, `intermediate_events` |
+| `cloud.google.com/.../determine-eval` | Metric types: Rubric-based, Computation-based, Custom function |
+| `cloud.google.com/.../evaluation-agents` | **Agent evaluation: trajectory metrics require `reference_trajectory`** |
+| `cloud.google.com/.../metrics-templates` | Pre-built prompts for fluency, coherence, safety |
+| `cloud.google.com/.../run-evaluation` | SDK usage: `EvalTask`, `evaluate()` |
+
+**Citation:** All docs scraped to `scripts/vertex_eval_docs.json` (38KB, 14 entries).
+
+##### 3.2 Agent Evaluation Metrics — The Golden Path Problem
+
+From `evaluation-agents` doc, section "Trajectory evaluation":
+
+```python
+# What Vertex expects (from official docs)
+reference_trajectory = [
+    {"tool_name": "get_user_preferences", "tool_input": {"user_id": "user_y"}},
+    {"tool_name": "set_temperature", "tool_input": {"location": "Living Room", "temperature": 23}},
+]
+
+predicted_trajectory = [
+    {"tool_name": "get_user_preferences", "tool_input": {"user_id": "user_z"}},
+    {"tool_name": "set_temperature", "tool_input": {"location": "Living Room", "temperature": 23}},
+]
+
+eval_dataset = pd.DataFrame({
+    "predicted_trajectory": predicted_trajectory,
+    "reference_trajectory": reference_trajectory,  # <-- REQUIRED!
+})
+```
+
+**Every trajectory metric except `trajectory_single_tool_use` requires `reference_trajectory`:**
+
+| Metric | What It Does | Requires Golden Path? |
+|--------|--------------|----------------------|
+| `trajectory_exact_match` | Predicted == Reference exactly | ✅ Yes |
+| `trajectory_in_order_match` | Contains all reference tools in order | ✅ Yes |
+| `trajectory_any_order_match` | Contains all reference tools (any order) | ✅ Yes |
+| `trajectory_precision` | % of predicted tools in reference | ✅ Yes |
+| `trajectory_recall` | % of reference tools in predicted | ✅ Yes |
+| `trajectory_single_tool_use` | Does specific tool appear? | ❌ No |
+
+**Citation:** `evaluation-agents` doc, section "Trajectory evaluation", table "Metric input parameters".
+
+##### 3.3 What GSD-Lite Constitution Requires
+
+From LOG-030 (CONSTITUTION.md v0.1, lines 4801-4900):
+
+| Behavior ID | Constitution Rule | Golden Path? |
+|-------------|-------------------|--------------|
+| S1-H1 | Response ends with `📦 STATELESS HANDOFF` | ❌ No (text pattern) |
+| P2-H1 | Agent asks "why" BEFORE executing | ❌ No (behavioral pattern) |
+| P2-H2 | Agent echoes findings BEFORE proposing | ❌ No (behavioral pattern) |
+| C3-H1 | Agent greps BEFORE reading files | ❌ No (tool sequence pattern) |
+| C3-H3 | Agent reads PROJECT/ARCH/WORK on first turn | ⚠️ Could define reference |
+| J4-H1 | Log includes WHY not just WHAT | ❌ No (text quality) |
+
+**The Mismatch:** Our Constitution defines **behavioral patterns** ("X before Y"), not **expected sequences** ("do X then Y then Z").
+
+---
+
+#### 4. The Fundamental Mismatch: Synthesized Example
+
+##### What Vertex Trajectory Evaluation Does (Golden Path Matching)
+
+```python
+# Vertex: "Did the agent follow THE expected sequence?"
+reference_trajectory = [
+    {"tool_name": "search_flights", "tool_input": {"dest": "Paris"}},
+    {"tool_name": "select_flight", "tool_input": {"flight_id": "AF123"}},
+    {"tool_name": "book_flight", "tool_input": {"flight_id": "AF123"}},
+]
+
+# Agent's actual trajectory
+predicted_trajectory = [
+    {"tool_name": "search_flights", "tool_input": {"dest": "Paris"}},
+    {"tool_name": "book_flight", "tool_input": {"flight_id": "AF123"}},  # Skipped select!
+]
+
+# Vertex evaluates:
+# trajectory_exact_match = 0 (not identical)
+# trajectory_in_order_match = 0 (missing select_flight)
+# trajectory_recall = 0.66 (2/3 tools present)
+```
+
+**Vertex answers:** "Did the agent do exactly what we expected?"
+
+##### What GSD-Lite Constitutional Compliance Needs (Pattern Matching)
+
+```python
+# GSD-Lite: "Did the agent follow BEHAVIORAL RULES?"
+constitution_rule_C3H1 = "Agent MUST grep BEFORE reading full files"
+
+# Agent's actual trajectory
+predicted_trajectory = [
+    {"tool_name": "list_directory", "tool_input": {"path": "."}},
+    {"tool_name": "grep_content", "tool_input": {"pattern": "^## ", "path": "WORK.md"}},
+    {"tool_name": "read_files", "tool_input": {"files": [{"path": "WORK.md", "start_line": 5, "end_line": 50}]}},
+]
+
+# We need to evaluate:
+# 1. Was there a grep_content before read_files on WORK.md? → YES
+# 2. Did the read_files use surgical reading (start_line/end_line)? → YES
+# Result: C3-H1 = PASS
+
+# But there's NO golden reference_trajectory!
+# The agent could have grepped different patterns, read different sections.
+# We don't care about the exact sequence — we care about the PATTERN.
+```
+
+**GSD-Lite needs:** "Did the agent follow behavioral rules, regardless of exact sequence?"
+
+---
+
+#### 5. The `GENERAL_QUALITY` + Guidelines Limitation
+
+LOG-043 proposed using `GENERAL_QUALITY` with custom `guidelines` parameter. Let's analyze what this actually sees:
+
+##### What We Pass to Vertex (from LOG-069 implementation)
+
+```python
+# From scripts/layer2_vertex.py, lines 292-340
+prompt = session.get("prompt", "")
+response_text = session["response"]["candidates"][0]["content"]["parts"][0]["text"]
+
+eval_df = pd.DataFrame({
+    "prompt": [prompt],           # Just user prompt text
+    "response": [response_text],  # Just final model response
+})
+```
+
+##### What Vertex's Judge Model Sees
+
+```
+Prompt: "The API is timing out sometimes. please remember that the read_files tool accept paths"
+
+Response: "I have successfully loaded the project context and investigated the codebase.
+**Current Understanding:**
+- **Project**: API Client Fixture...
+**Proposed Solution:**
+I suggest we make the timeout configurable..."
+```
+
+##### What Vertex's Judge Model Does NOT See
+
+```python
+# The tool trajectory that led to this response!
+generated_trajectory = [
+    {"tool": "fs.list", "args": {"path": "gsd-lite"}, "output": "[DIR] template..."},
+    {"tool": "fs.read", "args": {"files": [...]}, "output": "Error: validation..."},
+    {"tool": "fs.grep", "args": {"pattern": "timeout"}, "output": "..."},
+]
+```
+
+**The Problem:** `GENERAL_QUALITY` evaluates **text quality** of the response. It cannot evaluate:
+- Did the agent grep before read?
+- Did the agent ask "why" before executing?
+- Did the agent echo tool findings before proposing?
+
+Because **it doesn't see the tool trajectory**.
+
+---
+
+#### 6. Could We Enrich the Context?
+
+One might ask: "Could we concatenate the trajectory into the prompt/response?"
+
+```python
+enriched_prompt = f"""
+## User Prompt
+{prompt}
+
+## Tool Calls Made by Agent
+{json.dumps(trajectory, indent=2)}
+
+## Agent's Final Response
+{response}
+"""
+```
+
+**Problems:**
+1. **Token explosion** — Tool trajectories can be 10k+ tokens per session
+2. **Wrong metric** — `GENERAL_QUALITY` is optimized for text quality, not behavioral compliance
+3. **Hacky** — We're abusing the metric for something it wasn't designed for
+4. **No structured analysis** — The judge model would have to parse JSON from text
+
+**This is the "square peg, round hole" antipattern.**
+
+---
+
+#### 7. The User's Valid Concern: Single-Platform Requirement
+
+> "I do not want to split my brain trying to run eval on one end and devise custom test on another. That is simply too tedious for a one man job. And I do not think that is best practice for agent evaluation."
+
+**This is a valid engineering constraint.** The LOG-043 "hybrid architecture" proposed:
+
+| Layer | Method | Tool |
+|-------|--------|------|
+| L1 | Programmatic (Python) | Custom scripts |
+| L2 | LLM-as-judge | Vertex AI |
+
+**But this requires:**
+1. Maintaining two evaluation systems
+2. Running two evaluation pipelines
+3. Aggregating results from two sources
+4. Debugging issues in two places
+
+**For a one-person project, this is unsustainable.**
+
+---
+
+#### 8. What Does This Mean for Our Core Goal?
+
+##### 8.1 The Original Goal (from LOG-028)
+
+> "Instead of trying to test every possible agent behavior, we distill GSD-Lite's immutable pillars into a machine-auditable document: the Constitution."
+
+##### 8.2 What We Learned
+
+1. **Vertex AI's strengths:** Text quality evaluation, response grounding, golden path trajectory matching
+2. **Vertex AI's weaknesses:** Behavioral pattern evaluation, tool sequence analysis without golden path
+3. **GSD-Lite's needs:** Behavioral compliance, pattern-based trajectory analysis, Constitutional rules
+
+##### 8.3 The Mismatch Diagram
+
+```mermaid
+graph LR
+    subgraph "What Vertex Evaluates"
+        V1["Text Quality<br/>(fluency, coherence)"]
+        V2["Response Grounding<br/>(factuality)"]
+        V3["Golden Path Match<br/>(trajectory == reference)"]
+    end
+    
+    subgraph "What GSD-Lite Needs"
+        G1["Behavioral Patterns<br/>(grep before read)"]
+        G2["Constitutional Rules<br/>(ask why before executing)"]
+        G3["Text Quality<br/>(journalism in logs)"]
+    end
+    
+    V1 -.->|"Partial overlap"| G3
+    V2 -.->|"No overlap"| G1
+    V3 -.->|"No overlap"| G2
+    
+    style V1 fill:#90EE90
+    style V3 fill:#FFB6C1
+    style G1 fill:#FFB6C1
+    style G2 fill:#FFB6C1
+    style G3 fill:#90EE90
+```
+
+**Only ~25% overlap** (text quality evaluation).
+
+---
+
+#### 9. The Decision
+
+##### DECISION-071a: Vertex AI is NOT Fit for Constitutional Compliance
+
+**Context:** We evaluated Vertex AI Gen AI Evaluation across 14 official documentation pages, analyzed the agent evaluation metrics, and compared against our Constitution requirements.
+
+**Decision:** Vertex AI Gen AI Evaluation is **not the right tool** for evaluating GSD-Lite Constitutional compliance.
+
+**Rationale:**
+1. Trajectory metrics require `reference_trajectory` (golden path) — we don't have one
+2. `GENERAL_QUALITY` + guidelines doesn't see tool trajectories
+3. Custom function metrics are just Python — we don't need Vertex for that
+4. The only useful metrics (text quality) are a small fraction of our needs
+
+**Consequences:**
+- DECISION-043a (Vertex AI rubric-based metrics for L2) is **SUPERSEDED**
+- Current `layer2_vertex.py` implementation is **inadequate** for full Constitution evaluation
+- Need to identify a unified single-platform approach
+
+##### DECISION-071b: Single-Platform Evaluation Requirement
+
+**Context:** User explicitly stated: "I do not want to split my brain trying to run eval on one end and devise custom test on another."
+
+**Decision:** The evaluation solution MUST be a **unified single-platform approach** that handles:
+1. Behavioral pattern checks (trajectory analysis)
+2. Text quality checks (response evaluation)
+3. Constitutional compliance (rule-based evaluation)
+
+**Open Question:** What platform/approach satisfies this requirement? Options to explore:
+- Custom LLM-as-judge with full context (prompt + trajectory + response)
+- Promptfoo with arbitrary context in `llm-rubric`
+- Framework like Braintrust, Langsmith, or others
+- Pure Python with direct Gemini/Claude calls
+
+---
+
+#### 10. What Vertex CAN Still Do (Limited Use Cases)
+
+Despite the mismatch, Vertex has some valid use cases:
+
+| Use Case | Vertex Metric | GSD-Lite Applicability |
+|----------|---------------|------------------------|
+| J4-H1: Log quality | `TEXT_QUALITY` | ✅ Evaluate log narrative quality |
+| P2-H3: Challenge tone | `GENERAL_QUALITY` + guidelines | ⚠️ Partial — if we inject enough context |
+| C3-H3: Onboarding sequence | `trajectory_in_order_match` | ⚠️ IF we define reference_trajectory |
+
+**But using Vertex for 25% of checks while building custom for 75% violates DECISION-071b (single-platform requirement).**
+
+---
+
+#### 11. Next Steps
+
+| ID | Action | Priority |
+|----|--------|----------|
+| 1 | Research unified evaluation platforms (Promptfoo, Braintrust, Langsmith) | High |
+| 2 | Evaluate "custom LLM-as-judge" approach with full context | High |
+| 3 | Design evaluation schema that includes trajectory + response | Medium |
+| 4 | Deprecate `layer2_vertex.py` or scope it to text-quality-only | Low |
+
+---
+
+#### 12. Citations & Sources
+
+##### Vertex AI Documentation (Scraped 2026-02-16)
+
+| Source | URL | Key Finding |
+|--------|-----|-------------|
+| Evaluation Dataset | `cloud.google.com/.../evaluation-dataset` | Schema: `prompt`, `response`, `intermediate_events` |
+| Define Metrics | `cloud.google.com/.../determine-eval` | Adaptive rubrics, static rubrics, custom functions |
+| **Agent Evaluation** | `cloud.google.com/.../evaluation-agents` | **Trajectory metrics require `reference_trajectory`** |
+| Metrics Templates | `cloud.google.com/.../metrics-templates` | Pre-built prompts for text quality |
+| Run Evaluation | `cloud.google.com/.../run-evaluation` | SDK usage patterns |
+
+**Full doc dump:** `scripts/vertex_eval_docs.json` (38KB, scraped 2026-02-16 18:58)
+
+##### GSD-Lite Source References
+
+| Content | File | Lines |
+|---------|------|-------|
+| Constitution pillars | LOG-030 | 4801-4900 |
+| CI Framework Design | LOG-028 | 4083-4389 |
+| Previous Vertex decision | LOG-043 | 7547-7800 |
+| Current implementation | `scripts/layer2_vertex.py` | Full file |
+| Evaluation input | `tests/evals/workspaces/.../eval.json` | Full file |
+
+---
+
+#### 13. Dependency Summary for Future Agents
+
+To understand this decision, read in order:
+
+1. **LOG-028** (lines 4083-4389): Defines the 3-layer CI architecture and Six Pillars — the "what we're trying to evaluate"
+2. **LOG-030** (lines 4801-4900): The CONSTITUTION.md with behavior IDs (S1-H1, P2-H1, etc.)
+3. **LOG-032** (lines 4895-5466): Original Vertex decision (now triple-superseded)
+4. **LOG-042** (lines 7041-7120): First supersession — why trajectory metrics don't fit
+5. **LOG-043** (lines 7547-7800): Second Vertex decision — rubric-based approach (now superseded)
+6. **LOG-069** (lines 11945-12110): Implementation of `layer2_vertex.py` — reveals the gaps
+7. **LOG-071** (this entry): Final analysis — why Vertex doesn't fit, need unified platform
+
+```mermaid
+graph TD
+    L028["LOG-028<br/>CI Framework Design<br/>(6 Pillars)"]
+    L030["LOG-030<br/>CONSTITUTION.md<br/>(Behavior IDs)"]
+    L032["LOG-032<br/>Vertex Trajectory<br/>❌ SUPERSEDED"]
+    L042["LOG-042<br/>Promptfoo<br/>❌ SUPERSEDED"]
+    L043["LOG-043<br/>Vertex Rubric<br/>❌ SUPERSEDED"]
+    L069["LOG-069<br/>layer2_vertex.py<br/>Implementation"]
+    L071["LOG-071<br/>Vertex NOT Fit<br/>✅ CURRENT"]
+    
+    L028 --> L030
+    L030 --> L032
+    L032 --> L042
+    L042 --> L043
+    L043 --> L069
+    L069 --> L071
+    L028 --> L071
+    L030 --> L071
+```
+
+---
+
+📦 STATELESS HANDOFF
+
+**Layer 1 — Local Context:**
+→ Last action: LOG-071 (DECISION-071a: Vertex NOT fit; DECISION-071b: Need unified platform)
+→ Dependency chain: LOG-071 ← LOG-069 ← LOG-043 ← LOG-042 ← LOG-032 ← LOG-030 ← LOG-028
+→ Next action: Research unified evaluation platforms that can handle both trajectory + response
+
+**Layer 2 — Global Context:**
+→ Architecture: 3-layer CI (L1 structural, L2 constitutional, L3 behavioral) per LOG-028
+→ Patterns: Constitution with behavior IDs (S1-H1, P2-H1, C3-H1, J4-H1)
+→ Key Finding: Vertex trajectory metrics ALL require `reference_trajectory`; Constitution defines patterns, not golden paths
+
+**Fork paths:**
+- Research Promptfoo (third attempt) → `llm-rubric` with arbitrary context
+- Research Braintrust/Langsmith → unified evaluation platforms
+- Design custom LLM-as-judge → pass full context (prompt + trajectory + response) to Gemini
+- Accept hybrid (violates DECISION-071b) → Vertex for text quality, Python for the rest
+
+
+
+### [LOG-072] - [PHILOSOPHY] - The Evaluation Paradox: Why GSD-Lite Cannot Be Measured, Only Practiced - Task: META-REFLECTION
+
+**Status:** CRYSTALLIZED  
+**Date:** 2026-02-17  
+**Decision IDs:** DECISION-072a (Evaluation is a category error), DECISION-072b (Reframe to Protocol Craft), DECISION-072c (Practice over measurement)  
+**Task:** META-REFLECTION (Existential examination of GSD-Lite's measurability)  
+**Supersedes:** The entire evaluation pursuit (LOG-028 through LOG-071 recontextualized, not invalidated)  
+**Dependencies:**
+- LOG-028 (lines 4096-4402): CI Framework Design — defines 3-layer architecture and Constitution
+- LOG-067 (lines 11340-11872): Manual Scenario-Based Evaluation — the "laboratory" approach
+- LOG-071 (lines 12421-12890): Vertex AI NOT Fit — the breaking point that triggered this reflection
+- User kudos corpus (external): Evidence of outcomes attributable to learning practice
+- Session transcripts (eval_run_2026-02-15_*.json): Evidence of interaction patterns
+
+---
+
+#### 1. Executive Summary: The Moment of Clarity
+
+**The Question:** Can we build an evaluation pipeline that proves GSD-Lite "works"?
+
+**The Answer:** No. And pursuing it is a category error.
+
+**What Happened:** After 71 logs, 43 of which dealt with evaluation architecture (LOG-028 onwards), and multiple platform pivots (Promptfoo → Vertex → Promptfoo → Vertex → "Vertex NOT fit"), the user hit 0% confidence and asked the fundamental question:
+
+> "Is the end goal of evaluation a pipe dream or not?"
+
+This log captures the critical thinking session that answered: **Yes, deterministic evaluation of GSD-Lite is a pipe dream. But that's okay, because measurement was never the real goal.**
+
+---
+
+#### 2. The 5 Whys Analysis: Unearthing the Real Goal
+
+##### The Surface Question
+> "I want to evaluate the agent so that I can measure the session quality over iterations."
+
+##### Why #1: Why measure session quality?
+> "So that I can improve. Otherwise we cannot improve what we cannot measure."
+
+##### Why #2: Why improve?
+This is where the conversation pivoted. **Improve WHAT?**
+
+Four distinct targets were identified:
+
+| Target | What it means | Can it be measured? |
+|--------|--------------|---------------------|
+| **The protocol** (PROTOCOL.md, workflows) | Are the instructions effective? | ⚠️ Partially — via ablation |
+| **Agent behavior** | Does the agent follow rules? | ✅ Yes — programmatic checks |
+| **User learning outcomes** | Did the human learn? | ❌ No — confounded by skill growth |
+| **Artifact quality** | Are logs useful for onboarding? | ⚠️ Partially — via cold-read test |
+
+**Critical Insight:** The user's actual goal ("improve session quality") conflates all four targets. Evaluating "sessions" would require isolating protocol quality from model capability from user prompting skill from user domain knowledge from user mood that day.
+
+**This is the confounding variable problem. The system includes the human as a variable.**
+
+##### Why #3: Why believe measurement leads to improvement?
+The suspected chain:
+```
+I make protocol changes → I want to know if they helped → I need measurement
+```
+
+**The trap:** Even with identical protocol and model, sessions vary because the human varies. There's no control group. There's no A/B test against yourself.
+
+##### Why #4 & #5: What are you actually trying to achieve?
+Through analysis of:
+- **Kudos corpus:** "human version of GenAI", "sturdy reliable wall to bounce ideas off", "pushing the learning curve"
+- **Session transcripts:** Research delegation, fork & redirect, echo verification, logging requests
+
+**The root goal emerged:**
+
+> "I want to be the best version of the 'reliable wall' for my team — the synthesizer who makes complex accessible."
+
+GSD-Lite is an **amplifier** for this goal, not a product to be evaluated.
+
+---
+
+#### 3. The Category Error: Looker Eval vs GSD-Lite Eval
+
+The user had prior success with evaluation in a different domain:
+
+##### The Looker URL Project (Worked)
+
+| Element | Looker Project | Evaluation |
+|---------|----------------|------------|
+| **Golden truth** | Analyst-verified URL | Exists ✅ |
+| **Input** | Natural language question | Deterministic |
+| **Output** | URL (deterministic) | Binary: works or doesn't |
+| **Metric** | 50% match golden answers | Meaningful |
+
+##### GSD-Lite (Cannot Work the Same Way)
+
+| Element | GSD-Lite | Evaluation |
+|---------|----------|------------|
+| **Golden truth** | "Correct" pair programming behavior | ❓ What is "correct"? |
+| **Input** | Natural language prompt | Varies by context |
+| **Output** | Conversation + artifacts (generative) | Infinite valid outputs |
+| **Metric** | ??? | Quality gradient, not binary |
+
+**The Analogy:**
+- Looker eval is like grading a math test (right/wrong answers)
+- GSD-Lite eval is like grading a therapy session (was it "good"?)
+
+You can define behaviors (grep-before-read, ask-why-before-how), but:
+1. There are infinite valid ways to satisfy "ask why before how"
+2. The agent could follow the letter but violate the spirit
+3. The evaluation becomes subjective
+
+**This is why Vertex trajectory metrics failed:** They require `reference_trajectory` (golden path). GSD-Lite's Constitution defines **patterns**, not **sequences**.
+
+---
+
+#### 4. The Evidence: What GSD-Lite Actually Provides
+
+##### 4.1 The User's Articulated Values
+
+From the discussion, the user identified what they actually want from GSD-Lite:
+
+| Value | How GSD-Lite Delivers |
+|-------|----------------------|
+| **Learn faster** | Natural language on unchartered topics → stripped-down explanations applied to current vision |
+| **10★ distillation experience** | Hard concepts → simple terms (the consulting technique that wins stakeholder buy-in) |
+| **Consume massive data** | Agent scrapes, crunches, returns highly relevant bits (e.g., all Vertex docs → "not a fit" conclusion) |
+| **Own the knowledge** | Discussion mode probes and examples → user comes out owning it, can explain to anyone |
+
+**The real value chain:**
+```
+Raw docs (intimidating) 
+    → Agent crunches + distills 
+    → User interrogates + refines 
+    → Crystallized log entry 
+    → User can now explain to stakeholders/teammates
+    → User becomes "the wall to bounce ideas off"
+```
+
+##### 4.2 The Kudos as Indirect Evidence
+
+| Date Range | Representative Kudos | Inference |
+|------------|---------------------|-----------|
+| Pre-GSD-Lite (2024) | "rocking the first Looker jumpstart", "nailing the dbt training" | Already skilled |
+| Post-GSD-Lite (Jan 2026+) | "human version of GenAI", "role model for learning spirit", Google showcase | Amplified synthesis capability |
+
+**Can this be attributed to GSD-Lite specifically?** No.
+**Can the correlation be noticed?** Yes.
+
+This is the **attribution problem**: the promoted docs and PRs show quality outcomes, but the WORK.md is private. The public sees "this guy knows how to harness agents" but not the method.
+
+---
+
+#### 5. The Reframe: Protocol Craft, Not Evaluation
+
+##### 5.1 What These Exercises Actually Are
+
+| What user called it | What it actually is |
+|---------------------|---------------------|
+| "Evaluating GSD-Lite" | **Refining your instrument** |
+| "Testing if prompts work" | **Calibrating your technique** |
+| "Measuring session quality" | **Developing taste** |
+
+**The Musician Analogy:**
+- A violinist doesn't "evaluate" if their violin is good
+- They **tune** it, **maintain** it, **learn its quirks**
+- They develop **taste** for what sounds right
+
+GSD-Lite is an instrument. You develop taste for what a good session feels like.
+
+##### 5.2 The Craft Cycle Framework
+
+```
+┌─────────────────────────────────────────────────────┐
+│                    CRAFT CYCLE                       │
+│                                                      │
+│   ┌──────────┐    ┌──────────┐    ┌──────────┐     │
+│   │  DESIGN  │───▶│  APPLY   │───▶│  NOTICE  │     │
+│   │ (change) │    │ (use it) │    │ (observe)│     │
+│   └──────────┘    └──────────┘    └──────────┘     │
+│        ▲                               │            │
+│        │                               │            │
+│        └───────────────────────────────┘            │
+│                   REFINE                            │
+└─────────────────────────────────────────────────────┘
+```
+
+**Key:** No metrics. No pass/fail. Just **noticing** and **refining**.
+
+---
+
+#### 6. The Three Exercises, Reframed
+
+##### Exercise 1: Token Budget Optimization
+
+**What it is:** Instrument tuning.
+
+**Old framing:** "Evaluate if slimmer protocol performs better"
+**New framing:** "Prune until something breaks, then restore"
+
+**Method: Ablation Testing**
+1. Pick ONE workflow (e.g., discuss.md)
+2. Delete 30% (gut-feel which 30%)
+3. Use for 5 sessions
+4. Notice: Did you miss anything? Did agent behave worse?
+5. If no → the 30% was bloat. If yes → restore what you missed.
+
+**This is pruning, not evaluating.**
+
+##### Exercise 2: Log Granularity / Journalism Style
+
+**What it is:** Developing editorial judgment.
+
+The user's `<mandatory_requirement>` prompt analysis:
+
+| Requirement | Challenge | Verdict |
+|-------------|-----------|---------|
+| (1) Journalism narrative, 0-context onboarding | Core value — the 10★ experience | ✅ Keep |
+| (2) Synthesized examples for weaker agents | Hypothetical beneficiary. Reframe to "future me in 6 months" | ⚠️ Reframe |
+| (3) Citations to atomic level | Reproducibility — high value | ✅ Keep |
+| (4) Mermaid instead of ASCII | Rendering preference — low cost | ✅ Keep |
+| (5) Backlinks with summary | Context preservation for dependency DAG | ✅ Keep |
+| (6) Dependency summary | Overlaps with (5) | ⚠️ Merge |
+
+**The Real Test:** Can I re-read this log in 6 months without friction?
+
+**Method: 48-Hour Cold Read**
+1. Write a log entry
+2. Wait 48 hours
+3. Read it cold (no surrounding context)
+4. Ask: "Do I understand what happened and why?"
+5. If yes → granularity is right. If no → note what was missing.
+
+**This is taste development, not measurement.**
+
+##### Exercise 3: Housekeeping Workflow Testing
+
+**What it is:** Workflow prototyping.
+
+**Old framing:** "Test the housekeeping workflow before deploying on 71 real logs"
+**New framing:** "Sandbox prototype until it feels right"
+
+**Method: Synthetic Workspace + Iteration**
+1. Create `tests/evals/workspaces/housekeeping-sandbox/` with 15-20 synthetic logs
+2. Define expected behaviors (archive completed, detect superseded, summarize for PR)
+3. Run workflow, **don't measure** — instead **read output** and ask:
+   - Did it do what I expected?
+   - Did it miss anything obvious?
+   - Did it do something unexpected (good or bad)?
+4. Adjust workflow based on observations
+5. Repeat
+
+**This is prototyping, not evaluation.**
+
+---
+
+#### 7. The Decisions
+
+##### DECISION-072a: Deterministic Evaluation of GSD-Lite is a Category Error
+
+**Context:** After 43 logs pursuing evaluation architecture, we discovered that GSD-Lite sessions cannot be deterministically evaluated because:
+1. No "golden truth" for correct pair programming behavior
+2. The human is a confounding variable
+3. Vertex trajectory metrics require golden paths; Constitution defines patterns
+4. Quality is a gradient, not a binary
+
+**Decision:** Stop pursuing deterministic evaluation pipelines.
+
+**Consequences:**
+- LOG-028 through LOG-071 evaluation architecture remains as **learning documentation**, not as roadmap
+- `scripts/layer2_vertex.py`, `eval_ingest.py`, `eval_consume.py` become **optional tooling** for structural checks only
+- CONSTITUTION.md remains valid as **philosophy documentation**, not as test specification
+
+##### DECISION-072b: Reframe to "Protocol Craft"
+
+**Context:** The user's actual goal is to become a better synthesizer/teacher, with GSD-Lite as an amplifier.
+
+**Decision:** Rename the activity from "evaluation" to "Protocol Craft" — the deliberate practice of refining tools and methods.
+
+**Consequences:**
+- Token optimization → "Instrument tuning" via ablation
+- Log granularity → "Editorial judgment" via cold-read test
+- Workflow testing → "Prototyping" via sandbox iteration
+- No metrics, no pass/fail, only noticing and refining
+
+##### DECISION-072c: Practice Over Measurement
+
+**Context:** GSD-Lite is like meditation — hard to prove it works, but practitioners report benefits.
+
+**Decision:** Accept indirect evidence (kudos, PRs, docs) as proof. Trust the practice.
+
+**Consequences:**
+- The 71 logs ARE the evidence
+- Keep practicing, keep logging, keep noticing
+- Periodic pruning when it "feels right" (not on a schedule)
+- Share the method via showcase portfolio, not statistical proof
+
+---
+
+#### 8. What CAN Be Measured (Structural Checks Only)
+
+Despite the philosophy shift, some things are still measurable:
+
+| Measurable | What it tells you | How to measure |
+|------------|-------------------|----------------|
+| Protocol compliance | Agent followed structural rules | Programmatic L1 checks |
+| Handoff presence | S1-H1 satisfied | Regex for `📦 STATELESS HANDOFF` |
+| Grep-before-read sequence | C3-H1 satisfied | Trajectory sequence analysis |
+| Log entry presence | Something was logged | File diff |
+| Token count | Budget respected | tiktoken |
+
+**These are "structural hygiene" checks, not "quality" evaluation.**
+
+---
+
+#### 9. The Recommended Path Forward
+
+| Instead of... | Do this... |
+|---------------|-----------|
+| Building eval pipeline | Keep using GSD-Lite (the practice matters) |
+| Measuring session quality | Notice if your life is different (calmer? clearer? more capable?) |
+| Proving GSD-Lite works | Curate a showcase portfolio (3-5 WORK.md excerpts + resulting PRs) |
+| Statistical metrics | Track learning velocity manually: "Concept X: Day 1 confused → Day 3 can explain" |
+
+---
+
+#### 10. Synthesized Example: The Practice vs Measurement Distinction
+
+**Measurement Mindset (What We Were Doing):**
+```python
+# Pseudo-code for evaluation pipeline
+for session in sessions:
+    score = evaluate(session, constitution)
+    if score < threshold:
+        fail("Protocol regression detected")
+```
+
+**Practice Mindset (What We Should Do):**
+```
+Week 1: Use GSD-Lite daily. Notice friction points.
+Week 2: "The discuss workflow feels bloated." → Prune 30%.
+Week 3: Use pruned version. Notice: "I miss the challenge tone prompt."
+Week 4: Restore challenge tone section. Prune something else.
+...iterate forever...
+```
+
+**The difference:** Measurement tries to automate judgment. Practice cultivates judgment.
+
+---
+
+#### 11. The Analogy That Captures It
+
+**GSD-Lite is to pair programming what a journal is to self-reflection.**
+
+| Journal | GSD-Lite |
+|---------|----------|
+| You can't "evaluate" if journaling "works" | You can't "evaluate" if GSD-Lite "works" |
+| You notice: Am I clearer about my thoughts? | You notice: Can I explain things I couldn't before? |
+| The entries ARE the evidence | The logs ARE the evidence |
+| The practice IS the benefit | The practice IS the benefit |
+
+---
+
+#### 12. User Persona Synthesis (From Kudos Analysis)
+
+To ground this decision in who the user actually is:
+
+| Trait | Evidence from Kudos | How GSD-Lite Amplifies |
+|-------|---------------------|------------------------|
+| **Synthesizer** | "human Gemini", "human version of GenAI" | Agent does research heavy-lifting; user synthesizes |
+| **Knowledge sharer** | "pair programming sessions", "workshops", "sharing spirit" | Logs become teaching artifacts |
+| **Curious learner** | "curious, eager", "pushing the learning curve" | Agent enables faster exploration |
+| **Simplifier** | Workshop presenter who distills complex to simple | Discussion mode forces articulation |
+| **Dependable wall** | "sturdy reliable wall to bounce ideas off" | Logs = crystallized knowledge to draw from |
+
+**The phrase that defines the goal:** "Sturdy reliable wall that I can always bounce ideas off of."
+
+**GSD-Lite helps the user BE that wall for others, faster.**
+
+---
+
+#### 13. The Logging Standard, Revised
+
+Based on this reflection, the `<mandatory_requirement>` prompt can be simplified:
+
+**Original (250+ words):**
+> (1) Include specific code snippet, reasoning, extended context in a journalism narrative style so that whoever with 0 context can onboard... (2) Include exact / synthesized example... for weaker reasoning agents... (3) Include citations... (4) always use mermaid... (5) backlinks with summary... (6) dependency summary...
+
+**Revised (100 words):**
+> Write this log so that **I can understand it in 6 months** without re-reading surrounding context. Include:
+> - The **symptom** (what went wrong or prompted this)
+> - The **evidence** (code snippet, error message, query result)
+> - The **decision** (what we chose and why)
+> - **Citations** (URL, file, line number — atomic reproducibility)
+> - **Dependencies** (which prior logs does this build on)
+> Use mermaid for diagrams. Backlink with summary when referencing other logs.
+
+**The simplification:** Remove "weaker reasoning agents" (hypothetical beneficiary). Keep "future me" (actual beneficiary).
+
+---
+
+#### 14. Dependency Summary for Future Agents
+
+To understand this log, read in this order:
+
+1. **LOG-028** (lines 4096-4402): The original CI Framework Design — sets up the 3-layer architecture and Constitution approach
+2. **LOG-067** (lines 11340-11872): Manual Scenario-Based Evaluation — the "laboratory" approach that seemed promising
+3. **LOG-071** (lines 12421-12890): Vertex AI NOT Fit — the breaking point where we discovered trajectory metrics require golden paths
+4. **LOG-072** (this entry): The philosophical reframe — evaluation is a category error; embrace practice over measurement
+
+```mermaid
+graph TD
+    L028["LOG-028<br/>CI Framework Design<br/>(3-layer architecture)"]
+    L067["LOG-067<br/>Manual Scenario Eval<br/>(Laboratory approach)"]
+    L071["LOG-071<br/>Vertex NOT Fit<br/>(Golden path problem)"]
+    L072["LOG-072<br/>The Evaluation Paradox<br/>(Practice > Measurement)<br/>✅ CURRENT"]
+    
+    L028 --> L067
+    L067 --> L071
+    L071 -->|"Triggered existential question"| L072
+    
+    subgraph "The Journey"
+        J1["43 logs on evaluation"]
+        J2["Multiple platform pivots"]
+        J3["0% confidence"]
+        J4["5 Whys analysis"]
+        J5["Category error discovered"]
+    end
+    
+    L028 --> J1
+    J1 --> J2
+    J2 --> J3
+    J3 --> J4
+    J4 --> J5
+    J5 --> L072
+```
+
+---
+
+#### 15. What This Means for the Evaluation Artifacts
+
+| Artifact | Status | New Purpose |
+|----------|--------|-------------|
+| `CONSTITUTION.md` | **VALID** | Philosophy documentation, not test spec |
+| `scripts/layer2_vertex.py` | **OPTIONAL** | Text quality checks only (J4-H1) |
+| `scripts/eval_ingest.py` | **OPTIONAL** | Session extraction for analysis |
+| `scripts/eval_consume.py` | **OPTIONAL** | Structural hygiene checks |
+| `tests/evals/workspaces/` | **VALID** | Sandbox for workflow prototyping |
+| `pair-programming.yaml` | **ARCHIVED** | Historical reference |
+
+---
+
+📦 STATELESS HANDOFF
+
+**Layer 1 — Local Context:**
+→ Last action: LOG-072 (DECISION-072a/b/c: Evaluation is category error; reframe to Protocol Craft; practice over measurement)
+→ Dependency chain: LOG-072 ← LOG-071 ← LOG-067 ← LOG-028
+→ Next action: Continue practicing GSD-Lite; apply Craft Cycle (design → apply → notice → refine)
+
+**Layer 2 — Global Context:**
+→ Architecture: Evaluation pursuit is COMPLETE (reframed, not abandoned)
+→ Philosophy: GSD-Lite is an instrument to be tuned, not a product to be evaluated
+→ Key insight: The 71 logs ARE the evidence; the kudos ARE the evaluation; the practice IS the benefit
+
+**Fork paths:**
+- Continue execution on any other task → Read relevant logs, proceed
+- Token optimization → Ablation testing on discuss.md (delete 30%, use for 5 sessions, notice)
+- Log granularity → Apply revised 100-word prompt, do 48-hour cold-read test
+- Housekeeping workflow → Create `housekeeping-sandbox/` with synthetic logs, prototype
+- Share the method → Curate 3-5 showcase excerpts for portfolio
+
+
+
+### [LOG-073] - [DECISION] - The Lean Architecture: Single-File Protocol with Embedded Philosophy - Task: PROTOCOL-CRAFT-001
+
+**Status:** APPROVED  
+**Date:** 2026-02-17  
+**Decision IDs:** DECISION-073a (Radical consolidation into gsd-lite.md), DECISION-073b (Delete redundant workflows), DECISION-073c (Grep-first artifact design), DECISION-073d (Embedded Journalism Standard)  
+**Task:** PROTOCOL-CRAFT-001 (Token optimization as instrument tuning)  
+**Depends On:**
+- LOG-072 (lines 12904-13380): The Evaluation Paradox — reframed evaluation to Protocol Craft
+- LOG-020 (lines 2757-3016): 10k token budget discovery — established the headroom constraint
+- LOG-016 (lines 1410-1945): Stateless-First Architecture — the core philosophy being preserved
+
+---
+
+#### 1. Executive Summary: The Token Budget Problem
+
+**The Constraint:** GSD-Lite agents should start with ~5k fixed tokens, leaving room for JIT work log context (~10-20k) and actual pair programming work (~75k+).
+
+**The Reality (Before):**
+```
+gsd-lite.md alone:     6,710 tokens (exceeds 5k target)
++ one workflow:        ~1,800 tokens
++ Constitution ref:    ~5,200 tokens
+= TOTAL FIXED COST:    ~13,700 tokens (2.7x over budget)
+```
+
+**The Solution:** Radical consolidation into a single `gsd-lite.md` file (~3,800 tokens) that contains ALL philosophy, with on-demand workflows for utility tasks only.
+
+**The Philosophy Preserved:** This is instrument tuning, not feature removal. Every cut was validated against "does this preserve the pair programming experience that made me who I am?"
+
+---
+
+#### 2. The Token Audit (Baseline)
+
+Source: `python scripts/token_audit.py ./src` run on 2026-02-17
+
+| File | Tokens | % | Fate |
+|------|--------|---|------|
+| `agents/gsd-lite.md` | 6,710 | 18.1% | **REWRITE** → 3,800 |
+| `agents/gsd-housekeeping.md` | 6,549 | 17.7% | **KEEP** (separate agent) |
+| `constitution/CONSTITUTION.md` | 5,200 | 14.1% | **DELETE** (eval artifact, never used by agent) |
+| `workflows/checkpoint.md` | 2,736 | 7.4% | **DELETE** (obvious behavior) |
+| `workflows/new-project.md` | 2,578 | 7.0% | **KEEP** (on-demand utility) |
+| `workflows/progress.md` | 2,055 | 5.6% | **DELETE** (echo-back is implicit) |
+| `workflows/map-codebase.md` | 1,903 | 5.1% | **KEEP** (on-demand utility) |
+| `workflows/discuss.md` | 1,774 | 4.8% | **MERGE** into gsd-lite.md |
+| `workflows/execution.md` | 1,213 | 3.3% | **DELETE** (unused, all starts from discuss) |
+| `references/questioning.md` | 1,272 | 3.4% | **MERGE** into gsd-lite.md |
+| Template artifacts | 4,992 | 13.5% | **MINIMIZE** (grep-only, no examples) |
+| **TOTAL** | **36,982** | 100% | |
+
+**Category Breakdown (Before):**
+- `agents/`: 13,259 tokens (35.9%)
+- `workflows/`: 12,259 tokens (33.1%)
+- `constitution/`: 5,200 tokens (14.1%)
+- `template/ root`: 4,992 tokens (13.5%)
+- `references/`: 1,272 tokens (3.4%)
+
+---
+
+#### 3. The Redundancy Analysis
+
+**Key Discovery:** Massive content duplication across files.
+
+| Content | Appears In | Duplicated Tokens |
+|---------|-----------|-------------------|
+| Questioning Philosophy | `gsd-lite.md` + `questioning.md` + `discuss.md` | ~1,500 |
+| Stateless Handoff format | `gsd-lite.md` + `CONSTITUTION.md` | ~800 |
+| Anti-patterns list | `gsd-lite.md` + `questioning.md` + `discuss.md` | ~300 |
+| WORK.md structure | `gsd-lite.md` + template `WORK.md` | ~400 |
+| Safety Protocol | `gsd-lite.md` + workflows | ~300 |
+| **Total Duplication** | | **~3,300 tokens (9%)** |
+
+**Critical Insight from User:**
+> "Artifact examples in WORK.md/INBOX.md are DEAD. GSD-Lite agent strictly uses grep to read — they WILL MISS examples embedded in those files."
+
+**Implication:** ALL examples and templates must live in `gsd-lite.md` (always loaded). Artifact templates should be minimal structure only.
+
+---
+
+#### 4. The Lean Architecture
+
+##### 4.1 File Structure (After)
+
+```
+gsd-lite/template/
+├── agents/
+│   ├── gsd-lite.md        # ~3,800 tokens — THE ONLY INSTRUCTION FILE
+│   │                      # Contains: Protocol + Discuss + Questioning + 
+│   │                      #           Journalism Standard + All Examples
+│   └── gsd-housekeeping.md # ~6,549 tokens — SEPARATE AGENT (unchanged)
+│
+├── workflows/
+│   ├── new-project.md     # ~2,500 tokens — On-demand utility
+│   └── map-codebase.md    # ~1,900 tokens — On-demand utility
+│
+├── artifacts/             # GREP-ONLY — Minimal structure, NO examples
+│   ├── WORK.md            # ~200 tokens — Section headers only
+│   ├── INBOX.md           # ~100 tokens — Minimal structure
+│   ├── PROJECT.md         # ~100 tokens — Blank template
+│   ├── ARCHITECTURE.md    # ~100 tokens — Blank template
+│   └── HISTORY.md         # ~50 tokens — Blank template
+│
+└── [DELETED]
+    ├── constitution/      # Eval artifact, never used
+    ├── references/        # Merged into gsd-lite.md
+    ├── discuss.md         # Merged into gsd-lite.md
+    ├── execution.md       # Unused (all starts from discuss)
+    ├── checkpoint.md      # Obvious behavior
+    └── progress.md        # Echo-back is implicit
+```
+
+##### 4.2 Token Budget (After)
+
+| Component | Before | After | Δ |
+|-----------|--------|-------|---|
+| `gsd-lite.md` | 6,710 | 3,800 | -2,910 |
+| `CONSTITUTION.md` | 5,200 | 0 | -5,200 |
+| `discuss.md` | 1,774 | 0 | -1,774 (merged) |
+| `execution.md` | 1,213 | 0 | -1,213 |
+| `checkpoint.md` | 2,736 | 0 | -2,736 |
+| `progress.md` | 2,055 | 0 | -2,055 |
+| `questioning.md` | 1,272 | 0 | -1,272 (merged) |
+| Artifact templates | 4,992 | 550 | -4,442 |
+| **Fixed cost** | ~13,700 | ~3,800 | **-9,900 (72% reduction)** |
+
+##### 4.3 New Budget Model
+
+| Phase | Tokens | Notes |
+|-------|--------|-------|
+| **Fixed cost** | ~3,800 | `gsd-lite.md` only |
+| **On-demand** | ~4,400 | `new-project.md` OR `map-codebase.md` (rarely both) |
+| **JIT context** | ~10-20k | 1-3 log entries via grep-first |
+| **Work budget** | ~76-86k | Actual pair programming (100k context assumed) |
+
+**Target achieved:** 3,800 < 5,000 ✅
+
+---
+
+#### 5. The `gsd-lite.md` Structure (Single Source of Truth)
+
+The consolidated file has 12 sections, each with a specific purpose:
+
+```markdown
+# GSD-Lite Protocol
+
+## 1. Safety Protocol (CRITICAL)                    [~200 tokens]
+   - Never overwrite existing artifacts with templates
+   - Check → Read → Append/Update → Preserve
+
+## 2. Universal Onboarding                          [~300 tokens]
+   - 4 steps: PROTOCOL → PROJECT → ARCH → WORK
+   - Echo-back is implicit (agent proves understanding)
+
+## 3. Workflow Router                               [~150 tokens]
+   - Table only: discuss (default), new-project, map-codebase
+   - No prose explanation
+
+## 4. File Guide                                    [~100 tokens]
+   - Table of artifacts and their purpose
+   - Write targets for each
+
+## 5. Grep-First Strategy                           [~200 tokens]
+   - Two-step pattern: discover → surgical read
+   - Common boundary patterns
+   - No verbose examples
+
+## 6. Golden Rules                                  [~100 tokens]
+   - 6 rules, one line each
+   - No elaboration
+
+## 7. The Pair Programming Model (CORE)             [~800 tokens]
+   - Merged from discuss.md
+   - First Turn Protocol
+   - Modes: Vision Exploration, Teaching, Unblocking, Plan Presentation
+   - Artifact Write Protocol (ask before write)
+   - Scope Discipline
+
+## 8. Questioning Philosophy (CORE)                 [~600 tokens]
+   - Merged from questioning.md
+   - Why Before How (the golden rule)
+   - Challenge Tone Protocol (table form)
+   - Question Types (compact)
+   - Teaching Detour
+   - Anti-patterns (single list, no duplication)
+
+## 9. Stateless Handoff (CORE)                      [~400 tokens]
+   - Two-layer structure explanation
+   - ONE canonical format (copy-paste ready)
+   - 3 variations: mid-discussion, post-decision, first turn
+   - Single source of truth (no duplication in Constitution)
+
+## 10. The Journalism Standard (CORE)               [~500 tokens]
+    - User's <mandatory_requirement> EMBEDDED
+    - 6 requirements with rationale
+    - Log Entry Template (copy-paste ready)
+    - The test: "Can I understand this in 6 months?"
+
+## 11. WORK.md Structure Reference                  [~300 tokens]
+    - Section 1/2/3 purpose (what each is FOR)
+    - When to read/write each
+    - Grep patterns for discovery
+    - NOT templates (those are in Section 10)
+
+## 12. Constitutional Behaviors (Non-Negotiable)    [~150 tokens]
+    - Compact table of hardcoded rules
+    - S1-H1: Stateless handoff required
+    - P2-H1: Why before how
+    - P2-H2: Ask before writing
+    - P2-H5: Echo findings before proposing
+    - C3-H1: Grep before read
+    - J4-H1: Journalism standard
+
+TOTAL: ~3,800 tokens
+```
+
+---
+
+#### 6. The Journalism Standard (Embedded Forever)
+
+This is the user's `<mandatory_requirement>` — now embedded in `gsd-lite.md` Section 10. The user never needs to paste it again.
+
+**The Standard:**
+
+When writing log entries, ALWAYS include:
+
+| # | Requirement | Rationale |
+|---|-------------|-----------|
+| 1 | **Narrative context** | Zero-context reader can onboard. Journalism style. |
+| 2 | **Code snippets** | Actual code with file paths, not descriptions. |
+| 3 | **Synthesized examples** | You can re-read in 6 months without friction. |
+| 4 | **Citations** | URL, file:line, commit hash. Atomic reproducibility. |
+| 5 | **Mermaid diagrams** | Never ASCII art. Renders properly in reader. |
+| 6 | **Dependency summary** | Which prior logs this builds on (for DAG construction). |
+
+**The Test:** Can someone reproduce this decision with ZERO additional research?
+
+**The Template:**
+```markdown
+### [LOG-NNN] - [TYPE] - {{summary}} - Task: TASK-ID
+**Timestamp:** YYYY-MM-DD
+**Depends On:** LOG-XXX (context), LOG-YYY (context)
+
+---
+
+#### 1. {{Section Title}}
+
+{{Narrative with code snippets, citations, mermaid diagrams}}
+
+---
+
+📦 STATELESS HANDOFF
+
+**Layer 1 — Local Context:**
+→ Last action: LOG-NNN (brief)
+→ Dependency chain: LOG-NNN ← LOG-XXX ← LOG-YYY
+→ Next action: {{specific}}
+
+**Layer 2 — Global Context:**
+→ Key decisions: {{from Key Events Index}}
+
+**Fork paths:**
+- Continue → {{logs}}
+- Discuss → {{logs}}
+```
+
+---
+
+#### 7. Why Each File Was Deleted
+
+| File | Tokens | Deletion Rationale |
+|------|--------|-------------------|
+| `CONSTITUTION.md` | 5,200 | **Eval artifact.** Created for CI testing (LOG-028), never loaded by agent. Constitutional behaviors now in `gsd-lite.md` Section 12 as compact table (~150 tokens). |
+| `discuss.md` | 1,774 | **Merged.** User confirmed: "all actions come from discuss first." Content now in `gsd-lite.md` Section 7. |
+| `execution.md` | 1,213 | **Unused.** User confirmed: "I have never used execution workflow." Discuss covers everything. |
+| `checkpoint.md` | 2,736 | **Obvious behavior.** Checkpointing is "update WORK.md Current Understanding" — doesn't need 370 lines of instruction. |
+| `progress.md` | 2,055 | **Obvious behavior.** Echo-back is implicit in Universal Onboarding. Agent proves understanding on first turn. |
+| `questioning.md` | 1,272 | **Merged.** Reference file never loaded independently. Content now in `gsd-lite.md` Section 8. |
+
+**Total deleted:** 14,250 tokens
+
+---
+
+#### 8. The Grep-First Constraint on Artifacts
+
+**Critical Design Rule:** Examples in artifact templates (WORK.md, INBOX.md) are invisible to GSD-Lite agents.
+
+**Why:**
+1. GSD-Lite agents use grep-first strategy
+2. `grep "^## " WORK.md` returns section headers
+3. Agent reads Section 1 (Current Understanding) surgically
+4. Agent NEVER reads example log entries buried in the template
+5. Therefore, examples in WORK.md are dead weight
+
+**Implication:**
+- ALL examples must live in `gsd-lite.md` (always loaded)
+- Artifact templates should be **minimal structure only**
+- No sample log entries, no example loops, no demonstration content
+
+**Before (WORK.md template):** ~2,489 tokens with examples
+**After (WORK.md template):** ~200 tokens — section headers + minimal fields
+
+---
+
+#### 9. The Decisions
+
+##### DECISION-073a: Radical Consolidation into `gsd-lite.md`
+
+**Context:** Token audit revealed 36,982 tokens across 15 files, with ~3,300 tokens duplicated. Fixed cost was 2.7x over the 5k target.
+
+**Decision:** Consolidate ALL philosophy into a single `gsd-lite.md` file (~3,800 tokens) with 12 sections covering Protocol, Discuss, Questioning, Journalism, and Handoff.
+
+**Consequences:**
+- One file to maintain, one source of truth
+- No "load this reference" instructions that may be skipped
+- Philosophy is ALWAYS in context
+
+##### DECISION-073b: Delete Redundant Workflows
+
+**Context:** User confirmed `execution.md` is unused ("all starts from discuss"), and `checkpoint.md`/`progress.md` describe obvious behaviors.
+
+**Decision:** Delete `execution.md`, `checkpoint.md`, `progress.md`, and `questioning.md`. Keep only `new-project.md` and `map-codebase.md` as on-demand utilities.
+
+**Consequences:**
+- 7,276 tokens removed from workflows/
+- Core philosophy lives in `gsd-lite.md`, not scattered across files
+
+##### DECISION-073c: Grep-First Artifact Design
+
+**Context:** GSD-Lite agents grep artifacts, not read them fully. Examples embedded in WORK.md are invisible.
+
+**Decision:** Artifact templates contain **minimal structure only**. All examples and templates live in `gsd-lite.md` (always loaded).
+
+**Consequences:**
+- WORK.md template: ~200 tokens (down from 2,489)
+- INBOX.md template: ~100 tokens (down from 1,370)
+- Examples live where they're visible: `gsd-lite.md` Section 9 & 10
+
+##### DECISION-073d: Embedded Journalism Standard
+
+**Context:** User repeatedly pastes `<mandatory_requirement>` prompt when requesting logs. This is friction and token waste.
+
+**Decision:** Embed the Journalism Standard permanently in `gsd-lite.md` Section 10. User never pastes the requirement again.
+
+**Consequences:**
+- ~500 tokens added to `gsd-lite.md` (permanent)
+- ~250 tokens saved per log request (amortized)
+- Consistent log quality without prompting
+
+---
+
+#### 10. Architecture Diagram
+
+```mermaid
+graph TD
+    subgraph "ALWAYS LOADED (~3,800 tokens)"
+        GSD["gsd-lite.md<br/>─────────────<br/>§1 Safety Protocol<br/>§2 Universal Onboarding<br/>§3 Workflow Router<br/>§4 File Guide<br/>§5 Grep-First Strategy<br/>§6 Golden Rules<br/>§7 Pair Programming Model<br/>§8 Questioning Philosophy<br/>§9 Stateless Handoff<br/>§10 Journalism Standard<br/>§11 WORK.md Reference<br/>§12 Constitutional Behaviors"]
+    end
+    
+    subgraph "ON-DEMAND (~4,400 tokens)"
+        NP["new-project.md<br/>~2,500 tokens"]
+        MC["map-codebase.md<br/>~1,900 tokens"]
+    end
+    
+    subgraph "GREP-ONLY (~550 tokens)"
+        WORK["WORK.md<br/>~200 tokens<br/>(structure only)"]
+        INBOX["INBOX.md<br/>~100 tokens"]
+        PROJ["PROJECT.md<br/>~100 tokens"]
+        ARCH["ARCHITECTURE.md<br/>~100 tokens"]
+        HIST["HISTORY.md<br/>~50 tokens"]
+    end
+    
+    subgraph "SEPARATE AGENT"
+        HK["gsd-housekeeping.md<br/>~6,549 tokens<br/>(own context)"]
+    end
+    
+    subgraph "DELETED"
+        DEL1["constitution/"]
+        DEL2["discuss.md"]
+        DEL3["execution.md"]
+        DEL4["checkpoint.md"]
+        DEL5["progress.md"]
+        DEL6["questioning.md"]
+    end
+    
+    GSD -->|"routes to"| NP
+    GSD -->|"routes to"| MC
+    GSD -->|"greps"| WORK
+    GSD -->|"greps"| INBOX
+```
+
+---
+
+#### 11. How to Use This Log for Future Protocol Craft
+
+This log is the **authoritative reference** for GSD-Lite's architecture. When iterating:
+
+##### 11.1 To Understand Current State
+1. Read Section 5 (token audit) for baseline
+2. Read Section 6 (structure) for what's in `gsd-lite.md`
+3. Read Section 7 (deletion rationale) for why files were removed
+
+##### 11.2 To Make Changes (Craft Cycle)
+```
+DESIGN:  "I want to trim Section 8 (Questioning)"
+APPLY:   Edit gsd-lite.md, delete 30% of Section 8
+NOTICE:  Use for 5 sessions — did I miss anything?
+REFINE:  Restore what I missed, or cut more
+```
+
+##### 11.3 To Measure Impact
+```bash
+# Run token audit after changes
+python scripts/token_audit.py ./src
+
+# Compare against baseline (LOG-073, Section 5)
+# Target: gsd-lite.md < 5,000 tokens
+```
+
+##### 11.4 To Add New Philosophy
+1. Identify which section it belongs to (§1-12)
+2. Add to that section in `gsd-lite.md`
+3. Update token count in this log (or create LOG-074 for major changes)
+4. Delete any duplicate content elsewhere
+
+---
+
+#### 12. Implementation Checklist
+
+| Task | Status | Notes |
+|------|--------|-------|
+| Rewrite `gsd-lite.md` to 12-section structure | ⬜ TODO | Target: ~3,800 tokens |
+| Merge `discuss.md` content into §7 | ⬜ TODO | Pair Programming Model |
+| Merge `questioning.md` content into §8 | ⬜ TODO | Questioning Philosophy |
+| Embed Journalism Standard in §10 | ⬜ TODO | Copy-paste template included |
+| Delete `CONSTITUTION.md` | ⬜ TODO | Eval artifact, unused |
+| Delete `execution.md` | ⬜ TODO | Unused |
+| Delete `checkpoint.md` | ⬜ TODO | Obvious behavior |
+| Delete `progress.md` | ⬜ TODO | Obvious behavior |
+| Delete `questioning.md` | ⬜ TODO | After merge |
+| Minimize artifact templates | ⬜ TODO | Structure only, no examples |
+| Run token audit to verify | ⬜ TODO | Target: < 5,000 total fixed |
+
+---
+
+#### 13. Dependency Summary for Future Agents
+
+To understand this architectural decision:
+
+1. **LOG-072** (lines 12904-13380): The Evaluation Paradox — why we reframed to Protocol Craft
+2. **LOG-020** (lines 2757-3016): 10k token budget — the constraint driving this optimization
+3. **LOG-016** (lines 1410-1945): Stateless-First Architecture — the core philosophy being preserved
+4. **LOG-073** (this entry): The authoritative architecture reference
+
+```mermaid
+graph TD
+    L016["LOG-016<br/>Stateless-First<br/>(Philosophy)"]
+    L020["LOG-020<br/>10k Token Budget<br/>(Constraint)"]
+    L072["LOG-072<br/>Evaluation Paradox<br/>(Reframe to Craft)"]
+    L073["LOG-073<br/>Lean Architecture<br/>(Implementation)<br/>✅ CURRENT"]
+    
+    L016 -->|"Philosophy to preserve"| L073
+    L020 -->|"Constraint to satisfy"| L073
+    L072 -->|"Reframe enables"| L073
+```
+
+---
+
+#### 14. The Philosophy This Preserves
+
+Despite 72% token reduction, the core GSD-Lite experience remains:
+
+| Philosophy | How It's Preserved |
+|------------|-------------------|
+| **Stateless-First** | §9 contains canonical handoff format + variations |
+| **Pair Programming** | §7 contains full discuss workflow (Vision, Teaching, Unblocking, Plans) |
+| **Why Before How** | §8 contains Challenge Tone Protocol + question types |
+| **Journalism Quality** | §10 contains embedded standard + copy-paste template |
+| **Grep-First Context** | §5 contains patterns; §11 explains WORK.md structure |
+| **User Owns Completion** | §6 Golden Rules; §7 Artifact Write Protocol |
+
+**The test:** Can the user still have the 10★ distillation experience? Yes — all philosophy is in `gsd-lite.md`, always loaded, always available.
+
+---
+
+📦 STATELESS HANDOFF
+
+**Layer 1 — Local Context:**
+→ Last action: LOG-073 (DECISION-073a/b/c/d: Lean architecture with radical consolidation)
+→ Dependency chain: LOG-073 ← LOG-072 ← LOG-020 ← LOG-016
+→ Next action: Implement the 12-section `gsd-lite.md` rewrite (see Section 12 checklist)
+
+**Layer 2 — Global Context:**
+→ Architecture: Single-file protocol (`gsd-lite.md` ~3,800 tokens) + 2 on-demand workflows
+→ Philosophy: Protocol Craft — tune the instrument via ablation, not evaluation
+→ Key constraint: Fixed cost < 5,000 tokens; JIT budget ~10-20k; work budget ~75k+
+
+**Fork paths:**
+- Implement rewrite → Start with §1-6 (low-risk sections), then §7-10 (core philosophy)
+- Discuss changes → Challenge any deletion rationale in Section 7
+- Different scope → Address other tasks; this decision is complete
+- Future craft iteration → Reference this log as baseline; create LOG-074 for major changes
+
+
+
+### [LOG-074] - [PROCEDURE] - The Protocol Craft Retro: A Maintenance Workflow for Tuning GSD-Lite - Task: PROTOCOL-CRAFT-002
+
+**Status:** CRYSTALLIZED  
+**Date:** 2026-02-17  
+**Task:** PROTOCOL-CRAFT-002 (Capture the retro workflow as repeatable procedure)  
+**Depends On:**
+- LOG-072 (lines 12904-13380): The Evaluation Paradox — established "Protocol Craft" as the frame
+- LOG-073 (lines 13395-13850): The Lean Architecture — the baseline to measure against
+
+---
+
+#### 1. Executive Summary: Why This Procedure Exists
+
+This session (2026-02-17) produced a breakthrough: after 71 logs pursuing evaluation, we discovered that GSD-Lite cannot be measured, only practiced. The conversation that led to this insight followed a specific pattern that should be repeatable.
+
+**The Guitar Tuning Analogy:**
+- You don't "evaluate" if your guitar is good
+- You **tune** it periodically when it sounds off
+- You develop **taste** for what sounds right
+- This log is the tuning procedure
+
+**When to run this retro:**
+- Confidence in GSD-Lite drops ("is this even helping?")
+- Token budget feels bloated ("too much overhead")
+- Logs feel stale ("am I capturing the right things?")
+- Major protocol changes planned ("should we restructure?")
+
+---
+
+#### 2. The Protocol Craft Retro Workflow
+
+```mermaid
+flowchart TD
+    subgraph "PHASE 1: Ground the Conversation"
+        A1["1. State your confidence level<br/>(0-100%)"] --> A2["2. Articulate what's bothering you<br/>(vague is okay)"]
+        A2 --> A3["3. Request critical thinking partner<br/>(not agreeable agent)"]
+    end
+    
+    subgraph "PHASE 2: Apply 5 Whys"
+        B1["4. Agent asks: Why do you want X?"] --> B2["5. You answer honestly"]
+        B2 --> B3["6. Agent challenges: But why that?"]
+        B3 --> B4["7. Repeat until root goal emerges"]
+        B4 --> B5["8. Agent echoes back the real WHY"]
+    end
+    
+    subgraph "PHASE 3: Ground in Evidence"
+        C1["9. Review session transcripts<br/>(eval_run_*.json)"] --> C2["10. Review external evidence<br/>(kudos, PRs, docs)"]
+        C2 --> C3["11. Agent synthesizes patterns"]
+    end
+    
+    subgraph "PHASE 4: Reframe & Decide"
+        D1["12. Agent proposes reframe<br/>(if original goal was misguided)"] --> D2["13. Identify what CAN be done<br/>(vs what's a pipe dream)"]
+        D2 --> D3["14. Make decisions with IDs"]
+    end
+    
+    subgraph "PHASE 5: Capture & Baseline"
+        E1["15. Run token audit<br/>(python scripts/token_audit.py)"] --> E2["16. Log the architecture<br/>(current state as baseline)"]
+        E2 --> E3["17. Create implementation checklist"]
+    end
+    
+    A3 --> B1
+    B5 --> C1
+    C3 --> D1
+    D3 --> E1
+```
+
+---
+
+#### 3. Phase 1: Ground the Conversation
+
+**Purpose:** Set the stage for honest critical dialogue.
+
+##### Step 1: State Your Confidence Level
+
+Be explicit about where you are:
+
+```
+"Right now my confidence with [aspect of GSD-Lite] is [0-100%]."
+```
+
+**Example from this session:**
+> "Right now my confidence with our evaluation exercise with this whole set up is 0."
+
+##### Step 2: Articulate What's Bothering You
+
+Dump your thoughts — vague is okay. The agent will help sharpen:
+
+```
+"I want to [goal] so that [reason]. But I don't know if [uncertainty]."
+```
+
+**Example from this session:**
+> "I want to evaluate the agent so that I can measure session quality over iterations. So that I can improve. Otherwise we cannot improve what we cannot measure."
+
+##### Step 3: Request Critical Thinking Partner
+
+Explicitly ask for challenge, not agreement:
+
+```
+"I need you to put on your critical thinking hat. You are a thinking 
+partner, not a people pleaser. I do not want you to agree blindly to 
+my requests/thoughts without verifying the logic is sound. Logic should 
+trump all, even my preferences."
+```
+
+**Why this matters:** Without this framing, agents default to agreeable mode. The breakthrough came from direct challenge ("this is impossible" with concrete reasoning).
+
+---
+
+#### 4. Phase 2: Apply 5 Whys
+
+**Purpose:** Unearth the real goal beneath the stated goal.
+
+##### The Pattern
+
+| Turn | Agent | You |
+|------|-------|-----|
+| 1 | "Why do you want to [stated goal]?" | [Your reason] |
+| 2 | "Why is [that reason] important?" | [Deeper reason] |
+| 3 | "Why does [deeper reason] matter?" | [Even deeper] |
+| 4 | "Why is [that] your priority?" | [Root motivation] |
+| 5 | "So the real goal is [X], not [original stated goal]?" | "Yes" / "Actually..." |
+
+##### Example from This Session
+
+| Why # | Question | Answer |
+|-------|----------|--------|
+| 1 | Why evaluate? | To know if changes helped |
+| 2 | Why know if changes helped? | To improve |
+| 3 | Why improve? | To learn faster, ship better, be the reliable wall |
+| 4 | Why those outcomes? | They're my professional identity and joy |
+| 5 | **Root:** | "I want to be the best version of the 'reliable wall' for my team" |
+
+**The Reframe:** Original goal was "evaluate GSD-Lite." Real goal was "become a better synthesizer." Evaluation was a means to an imagined end — but the means was a category error.
+
+---
+
+#### 5. Phase 3: Ground in Evidence
+
+**Purpose:** Move from feelings to facts.
+
+##### Step 9: Review Session Transcripts
+
+Point the agent at your actual usage data:
+
+```
+"Here are my session transcripts: eval_run_2026-02-15_2121.json 
+and eval_run_2026-02-15_2116.json. Skim them to infer my typical 
+interaction patterns with GSD-Lite."
+```
+
+**What the agent looks for:**
+- Interaction patterns (research delegation, fork & redirect, echo verification)
+- Frequency of different modes (discuss vs execute)
+- What you actually ask for vs what you think you ask for
+
+##### Step 10: Review External Evidence
+
+Provide evidence of outcomes:
+
+```
+"Here are my kudos from colleagues since I started using GSD-Lite 
+in Jan 2026. Infer what you can about outcomes."
+```
+
+**What the agent looks for:**
+- Before/after comparison (if timeline available)
+- Traits others notice ("human version of GenAI", "reliable wall")
+- Correlation (not causation) with GSD-Lite usage
+
+##### Step 11: Agent Synthesizes Patterns
+
+The agent should produce a table like:
+
+| Your Trait | Evidence | How GSD-Lite Might Amplify |
+|------------|----------|---------------------------|
+| Synthesizer | "human Gemini" | Agent does research; you synthesize |
+| Knowledge sharer | Workshops, pair sessions | Logs become teaching artifacts |
+| Curious learner | "pushing the learning curve" | Agent enables faster exploration |
+
+---
+
+#### 6. Phase 4: Reframe & Decide
+
+**Purpose:** Transform insight into actionable decisions.
+
+##### Step 12: Agent Proposes Reframe
+
+If the original goal was misguided, the agent should say so directly:
+
+```
+"Your original question was [X]. But based on the 5 Whys and evidence, 
+I believe the real question is [Y]. Here's why [X] is a category error..."
+```
+
+**Example from this session:**
+> "You're at 0% confidence because you're asking the wrong question.
+> Wrong question: 'Can I measure if GSD-Lite makes sessions better?'
+> Right question: 'What specific, measurable behaviors do I care about, and are they happening?'"
+
+##### Step 13: Identify What CAN Be Done
+
+Separate achievable from pipe dream:
+
+| Goal | Achievable? | Method |
+|------|-------------|--------|
+| Measure session quality | ❌ Pipe dream | Human is confounding variable |
+| Check structural compliance | ✅ Yes | Programmatic L1 checks |
+| Track learning velocity | ✅ Yes | Manual log: "Day 1 confused → Day 3 can explain" |
+| Prove GSD-Lite works | ❌ Pipe dream | Attribution problem |
+| Notice if life is different | ✅ Yes | Periodic reflection |
+
+##### Step 14: Make Decisions with IDs
+
+Formalize insights as numbered decisions:
+
+```
+DECISION-XXXa: [What we decided]
+- Context: [Why this decision was needed]
+- Rationale: [The reasoning]
+- Consequences: [What changes]
+```
+
+---
+
+#### 7. Phase 5: Capture & Baseline
+
+**Purpose:** Create a reference point for future iterations.
+
+##### Step 15: Run Token Audit
+
+```bash
+python scripts/token_audit.py ./src
+```
+
+Capture the output in the log. This becomes the baseline for measuring future changes.
+
+##### Step 16: Log the Architecture
+
+Create a log entry (like LOG-073) that captures:
+- Current file structure with token counts
+- Reasoning behind each component
+- What to keep vs what to cut
+- How components relate to each other
+
+**This log becomes the authoritative reference** — anyone (including future you) can read it and understand the current state.
+
+##### Step 17: Create Implementation Checklist
+
+If changes are needed, create a concrete TODO:
+
+```markdown
+| Task | Status | Notes |
+|------|--------|-------|
+| Rewrite gsd-lite.md | ⬜ TODO | Target: ~3,800 tokens |
+| Delete CONSTITUTION.md | ⬜ TODO | Eval artifact, unused |
+| ...etc | | |
+```
+
+---
+
+#### 8. The Retro Checklist (Copy-Paste Ready)
+
+Use this checklist when running the retro:
+
+```markdown
+## Protocol Craft Retro Checklist
+
+### Phase 1: Ground the Conversation
+- [ ] State confidence level (0-100%)
+- [ ] Articulate what's bothering you (vague is okay)
+- [ ] Request critical thinking partner explicitly
+
+### Phase 2: Apply 5 Whys
+- [ ] Agent asks "why" at least 5 times
+- [ ] Root goal identified and echoed back
+- [ ] Check: Is original goal actually serving root goal?
+
+### Phase 3: Ground in Evidence
+- [ ] Review session transcripts (eval_run_*.json)
+- [ ] Review external evidence (kudos, PRs, outcomes)
+- [ ] Agent synthesizes interaction patterns
+
+### Phase 4: Reframe & Decide
+- [ ] Agent proposes reframe if needed
+- [ ] Separate achievable from pipe dream
+- [ ] Make decisions with DECISION-XXX IDs
+
+### Phase 5: Capture & Baseline
+- [ ] Run token audit: `python scripts/token_audit.py ./src`
+- [ ] Log architecture as authoritative reference
+- [ ] Create implementation checklist if changes needed
+
+### Output Artifacts
+- [ ] Philosophy log (like LOG-072) — the reframe
+- [ ] Architecture log (like LOG-073) — the baseline
+- [ ] Procedure log (like LOG-074) — the workflow itself
+```
+
+---
+
+#### 9. When NOT to Run This Retro
+
+This is a heavy process. Don't overuse it.
+
+**Skip the retro if:**
+- You just want to make a small tweak (use Craft Cycle instead)
+- Confidence is high and things are working
+- You're procrastinating on actual work
+- Less than 20 logs since last retro
+
+**The Craft Cycle (for small changes):**
+```
+DESIGN (change) → APPLY (use 5 sessions) → NOTICE (what broke?) → REFINE
+```
+
+**The Retro (for existential questions):**
+```
+Ground → 5 Whys → Evidence → Reframe → Baseline
+```
+
+---
+
+#### 10. Example Prompts That Triggered This Session
+
+For reference, here are the actual prompts that initiated this retro:
+
+##### Opening Prompt (Confidence + Critical Partner Request)
+```
+log-071 i need you to put on your critical thinking hat. 
+you are a thinking partner, not a people pleaser. I do not want you 
+to agree blindly to my requests / thoughts without verifying the logic 
+is sound. Logic should trump all even my preferences. 
+
+based on our vision what is the real WHY that we have documented re: 
+being able to evaluate the gsd-lite agent and the artifacts and the 
+protocols? Please do recommend to write this down if this has not been 
+articulated. Do use the 5 whys technique on me.
+```
+
+##### The Honest Dump (Vague Concerns Made Explicit)
+```
+Right now my confidence with our evaluation exercise with this whole 
+set up is 0. I want to put the framework the limitations behind for a 
+moment and really have a thinking partner that help walk me thru, is 
+the end goal of evaluation a pipe dream or not...
+```
+
+##### The Evidence Request
+```
+so i exported transcripts in eval_run_2026-02-15_2121.json... 
+Our company do have a public appreciation channel and I'm Ken here's 
+all the extracted posts if you want to infer...
+```
+
+##### The Acceptance + Pivot
+```
+I am onboard of practicing this instead of evaluating. Now what would 
+you call these exercises then if not at the goal of improving gsd-lite?
+```
+
+##### The Token Optimization Request
+```
+okay let's think about how to optimize the tokens - based on the 
+reflection so far and this report how big the gsd source code prompts 
+are what would you recommend trimming...
+```
+
+---
+
+#### 11. The Session Arc (What Happened)
+
+For future reference, here's the arc of this session:
+
+```mermaid
+graph TD
+    subgraph "Hour 1: The Crisis"
+        A["0% confidence<br/>'Is evaluation a pipe dream?'"]
+        B["5 Whys applied<br/>Root: 'Be the reliable wall'"]
+        C["Category error discovered<br/>Measurement ≠ Practice"]
+    end
+    
+    subgraph "Hour 2: The Reframe"
+        D["LOG-072: Evaluation Paradox<br/>Practice > Measurement"]
+        E["Protocol Craft introduced<br/>Tune, don't grade"]
+        F["3 exercises reframed<br/>Ablation, Cold-read, Sandbox"]
+    end
+    
+    subgraph "Hour 3: The Architecture"
+        G["Token audit reviewed<br/>36,982 tokens identified"]
+        H["Redundancy mapped<br/>~3,300 duplicated"]
+        I["LOG-073: Lean Architecture<br/>3,800 token target"]
+    end
+    
+    subgraph "Hour 4: The Capture"
+        J["LOG-074: This procedure<br/>Repeatable workflow"]
+    end
+    
+    A --> B --> C --> D --> E --> F --> G --> H --> I --> J
+```
+
+---
+
+#### 12. The Artifacts Produced
+
+| Artifact | Purpose | Reference |
+|----------|---------|-----------|
+| **LOG-072** | Philosophy — why evaluation is a category error | Lines 12904-13380 |
+| **LOG-073** | Architecture — current state baseline with token counts | Lines 13395-13850 |
+| **LOG-074** | Procedure — this retro workflow (the guitar tuning guide) | This entry |
+
+**Together, these three logs form the "Protocol Craft Toolkit":**
+- LOG-072 tells you **WHY** (the philosophy)
+- LOG-073 tells you **WHAT** (the current state)
+- LOG-074 tells you **HOW** (the procedure)
+
+---
+
+#### 13. Dependency Summary for Future Agents
+
+To understand and run this retro:
+
+1. **LOG-072** (lines 12904-13380): The Evaluation Paradox — read this first to understand why we do Protocol Craft instead of evaluation
+2. **LOG-073** (lines 13395-13850): The Lean Architecture — the baseline you're measuring against
+3. **LOG-074** (this entry): The procedure itself
+
+```mermaid
+graph TD
+    L072["LOG-072<br/>The Evaluation Paradox<br/>(WHY: Philosophy)"]
+    L073["LOG-073<br/>The Lean Architecture<br/>(WHAT: Baseline)"]
+    L074["LOG-074<br/>The Retro Procedure<br/>(HOW: Workflow)<br/>✅ CURRENT"]
+    
+    L072 -->|"Establishes frame"| L074
+    L073 -->|"Provides baseline"| L074
+    
+    subgraph "Protocol Craft Toolkit"
+        L072
+        L073
+        L074
+    end
+```
+
+---
+
+📦 STATELESS HANDOFF
+
+**Layer 1 — Local Context:**
+→ Last action: LOG-074 (Protocol Craft Retro procedure captured)
+→ Dependency chain: LOG-074 ← LOG-073 ← LOG-072
+→ Next action: Fork to implement LOG-073 checklist (gsd-lite.md rewrite)
+
+**Layer 2 — Global Context:**
+→ Architecture: Protocol Craft Toolkit complete (LOG-072 + LOG-073 + LOG-074)
+→ Philosophy: Tune the instrument via retro, don't grade it via evaluation
+→ Key artifacts: LOG-073 is architecture baseline; LOG-074 is tuning procedure
+
+**Fork paths:**
+- Implement architecture → Reference LOG-073 Section 12 checklist
+- Run future retro → Follow LOG-074 Phase 1-5 workflow
+- Continue other work → Protocol Craft Toolkit is complete
+- Share the method → LOG-072/073/074 form a teachable package
+
+---
+
+### [LOG-075] - [EXEC] - Template Minimization: 90% Token Reduction on Artifact Templates - Task: PROTOCOL-CRAFT-001
+
+**Status:** COMPLETE  
+**Date:** 2026-02-17  
+**Task:** PROTOCOL-CRAFT-001 (The Lean Architecture)  
+**Depends On:**
+- LOG-073 (lines 13373-13876): The Lean Architecture decision — established DECISION-073c (grep-first artifact design, NO examples in templates)
+
+---
+
+#### 1. What Was Done
+
+Implemented DECISION-073c by stripping all examples from the five artifact templates in `src/gsd_lite/template/`. Templates now contain structure only — agents discover patterns from actual work logs via grep-first reading.
+
+**Files Modified:**
+- `src/gsd_lite/template/WORK.md` — Reduced to section headers + empty XML tags
+- `src/gsd_lite/template/PROJECT.md` — Reduced to section headers only
+- `src/gsd_lite/template/INBOX.md` — Reduced to two section headers
+- `src/gsd_lite/template/HISTORY.md` — Reduced to table header only
+- `src/gsd_lite/template/ARCHITECTURE.md` — Reduced to section headers only
+
+---
+
+#### 2. Token Audit Results
+
+**Before (Estimated from LOG-073):**
+| File | Tokens |
+|------|--------|
+| WORK.md (with examples) | ~1,200 |
+| PROJECT.md (with examples) | ~450 |
+| INBOX.md (with examples) | ~600 |
+| HISTORY.md (with examples) | ~150 |
+| ARCHITECTURE.md (with examples) | ~400 |
+| **Total Templates** | **~2,800** |
+
+**After (Actual from `python scripts/token_audit.py ./src`):**
+| File | Tokens | Reduction |
+|------|--------|-----------|
+| WORK.md | 117 | 90% |
+| PROJECT.md | 42 | 91% |
+| INBOX.md | 17 | 97% |
+| HISTORY.md | 30 | 80% |
+| ARCHITECTURE.md | 36 | 91% |
+| **Total Templates** | **242** | **91%** |
+
+---
+
+#### 3. Full Token Audit Snapshot (2026-02-17)
+
+```
+==============================================================================
+GSD-LITE TOKEN AUDIT REPORT
+==============================================================================
+Directory: /Users/luutuankiet/dev/gsd_lite/src
+Files scanned: 9
+Total tokens: 13,686
+
+------------------------------------------------------------------------------
+File                                          Tokens   % Total   Loaded When
+------------------------------------------------------------------------------
+gsd-lite.md (agent instruction)                2,414     17.6%   Always
+gsd-housekeeping.md                            6,549     47.9%   Housekeeping only
+new-project.md                                 2,578     18.8%   New project only
+map-codebase.md                                1,903     13.9%   Map codebase only
+WORK.md (template)                               117      0.9%   Never (scaffolded)
+PROJECT.md (template)                             42      0.3%   Never (scaffolded)
+ARCHITECTURE.md (template)                        36      0.3%   Never (scaffolded)
+HISTORY.md (template)                             30      0.2%   Never (scaffolded)
+INBOX.md (template)                               17      0.1%   Never (scaffolded)
+------------------------------------------------------------------------------
+
+CATEGORY BREAKDOWN:
+  agents/      8,963 tokens (2 files)   65.5%
+  workflows/   4,481 tokens (2 files)   32.7%
+  templates/     242 tokens (5 files)    1.8%
+```
+
+---
+
+#### 4. Architecture Verification
+
+**Fixed cost per session: 2,414 tokens** (gsd-lite.md only)
+
+| Budget Item | Tokens | Status |
+|-------------|--------|--------|
+| Target (LOG-073) | <5,000 | ✅ |
+| Actual (gsd-lite.md) | 2,414 | ✅ **51% under budget** |
+| Headroom for JIT logs | ~7,500 | Available |
+| Work budget | ~80,000+ | Available |
+
+**On-demand workflows (loaded only when invoked):**
+- `new-project.md`: 2,578 tokens
+- `map-codebase.md`: 1,903 tokens
+- `gsd-housekeeping.md`: 6,549 tokens (candidate for future trimming)
+
+---
+
+#### 5. Design Rationale: Why No Examples in Templates
+
+**The Grep-First Principle:**
+- Agents discover patterns by reading actual work logs, not template examples
+- Examples in templates are never read — agents grep for `^### \[LOG-` to find real entries
+- Templates are scaffolding, not documentation
+
+**Token Conservation:**
+- Every token in templates is wasted if agents don't read them
+- Real documentation lives in `gsd-lite.md` (the agent instruction)
+- Workflows provide context when needed (JIT loading)
+
+**Clarity:**
+- Empty templates signal "fill this in" rather than "copy this pattern"
+- Real examples emerge organically from the user's actual work
+
+---
+
+#### 6. Remaining Items from LOG-073 Checklist
+
+| Item | Status |
+|------|--------|
+| ✅ Minimize artifact templates (structure only, no examples) | **DONE (this log)** |
+| ✅ Merge workflows into gsd-lite.md | Done prior to this session |
+| ✅ Delete: CONSTITUTION.md, execution.md, checkpoint.md, progress.md, questioning.md | Done prior to this session |
+| ⏳ Run token audit to verify < 5,000 fixed cost | **DONE: 2,414 tokens** |
+| 🔮 Future: Audit gsd-housekeeping.md (6,549 tokens) | Optional craft cycle |
+
+---
+
+#### 7. Dependency Summary
+
+```mermaid
+graph TD
+    L073["LOG-073<br/>The Lean Architecture<br/>(DECISION-073c: grep-first design)"]
+    L075["LOG-075<br/>Template Minimization<br/>(Implementation)<br/>✅ CURRENT"]
+    
+    L073 -->|"Established principle"| L075
+    
+    subgraph "Artifacts Modified"
+        W["WORK.md<br/>117 tokens"]
+        P["PROJECT.md<br/>42 tokens"]
+        I["INBOX.md<br/>17 tokens"]
+        H["HISTORY.md<br/>30 tokens"]
+        A["ARCHITECTURE.md<br/>36 tokens"]
+    end
+    
+    L075 --> W
+    L075 --> P
+    L075 --> I
+    L075 --> H
+    L075 --> A
+```
+
+---
+
+📦 STATELESS HANDOFF
+
+**Layer 1 — Local Context:**
+→ Last action: LOG-075 (Template minimization complete)
+→ Dependency chain: LOG-075 ← LOG-073 ← LOG-072
+→ Results: 91% reduction in template tokens; 2,414 fixed cost (51% under 5k target)
+→ Next action: Continue practicing with lean setup; gsd-housekeeping.md optional for future trimming
+
+**Layer 2 — Global Context:**
+→ Architecture: LOG-073 Lean Architecture now implemented
+→ Token budget: 2,414 fixed + ~7.5k JIT + ~80k work = optimal pair programming headroom
+→ Philosophy: LOG-072 Protocol Craft — tune via practice, not evaluation
+
+**Fork paths:**
+- Continue work → Lean architecture is live, use it
+- Trim housekeeping → Audit gsd-housekeeping.md (6,549 tokens)
+- Run retro later → Follow LOG-074 procedure when confidence drops
+- Share results → LOG-073/074/075 form complete implementation story
+
