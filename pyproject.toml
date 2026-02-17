@@ -9,8 +9,15 @@ dependencies = [
     "rich>=13.0.0",
     "sqlmodel>=0.0.22",
     "pyyaml>=6.0",
+    "google-cloud-aiplatform[evaluation]>=1.137.0",
 ]
 
+
+[project.optional-dependencies]
+dev = [
+    "jsonpickle>=3.0.0",
+    "pytest>=7.0.0",
+]
 
 [project.scripts]
 gsd-lite = "gsd_lite.__main__:app"

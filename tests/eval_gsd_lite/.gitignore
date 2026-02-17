@@ -1,6 +1,0 @@
-# Ignore generated database
-*.db
-
-# Ignore pycache
-__pycache__/
-*.pyc

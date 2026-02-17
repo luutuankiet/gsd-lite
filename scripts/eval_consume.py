@@ -684,6 +684,43 @@ def cmd_l1(args):
     return 0
 
 
+def cmd_l2(args):
+    """
+    Run Layer 2 Vertex AI evaluation.
+    
+    Delegates to layer2_vertex.py for the actual evaluation.
+    """
+    import subprocess
+    
+    # Build command
+    script_path = Path(__file__).parent / "layer2_vertex.py"
+    
+    if not script_path.exists():
+        print(f"❌ Error: layer2_vertex.py not found at {script_path}")
+        return 1
+    
+    cmd = [sys.executable, str(script_path), "evaluate", "--input", args.input]
+    
+    if args.pillar:
+        cmd.extend(["--pillar", args.pillar])
+    
+    if args.output:
+        cmd.extend(["--output", args.output])
+    
+    if args.verbose:
+        cmd.append("--verbose")
+    
+    cmd.extend(["--threshold", str(args.threshold)])
+    
+    print(f"🚀 Running Layer 2 evaluation...")
+    print(f"   Command: {' '.join(cmd)}")
+    print()
+    
+    # Run and pass through exit code
+    result = subprocess.run(cmd)
+    return result.returncode
+
+
 def cmd_checks(args):
     """List available checks."""
     print("📋 Layer 1 Checks (Programmatic)")
@@ -749,6 +786,16 @@ Examples:
     l1_parser.add_argument("--ci", action="store_true", help="CI mode: exit 1 if below threshold")
     l1_parser.add_argument("--threshold", type=float, default=0.8, help="Pass rate threshold for CI (default: 0.8)")
     
+    # l2 command
+    l2_parser = subparsers.add_parser("l2", help="Run Layer 2 Vertex AI evaluation")
+    l2_parser.add_argument("--input", "-i", required=True, help="Input file (eval_run_*.json)")
+    l2_parser.add_argument("--pillar", "-p", choices=["S1", "P2", "C3", "J4"],
+                          help="Focus on specific pillar (default: all)")
+    l2_parser.add_argument("--output", "-o", help="Write JSON report to file")
+    l2_parser.add_argument("--verbose", "-v", action="store_true", help="Show detailed progress")
+    l2_parser.add_argument("--threshold", type=float, default=0.7,
+                          help="Pass rate threshold (default: 0.7)")
+    
     # checks command
     checks_parser = subparsers.add_parser("checks", help="List available checks")
     
@@ -756,6 +803,8 @@ Examples:
     
     if args.command == "l1":
         sys.exit(cmd_l1(args))
+    elif args.command == "l2":
+        sys.exit(cmd_l2(args))
     elif args.command == "checks":
         sys.exit(cmd_checks(args))
     else:

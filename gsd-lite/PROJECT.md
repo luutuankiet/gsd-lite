@@ -4,13 +4,25 @@
 
 ## What This Is
 
-A pair programming protocol that helps human engineers collaborate with AI agents while maintaining ownership of reasoning and decisions. GSD-Lite scaffolds markdown artifacts (PROTOCOL.md, WORK.md, INBOX.md) that capture the *why* behind every decision — creating institutional memory that survives ephemeral agent sessions.
+A pair programming protocol that amplifies human learning through AI collaboration. GSD-Lite scaffolds markdown artifacts that capture the *why* behind every decision — creating institutional memory that survives ephemeral agent sessions.
 
-The framework enables a "fork & resume" workflow: pair program with an agent, log rich findings to artifacts, kill the session when token budget rises, and resume with a fresh agent pointing at the curated logs. Engineers stay in the driver seat, learning and owning every decision.
+**The core insight:** GSD-Lite is a **learning accelerator**, not a task manager. The artifacts aren't just logs — they're crystallized understanding that you derived through dialogue and can explain to anyone.
+
+The framework enables a "fork & resume" workflow: pair program with an agent, log rich findings, kill the session when tokens rise, resume with a fresh agent pointing at curated logs. Engineers stay in the driver seat, learning and owning every decision.
 
 ## Core Value
 
 Engineers own and comprehend the reasoning behind every line of code — agents are brilliant collaborators, but ephemeral. The human stakes their reputation on the outcome and must be able to explain the "why" to anyone.
+
+**The real value chain:**
+```
+Raw docs (intimidating) 
+    → Agent crunches + distills 
+    → You interrogate + refine 
+    → Crystallized log entry 
+    → You can now explain to stakeholders/teammates
+    → You become "the reliable wall to bounce ideas off"
+```
 
 ## Success Criteria
 
@@ -20,6 +32,7 @@ Project succeeds when:
 - [ ] Session token budget stays under 80k via deliberate fork-and-condense workflow
 - [ ] Log entries read like journalism: narrative, analogies, code snippets, zero-friction onboarding
 - [ ] Artifacts feed directly into PR descriptions and documentation
+- [ ] **The Kudos Test:** Teammates say "you explain things so clearly" — the logs made you a better synthesizer
 
 ## The Pair Programming Model
 
@@ -78,6 +91,12 @@ SESSION 2 (tokens: 0 → fresh start)
 - Meltano pipeline project (DATA-338, DATA-339)
 - 26+ rich log entries demonstrating the pattern
 - PR descriptions generated directly from WORK.md logs
+
+**Protocol Craft (LOG-072, LOG-073):**
+- GSD-Lite quality cannot be measured deterministically — practice over measurement
+- Refinement via **Craft Cycle**: design → apply → notice → refine
+- Lean Architecture: 2,414 token fixed cost, 90% template reduction
+- The logs ARE the evidence. The kudos ARE the evaluation.
 
 ## The Logging Standard
 

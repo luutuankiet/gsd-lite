@@ -42,6 +42,52 @@ graph TD
 - `pyproject.toml` - **Project Config**: Defines dependencies, scripts, and build targets.
 - `.planning/PROJECT.md` - **Vision**: Defines the "Why" and scope of the GSD-Lite project.
 
+---
+
+## Token Budget Architecture
+
+*Established: 2026-02-17 (LOG-073)*
+
+GSD-Lite is optimized for **minimal fixed cost, maximum work budget**.
+
+### The Token Budget Model
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│  100k context window                                         │
+├─────────────────────────────────────────────────────────────┤
+│  Fixed Cost (~2.4k)    │ Agent instruction (gsd-lite.md)    │
+├────────────────────────┼────────────────────────────────────┤
+│  JIT Context (~10-20k) │ Curated work logs (grep → read)    │
+├────────────────────────┼────────────────────────────────────┤
+│  Work Budget (~80k)    │ Actual pair programming            │
+└─────────────────────────────────────────────────────────────┘
+```
+
+### Template Token Costs
+
+| Component | Tokens | Loaded When |
+|-----------|--------|-------------|
+| `gsd-lite.md` | 2,414 | Always (agent instruction) |
+| `gsd-housekeeping.md` | 6,549 | Only when housekeeping |
+| `new-project.md` | 2,578 | Only when starting project |
+| `map-codebase.md` | 1,903 | Only when mapping codebase |
+| Templates (5 files) | 242 | Never loaded as instructions |
+
+**Design principle:** Templates are **structure only** — no examples. Examples bloat token cost and agents skip them during grep-first onboarding anyway.
+
+### The Lean Architecture (LOG-073)
+
+Consolidated from 36,982 tokens → ~2,400 token fixed cost:
+
+| Before | After |
+|--------|-------|
+| PROTOCOL.md (monolith) | `gsd-lite.md` (single agent file) |
+| 5 workflow files | 2 on-demand workflows |
+| CONSTITUTION.md | Deleted (practice over measurement) |
+| questioning.md reference | Embedded in agent file |
+| Templates with examples | Structure-only templates |
+
 ## The Two-Brain System
 
 ### Session vs. Filesystem Persistence
@@ -91,6 +137,49 @@ Because `projectID` is always "global", the evaluation parser must:
 3. Group sessions by detected project
 
 This is documented in LOG-033 (Fingerprinting) and LOG-034 (Schema).
+
+---
+
+## Protocol Craft Laboratory
+
+*Reframed: 2026-02-17 (LOG-072)*
+
+GSD-Lite quality cannot be measured deterministically — the human is a confounding variable. Instead, we practice **Protocol Craft**: deliberate refinement through the Craft Cycle.
+
+### The Craft Cycle
+
+```
+DESIGN → APPLY → NOTICE → REFINE → (repeat)
+```
+
+| Phase | Action | Example |
+|-------|--------|--------|
+| **Design** | Make a change to protocol/workflow | Cut 30% of discuss.md |
+| **Apply** | Use it for real sessions | 5 sessions over a week |
+| **Notice** | Observe what feels different | Did agents miss context? |
+| **Refine** | Adjust based on feel | Restore or cut more |
+
+### What We Measure (Proxies, Not Quality)
+
+| Measurable | What It Tells You |
+|------------|-------------------|
+| Token count | Is instruction bloated? |
+| Time to onboard | Can fresh agent get productive? |
+| Decision density | How many decisions per session? |
+| 48-hour cold read | Can YOU understand old logs? |
+
+### The Evaluation Laboratory (Historical)
+
+The `tests/evals/` directory contains synthetic fixtures for controlled testing:
+
+```
+tests/evals/
+├── templates/        # Synthetic API client app
+├── scenarios/        # Test scripts (for reference)
+└── workspaces/       # Sandbox clones
+```
+
+**Note:** Deterministic evaluation was deprioritized (LOG-072). The laboratory remains useful for **prototyping new workflows** in isolation, not for proving GSD-Lite "works."
 
 ---
 
