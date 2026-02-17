@@ -2,6 +2,14 @@
 
 <!-- version list -->
 
+## v1.18.0 (2026-02-17)
+
+### Features
+
+- Gsd-lite v3 leaner after retro
+  ([`8801189`](https://github.com/luutuankiet/gsd-lite/commit/8801189fd7b878313c05564c84f73b538663f450))
+
+
 ## v1.17.0 (2026-02-16)
 
 ### Features
