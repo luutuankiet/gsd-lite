@@ -179,46 +179,61 @@ async function commandDump() {
 
 function promptPassword(prompt) {
   return new Promise((resolve) => {
-    const rl = readline.createInterface({
-      input: process.stdin,
-      output: process.stdout,
-    });
-    
-    // Hide input (works on most terminals)
-    process.stdout.write(prompt);
-    
-    // For password masking, we need to handle raw mode
-    if (process.stdin.isTTY) {
-      process.stdin.setRawMode(true);
-    }
-    
-    let password = '';
-    
-    process.stdin.on('data', (char) => {
-      char = char.toString();
-      
-      switch (char) {
-        case '\n':
-        case '\r':
-        case '\u0004': // Ctrl+D
-          if (process.stdin.isTTY) {
-            process.stdin.setRawMode(false);
-          }
-          process.stdout.write('\n');
-          rl.close();
-          resolve(password);
-          break;
-        case '\u0003': // Ctrl+C
-          process.exit(1);
-          break;
-        case '\u007F': // Backspace
-          password = password.slice(0, -1);
-          break;
-        default:
-          password += char;
-          break;
+    const input = process.stdin;
+    const output = process.stdout;
+
+    const cleanup = () => {
+      if (input.isTTY) {
+        input.setRawMode(false);
       }
-    });
+      input.pause();
+      input.removeListener('data', onData);
+    };
+
+    const finish = () => {
+      cleanup();
+      output.write('\n');
+      resolve(password);
+    };
+
+    output.write(prompt);
+
+    let password = '';
+
+    if (input.isTTY) {
+      input.setRawMode(true);
+    }
+    input.resume();
+
+    const onData = (chunk) => {
+      const char = chunk.toString('utf8');
+
+      if (char === '\u0003') {
+        cleanup();
+        output.write('\n');
+        process.exit(1);
+      }
+
+      if (char === '\r' || char === '\n' || char === '\u0004') {
+        finish();
+        return;
+      }
+
+      if (char === '\u007f' || char === '\b') {
+        if (password.length > 0) {
+          password = password.slice(0, -1);
+          output.write('\b \b');
+        }
+        return;
+      }
+
+      if (char >= ' ' && char <= '~') {
+        password += char;
+        output.write('*');
+      }
+    };
+
+    input.on('data', onData);
   });
 }
 

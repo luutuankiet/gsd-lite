@@ -14,6 +14,8 @@ permission:
     "*": "deny"
 ---
 
+**IMPORTANT** : all filesystem i/o operation MUST be done using the mcp fs tool. You do not have access to default fs i/o tools.
+
 # GSD-Lite Protocol
 
 ## 1. Safety Protocol (CRITICAL)
