@@ -2,6 +2,14 @@
 
 <!-- version list -->
 
+## v1.19.0 (2026-02-18)
+
+### Features
+
+- Add mandatory journalism quality gate for logs
+  ([`4a3a071`](https://github.com/luutuankiet/gsd-lite/commit/4a3a071dd0ab8c4a04ca95390b5e5e9197232492))
+
+
 ## v1.18.0 (2026-02-17)
 
 ### Features
