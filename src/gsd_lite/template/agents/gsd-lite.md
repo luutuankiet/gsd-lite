@@ -265,6 +265,71 @@ When writing log entries, ALWAYS include:
 
 ---
 
+### Journalism Quality Gate (MANDATORY FOR EVERY LOG WRITE)
+
+**Applies to ALL log writes in `WORK.md`**
+
+#### Prime Directive
+If a zero-context agent cannot continue safely from this log alone within 5 minutes, the log is incomplete and MUST NOT be committed.
+
+#### Required Sections (Every Log)
+1. **Narrative Context**  
+   - What happened, why now, what question/uncertainty is being resolved.
+2. **Dependency Chain**  
+   - Explicit backward chain: `LOG-NNN <- LOG-NNN <- ...` with one-line relevance per dependency.
+3. **Evidence Ledger (Table Required)**  
+   - Columns: `Claim | Evidence | Citation`.
+   - Every non-trivial claim MUST have a citation.
+4. **Step-by-Step Walkthrough**  
+   - Operator-level sequence (what runs in what order, inputs/outputs, decision branches).
+   - Include examples (real or synthesized) to help aid onboarding, remove friction in future agents onboarding the topic.
+   - Prefer adding mermaid diagram as visual aid to any concepts and or examples being shown. For example
+      - Multi-system interaction (client/app/API/storage),
+      - Auth/session/token flow,
+      - State transition/checkpoint progression,
+      - Failure/retry branch logic.
+5. **Concrete Artifacts (Mandatory)**  
+   - At least one code/pseudocode snippet.
+   - At least one payload/example snippet (JSON or equivalent).
+6. **Failure Modes + Safeguards**  
+   - Concrete corruption/failure scenarios and prevention.
+7. **Decision Record**  
+   - Chosen path + alternatives considered + tradeoffs.
+8. **Verification Plan**  
+   - Pass/fail checks and observable signals.
+9. **Stateless Handoff**  
+   - Layer 1 + Layer 2 + fork paths (as defined in protocol).
+
+#### Citation Standard (Non-Negotiable)
+- Local repo claims: cite `path:line`.
+- External claims: cite URL + version/date or commit hash when available. Include the exact content snippet as proof which point in the log this cite backed up for.
+- "General knowledge" is allowed only for trivial definitions; not for architecture or risk claims.
+
+#### Semantic goal for log types : 
+- DISCOVERY: evidence-heavy; include raw observations + contradictions.
+- DECISION: include rejected options with why-not.
+- PLAN: include concrete stages, gates, rollback path.
+- EXEC: include exactly what changed (files/commands) + outcomes. If have blocker : include reproduction steps + current hypothesis + unblock experiments.
+
+### Auto-Fail Conditions (Do Not Commit If Any True)
+- No step-by-step walkthrough.
+- No concrete snippet (code or payload).
+- No citations for core claims.
+- No failure modes.
+- No dependency chain.
+- Stateless handoff missing/incomplete.
+
+### Pre-Commit Self-Check (Agent Internal)
+Before writing a log, agent MUST confirm:
+- [ ] Zero-context readability passes. That a fresh 0 context agent can read the log and read dependencies and continue the session with 0 ambiguity.
+- [ ] Evidence ledger complete
+- [ ] At least one code snippet present
+- [ ] At least one payload/example present
+- [ ] Mermaid included when flow complexity requires it
+- [ ] Verification plan included
+- [ ] Stateless handoff included
+If any box is unchecked, continue research and revise before commit.
+
 ## 11. WORK.md Structure (3 Sections)
 
 WORK.md has three `## ` level sections. Agents MUST understand their purpose:
