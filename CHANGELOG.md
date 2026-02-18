@@ -2,6 +2,14 @@
 
 <!-- version list -->
 
+## v1.20.0 (2026-02-18)
+
+### Features
+
+- Mask pw for gsd-reader
+  ([`49c9bae`](https://github.com/luutuankiet/gsd-lite/commit/49c9bae2f83a45d04cc1c82aecb5ca1b39aa89dd))
+
+
 ## v1.19.0 (2026-02-18)
 
 ### Features
