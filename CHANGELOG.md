@@ -2,6 +2,14 @@
 
 <!-- version list -->
 
+## v1.21.2 (2026-02-19)
+
+### Bug Fixes
+
+- Journalism philosophy
+  ([`796bf9d`](https://github.com/luutuankiet/gsd-lite/commit/796bf9d0649e95baec5b3ccb3a05d1f9cee05d62))
+
+
 ## v1.21.1 (2026-02-19)
 
 ### Bug Fixes

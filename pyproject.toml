@@ -1,6 +1,6 @@
 [project]
 name = "gsd-lite"
-version = "1.21.1"
+version = "1.21.2"
 description = "A minimal protocol for Getting Things Done with AI agents"
 readme = "README.md"
 requires-python = ">=3.9"
