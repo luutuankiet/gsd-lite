@@ -38,6 +38,25 @@ export interface WorklogAST {
   };
 }
 
+/** Root-level section extracted from PROJECT.md / ARCHITECTURE.md */
+export interface DocSection {
+  key: string;
+  title: string;
+  lineNumber: number;
+  anchorId: string;
+  markdown: string;
+  content: string;
+}
+
+/** Parsed context document (PROJECT.md or ARCHITECTURE.md) */
+export interface ContextDocument {
+  kind: 'project' | 'architecture';
+  fileName: string;
+  title: string;
+  totalLines: number;
+  sections: DocSection[];
+}
+
 /** Mermaid diagram extracted from content */
 export interface MermaidDiagram {
   id: string;

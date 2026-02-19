@@ -70,6 +70,8 @@ async function commandDump() {
   // Resolve paths
   const resolvedWorklog = path.resolve(worklogPath);
   const projectDir = path.dirname(resolvedWorklog);
+  const resolvedProject = path.join(projectDir, 'PROJECT.md');
+  const resolvedArchitecture = path.join(projectDir, 'ARCHITECTURE.md');
   
   // Derive project name from path (last 2 segments)
   const pathParts = projectDir.split(path.sep).filter(Boolean);
@@ -102,8 +104,10 @@ async function commandDump() {
   // Copy dist directory
   fs.cpSync(distDir, tempDist, { recursive: true });
   
-  // Read worklog and inject into HTML
+  // Read markdown artifacts and inject into HTML
   const worklogContent = fs.readFileSync(resolvedWorklog, 'utf-8');
+  const projectContent = fs.existsSync(resolvedProject) ? fs.readFileSync(resolvedProject, 'utf-8') : '';
+  const architectureContent = fs.existsSync(resolvedArchitecture) ? fs.readFileSync(resolvedArchitecture, 'utf-8') : '';
   const indexPath = path.join(tempDist, 'index.html');
   let indexHtml = fs.readFileSync(indexPath, 'utf-8');
   
@@ -112,11 +116,11 @@ async function commandDump() {
   indexHtml = indexHtml.replace(/href="\//g, 'href="./');
   indexHtml = indexHtml.replace(/src="\//g, 'src="./');
   
-  // Inject worklog content as a script tag (the app will read this instead of fetching)
-  // Use Base64 encoding to avoid any escaping issues with special characters,
-  // </script> sequences, or line breaks in the markdown content
-  const base64Content = Buffer.from(worklogContent, 'utf-8').toString('base64');
-  const injectScript = `<script>window.__WORKLOG_CONTENT_B64__ = "${base64Content}";</script>`;
+  // Inject content as Base64 to avoid escaping issues with markdown payloads
+  const worklogBase64 = Buffer.from(worklogContent, 'utf-8').toString('base64');
+  const projectBase64 = Buffer.from(projectContent, 'utf-8').toString('base64');
+  const architectureBase64 = Buffer.from(architectureContent, 'utf-8').toString('base64');
+  const injectScript = `<script>window.__WORKLOG_CONTENT_B64__ = "${worklogBase64}";window.__PROJECT_CONTENT_B64__ = "${projectBase64}";window.__ARCHITECTURE_CONTENT_B64__ = "${architectureBase64}";</script>`;
   indexHtml = indexHtml.replace('</head>', `${injectScript}\n</head>`);
   fs.writeFileSync(indexPath, indexHtml);
   
@@ -271,6 +275,9 @@ function commandServe() {
   const PORT = parseInt(portArg || process.env.PORT || '3000', 10);
   const WORKLOG = positionalArgs[0] || './gsd-lite/WORK.md';
   const WORKLOG_PATH = path.resolve(WORKLOG);
+  const ARTIFACT_DIR = path.dirname(WORKLOG_PATH);
+  const PROJECT_PATH = path.join(ARTIFACT_DIR, 'PROJECT.md');
+  const ARCHITECTURE_PATH = path.join(ARTIFACT_DIR, 'ARCHITECTURE.md');
 
   // Static assets directory (bundled with this package)
   const DIST = path.join(__dirname, 'dist');
@@ -307,6 +314,34 @@ function commandServe() {
         res.statusCode = 404;
         res.setHeader('Content-Type', 'text/plain');
         res.end(`WORK.md not found: ${WORKLOG_PATH}\n\nError: ${err.message}`);
+      }
+      return;
+    }
+
+    if (pathname === '/_project') {
+      try {
+        const content = fs.readFileSync(PROJECT_PATH, 'utf-8');
+        res.setHeader('Content-Type', 'text/plain; charset=utf-8');
+        res.setHeader('Cache-Control', 'no-cache');
+        res.end(content);
+      } catch (err) {
+        res.statusCode = 404;
+        res.setHeader('Content-Type', 'text/plain');
+        res.end(`PROJECT.md not found: ${PROJECT_PATH}\n\nError: ${err.message}`);
+      }
+      return;
+    }
+
+    if (pathname === '/_architecture') {
+      try {
+        const content = fs.readFileSync(ARCHITECTURE_PATH, 'utf-8');
+        res.setHeader('Content-Type', 'text/plain; charset=utf-8');
+        res.setHeader('Cache-Control', 'no-cache');
+        res.end(content);
+      } catch (err) {
+        res.statusCode = 404;
+        res.setHeader('Content-Type', 'text/plain');
+        res.end(`ARCHITECTURE.md not found: ${ARCHITECTURE_PATH}\n\nError: ${err.message}`);
       }
       return;
     }
@@ -388,8 +423,8 @@ function commandServe() {
     process.exit(1);
   }
 
-  // Watch the worklog file
-  const watcher = chokidar.watch(WORKLOG_PATH, {
+  // Watch markdown artifacts
+  const watcher = chokidar.watch([WORKLOG_PATH, PROJECT_PATH, ARCHITECTURE_PATH], {
     persistent: true,
     ignoreInitial: true,
     awaitWriteFinish: {
@@ -400,6 +435,11 @@ function commandServe() {
 
   watcher.on('change', (filepath) => {
     console.log(`[gsd-reader] ${path.basename(filepath)} changed`);
+    broadcastReload();
+  });
+
+  watcher.on('add', (filepath) => {
+    console.log(`[gsd-reader] ${path.basename(filepath)} created`);
     broadcastReload();
   });
 
@@ -419,7 +459,9 @@ function commandServe() {
     console.log('│  Press Ctrl+C to stop                               │');
     console.log('└─────────────────────────────────────────────────────┘');
     console.log('');
-    console.log(`[gsd-reader] Full path: ${WORKLOG_PATH}`);
+    console.log(`[gsd-reader] WORK path: ${WORKLOG_PATH}`);
+    console.log(`[gsd-reader] PROJECT path: ${PROJECT_PATH}`);
+    console.log(`[gsd-reader] ARCH path: ${ARCHITECTURE_PATH}`);
   });
 
   // Graceful shutdown

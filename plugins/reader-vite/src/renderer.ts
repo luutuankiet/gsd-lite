@@ -13,7 +13,7 @@
  * - Superseded styling for ~~strikethrough~~ titles
  */
 
-import type { WorklogAST, LogEntry, Section } from './types';
+import type { WorklogAST, LogEntry, Section, ContextDocument } from './types';
 
 // ============================================================
 // INLINE FORMATTING
@@ -70,27 +70,44 @@ function truncate(str: string, maxLength: number): string {
 // OUTLINE RENDERING
 // ============================================================
 
+function renderCopyCheckbox(copyKey: string): string {
+  return `
+    <label class="outline-select" title="Select for copy export">
+      <input type="checkbox" class="copy-select-input" data-copy-key="${escapeHtml(copyKey)}">
+    </label>
+  `;
+}
+
+function workSectionCopyKey(section: Section): string {
+  return `work-section-${section.lineNumber}`;
+}
+
+function workLogCopyKey(log: LogEntry): string {
+  return `work-log-${log.id}`;
+}
+
 /**
  * Render a single outline item (log or section)
  */
 function renderOutlineItem(item: LogEntry | Section, isLog: boolean = false): string {
   const anchor = `line-${item.lineNumber}`;
   const hasChildren = item.children && item.children.length > 0;
-  
+
   if (isLog) {
     const log = item as LogEntry;
     const supersededClass = log.superseded ? ' superseded' : '';
     const collapsedClass = hasChildren ? ' has-children collapsed' : '';
-    
+
     const toggleBtn = hasChildren ? '<span class="toggle-btn">▼</span>' : '';
-    const childrenHtml = hasChildren 
+    const childrenHtml = hasChildren
       ? `<ul class="outline-children">${log.children.map(c => renderOutlineItem(c, false)).join('')}</ul>`
       : '';
-    
+
     return `
       <li class="outline-item log-item${supersededClass}${collapsedClass}">
         <div class="outline-row">
           ${toggleBtn}
+          ${renderCopyCheckbox(workLogCopyKey(log))}
           <a href="#${anchor}" class="outline-link">
             <span class="badge badge-${log.type}">${log.type}</span>
             <span class="log-id">${log.id}</span>
@@ -100,51 +117,87 @@ function renderOutlineItem(item: LogEntry | Section, isLog: boolean = false): st
         ${childrenHtml}
       </li>
     `;
-  } else {
-    const section = item as Section;
-    const indentClass = `indent-${section.level}`;
-    const collapsedClass = hasChildren ? ' has-children collapsed' : '';
-    
-    const toggleBtn = hasChildren ? '<span class="toggle-btn">▼</span>' : '';
-    const childrenHtml = hasChildren
-      ? `<ul class="outline-children">${section.children.map(c => renderOutlineItem(c, false)).join('')}</ul>`
-      : '';
-    
+  }
+
+  const section = item as Section;
+  const indentClass = `indent-${section.level}`;
+  const collapsedClass = hasChildren ? ' has-children collapsed' : '';
+
+  const toggleBtn = hasChildren ? '<span class="toggle-btn">▼</span>' : '';
+  const childrenHtml = hasChildren
+    ? `<ul class="outline-children">${section.children.map(c => renderOutlineItem(c, false)).join('')}</ul>`
+    : '';
+  const shouldShowCopy = section.level <= 3;
+
+  return `
+    <li class="outline-item section-item ${indentClass}${collapsedClass}">
+      <div class="outline-row">
+        ${toggleBtn}
+        ${shouldShowCopy ? renderCopyCheckbox(workSectionCopyKey(section)) : '<span class="outline-select-spacer"></span>'}
+        <a href="#${anchor}" class="outline-link">${escapeHtml(section.title)}</a>
+      </div>
+      ${childrenHtml}
+    </li>
+  `;
+}
+
+function renderOutlineSectionHeader(title: string, count: number, group: 'project' | 'architecture' | 'work'): string {
+  return `
+    <h3 class="outline-section-title">
+      <span>${title} (${count})</span>
+      <button class="select-group-btn" data-select-group="${group}" title="Select all in ${title}">All</button>
+    </h3>
+  `;
+}
+
+function renderDocumentOutline(doc: ContextDocument, sectionTitle: string, icon: string): string {
+  if (!doc.sections.length) return '';
+
+  const sectionsHtml = doc.sections.map((section) => {
     return `
-      <li class="outline-item section-item ${indentClass}${collapsedClass}">
+      <li class="outline-item section-item indent-2">
         <div class="outline-row">
-          ${toggleBtn}
-          <a href="#${anchor}" class="outline-link">${escapeHtml(section.title)}</a>
+          ${renderCopyCheckbox(section.key)}
+          <a href="#${section.anchorId}" class="outline-link">
+            <span class="doc-pill doc-${doc.kind}">${icon}</span>
+            ${escapeHtml(section.title)}
+          </a>
         </div>
-        ${childrenHtml}
       </li>
     `;
-  }
+  }).join('');
+
+  return `
+    ${renderOutlineSectionHeader(sectionTitle, doc.sections.length, doc.kind)}
+    <ul class="outline-list">${sectionsHtml}</ul>
+  `;
 }
 
 /**
  * Render the full outline panel
  */
-function renderOutline(ast: WorklogAST): string {
-  // Sections
+function renderOutline(ast: WorklogAST, projectDoc?: ContextDocument, architectureDoc?: ContextDocument): string {
   const sectionsHtml = ast.sections.map(s => renderOutlineItem(s, false)).join('');
-  
-  // Logs in reverse order (newest first for navigation)
   const logsHtml = [...ast.logs].reverse().map(log => renderOutlineItem(log, true)).join('');
-  
+  const projectHtml = projectDoc ? renderDocumentOutline(projectDoc, 'PROJECT.md', 'P') : '';
+  const architectureHtml = architectureDoc ? renderDocumentOutline(architectureDoc, 'ARCHITECTURE.md', 'A') : '';
+
   return `
     <nav class="outline" id="outline">
       <div class="outline-header">
         <span>📋 Outline</span>
         <div class="outline-header-buttons">
+          <button class="outline-copy-btn" id="copySelectedBtn" title="Copy selected sections as markdown">📋 Copy</button>
           <button class="expand-all-btn" id="expandAllBtn" title="Expand/Collapse All">⊞</button>
           <button class="outline-close" id="outlineClose">✕</button>
         </div>
       </div>
       <div class="outline-content">
-        <h3 class="outline-section-title">Sections</h3>
+        ${projectHtml}
+        ${architectureHtml}
+        ${renderOutlineSectionHeader('WORK Sections', ast.sections.length, 'work')}
         <ul class="outline-list">${sectionsHtml}</ul>
-        <h3 class="outline-section-title">Logs (${ast.logs.length})</h3>
+        ${renderOutlineSectionHeader('WORK Logs', ast.logs.length, 'work')}
         <ul class="outline-list">${logsHtml}</ul>
       </div>
     </nav>
@@ -154,13 +207,12 @@ function renderOutline(ast: WorklogAST): string {
 /**
  * Render the mobile bottom sheet (shares content structure with outline)
  */
-function renderBottomSheet(ast: WorklogAST): string {
-  // Sections
+function renderBottomSheet(ast: WorklogAST, projectDoc?: ContextDocument, architectureDoc?: ContextDocument): string {
   const sectionsHtml = ast.sections.map(s => renderOutlineItem(s, false)).join('');
-  
-  // Logs in reverse order (newest first for navigation)
   const logsHtml = [...ast.logs].reverse().map(log => renderOutlineItem(log, true)).join('');
-  
+  const projectHtml = projectDoc ? renderDocumentOutline(projectDoc, 'PROJECT.md', 'P') : '';
+  const architectureHtml = architectureDoc ? renderDocumentOutline(architectureDoc, 'ARCHITECTURE.md', 'A') : '';
+
   return `
     <div class="sheet-overlay" id="sheetOverlay"></div>
     <!-- Peek handle: always visible at bottom edge when sheet is collapsed -->
@@ -174,14 +226,17 @@ function renderBottomSheet(ast: WorklogAST): string {
       <div class="sheet-header">
         <span class="sheet-title">📋 Outline</span>
         <div class="sheet-header-buttons">
+          <button class="outline-copy-btn" id="sheetCopySelectedBtn" title="Copy selected sections as markdown">📋 Copy</button>
           <button class="expand-all-btn" id="sheetExpandAllBtn" title="Expand/Collapse All">⊞</button>
           <button class="sheet-close-btn" id="sheetClose">✕</button>
         </div>
       </div>
       <div class="sheet-content">
-        <h3 class="outline-section-title">Sections</h3>
+        ${projectHtml}
+        ${architectureHtml}
+        ${renderOutlineSectionHeader('WORK Sections', ast.sections.length, 'work')}
         <ul class="outline-list">${sectionsHtml}</ul>
-        <h3 class="outline-section-title">Logs (${ast.logs.length})</h3>
+        ${renderOutlineSectionHeader('WORK Logs', ast.logs.length, 'work')}
         <ul class="outline-list">${logsHtml}</ul>
       </div>
     </div>
@@ -196,7 +251,7 @@ function renderBottomSheet(ast: WorklogAST): string {
  * Convert markdown content to HTML with line anchors.
  * Handles: headers, code blocks, tables, lists, paragraphs.
  */
-function renderMarkdown(content: string, startLine: number = 1): string {
+function renderMarkdown(content: string, startLine: number = 1, anchorPrefix: string = 'line'): string {
   const lines = content.split('\n');
   const htmlLines: string[] = [];
   
@@ -206,11 +261,12 @@ function renderMarkdown(content: string, startLine: number = 1): string {
   let inTable = false;
   let inList = false;
   let listType: 'ul' | 'ol' = 'ul';
+  let xmlDepth = 0;
   
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i];
     const lineNum = startLine + i;
-    const anchor = `id="line-${lineNum}"`;
+    const anchor = `id="${anchorPrefix}-${lineNum}"`;
     
     // Handle code fences
     const trimmedLine = line.trim();
@@ -255,8 +311,51 @@ function renderMarkdown(content: string, startLine: number = 1): string {
       continue;
     }
     
+    // XML-like tags (outside fenced code only)
+    const closeTagMatch = trimmedLine.match(/^<\/([A-Za-z_][\w:.-]*)\s*>$/);
+    const selfClosingTagMatch = trimmedLine.match(/^<([A-Za-z_][\w:.-]*)(\s+[^<>]+?)?\/>$/);
+    const inlineTagMatch = trimmedLine.match(/^<([A-Za-z_][\w:.-]*)(\s+[^<>]+?)?>([^<]*)<\/\1\s*>$/);
+    const openTagMatch = trimmedLine.match(/^<([A-Za-z_][\w:.-]*)(\s+[^<>]+?)?>$/);
+    const isXmlLikeTag = Boolean(closeTagMatch || selfClosingTagMatch || inlineTagMatch || openTagMatch) &&
+      !trimmedLine.startsWith('<!--') &&
+      !trimmedLine.startsWith('<!') &&
+      !trimmedLine.startsWith('<?');
+
+    if (isXmlLikeTag) {
+      if (inTable) {
+        htmlLines.push('</tbody></table>');
+        inTable = false;
+      }
+      if (inList) {
+        htmlLines.push(listType === 'ul' ? '</ul>' : '</ol>');
+        inList = false;
+      }
+
+      if (closeTagMatch) {
+        xmlDepth = Math.max(xmlDepth - 1, 0);
+        const depth = Math.min(xmlDepth + 1, 6);
+        htmlLines.push(`<div ${anchor} class="xml-tag-line xml-close depth-${depth}"><span class="xml-tag-pill">${escapeHtml(trimmedLine)}</span></div>`);
+      } else if (selfClosingTagMatch) {
+        const depth = Math.min(xmlDepth + 1, 6);
+        htmlLines.push(`<div ${anchor} class="xml-tag-line xml-self depth-${depth}"><span class="xml-tag-pill">${escapeHtml(trimmedLine)}</span></div>`);
+      } else if (inlineTagMatch) {
+        const depth = Math.min(xmlDepth + 1, 6);
+        const tagName = inlineTagMatch[1];
+        const attrs = inlineTagMatch[2] || '';
+        const value = formatInline(escapeHtml(inlineTagMatch[3] || ''));
+        const open = `&lt;${escapeHtml(tagName + attrs)}&gt;`;
+        const close = `&lt;/${escapeHtml(tagName)}&gt;`;
+        htmlLines.push(`<div ${anchor} class="xml-tag-line xml-inline depth-${depth}"><span class="xml-tag-pill">${open}</span><span class="xml-inline-value">${value}</span><span class="xml-tag-pill">${close}</span></div>`);
+      } else if (openTagMatch) {
+        const depth = Math.min(xmlDepth + 1, 6);
+        htmlLines.push(`<div ${anchor} class="xml-tag-line xml-open depth-${depth}"><span class="xml-tag-pill">${escapeHtml(trimmedLine)}</span></div>`);
+        xmlDepth += 1;
+      }
+      continue;
+    }
+
     // Headers (H1-H6)
-    const headerMatch = line.match(/^(#{1,6}) (.+)$/);
+    const headerMatch = line.match(/^(#{1,6})\s*(\S.*)$/);
     if (headerMatch) {
       if (inTable) {
         htmlLines.push('</tbody></table>');
@@ -453,13 +552,38 @@ function renderLogEntry(log: LogEntry): string {
 // MAIN RENDER FUNCTION
 // ============================================================
 
+interface RenderContextDocs {
+  projectDoc?: ContextDocument;
+  architectureDoc?: ContextDocument;
+}
+
+function renderContextSection(doc: ContextDocument, section: ContextDocument['sections'][number]): string {
+  const docLabel = doc.kind === 'project' ? 'PROJECT.md' : 'ARCHITECTURE.md';
+  const content = section.content
+    ? renderMarkdown(section.content, section.lineNumber + 1, `${doc.kind}-line`)
+    : '';
+
+  return `
+    <section class="worklog-section section-h2 context-doc ${doc.kind}-doc" id="${section.anchorId}" data-section-title="${escapeHtml(docLabel + ': ' + section.title)}">
+      <h2 class="section-title">
+        <span class="doc-section-pill">${docLabel}</span>
+        ${formatInline(escapeHtml(section.title))}
+      </h2>
+      <div class="section-content">
+        ${content}
+      </div>
+    </section>
+  `;
+}
+
 /**
  * Render full worklog to HTML string.
  * Returns the inner content (outline + main) - the shell is in index.html.
  */
-export function renderWorklog(ast: WorklogAST): string {
-  const outline = renderOutline(ast);
-  const bottomSheet = renderBottomSheet(ast);
+export function renderWorklog(ast: WorklogAST, docs: RenderContextDocs = {}): string {
+  const { projectDoc, architectureDoc } = docs;
+  const outline = renderOutline(ast, projectDoc, architectureDoc);
+  const bottomSheet = renderBottomSheet(ast, projectDoc, architectureDoc);
   
   // Combine sections and logs, sort by line number for correct document order
   type ContentItem = { type: 'section' | 'log'; lineNumber: number; item: Section | LogEntry };
@@ -470,13 +594,21 @@ export function renderWorklog(ast: WorklogAST): string {
   allItems.sort((a, b) => a.lineNumber - b.lineNumber);
   
   // Render in order
-  const content = allItems.map(({ type, item }) => {
+  const workContent = allItems.map(({ type, item }) => {
     if (type === 'section') {
       return renderSection(item as Section);
-    } else {
-      return renderLogEntry(item as LogEntry);
     }
+    return renderLogEntry(item as LogEntry);
   }).join('');
+
+  const projectContent = projectDoc
+    ? projectDoc.sections.map(section => renderContextSection(projectDoc, section)).join('')
+    : '';
+  const architectureContent = architectureDoc
+    ? architectureDoc.sections.map(section => renderContextSection(architectureDoc, section)).join('')
+    : '';
+
+  const content = `${projectContent}${architectureContent}${workContent}`;
   
   const latestLogLine = ast.logs.length > 0 ? ast.logs[ast.logs.length - 1].lineNumber : 1;
   
@@ -484,8 +616,11 @@ export function renderWorklog(ast: WorklogAST): string {
     <!-- Top Bar -->
     <header class="top-bar">
       <button class="btn-outline-toggle" id="outlineToggle">📋</button>
-      <span class="top-bar-title">GSD-Lite Worklog</span>
-      <button class="btn-jump-latest" id="jumpLatest" data-line="${latestLogLine}">⬇ Latest</button>
+      <span class="top-bar-title">GSD Reader: PROJECT + ARCHITECTURE + WORK</span>
+      <div class="top-bar-actions">
+        <button class="btn-copy-selected" id="copySelectedTop">📋 Copy</button>
+        <button class="btn-jump-latest" id="jumpLatest" data-line="${latestLogLine}">⬇ Latest</button>
+      </div>
     </header>
     
     <!-- Sticky Breadcrumb (shows current position while scrolling) -->
@@ -514,7 +649,7 @@ export function renderWorklog(ast: WorklogAST): string {
     
     <!-- Stats Footer -->
     <div class="stats-footer">
-      ${ast.metadata.totalLogs} logs · ${ast.metadata.totalLines} lines · ${ast.metadata.parseTime}ms
+      ${projectDoc?.sections.length || 0} project sections · ${architectureDoc?.sections.length || 0} architecture sections · ${ast.metadata.totalLogs} logs · ${ast.metadata.totalLines} work lines · ${ast.metadata.parseTime}ms
     </div>
   `;
 }
@@ -523,7 +658,7 @@ export function renderWorklog(ast: WorklogAST): string {
  * Initialize event listeners after render.
  * Call this after injecting renderWorklog() output into DOM.
  */
-export function initializeInteractions(): void {
+export function initializeInteractions(ast: WorklogAST, docs: RenderContextDocs = {}): void {
   const outline = document.getElementById('outline');
   const overlay = document.getElementById('overlay');
   const content = document.getElementById('content');
@@ -533,10 +668,138 @@ export function initializeInteractions(): void {
   const expandAllBtn = document.getElementById('expandAllBtn');
   const jumpLatest = document.getElementById('jumpLatest');
   const scrollThumb = document.getElementById('scrollThumb');
+  const copySelectedTop = document.getElementById('copySelectedTop');
+  const copySelectedBtn = document.getElementById('copySelectedBtn');
+  const sheetCopySelectedBtn = document.getElementById('sheetCopySelectedBtn');
   
   if (!outline || !overlay || !content) return;
   
   let allExpanded = false;
+
+  const copyOrder: string[] = [];
+  const copyPayloads = new Map<string, { source: string; title: string; markdown: string }>();
+
+  const { projectDoc, architectureDoc } = docs;
+
+  const addCopyEntry = (key: string, source: string, title: string, markdown: string) => {
+    if (!markdown.trim()) return;
+    copyOrder.push(key);
+    copyPayloads.set(key, { source, title, markdown: markdown.trimEnd() });
+  };
+
+  if (projectDoc) {
+    projectDoc.sections.forEach((section) => addCopyEntry(section.key, 'PROJECT.md', section.title, section.markdown));
+  }
+
+  if (architectureDoc) {
+    architectureDoc.sections.forEach((section) => addCopyEntry(section.key, 'ARCHITECTURE.md', section.title, section.markdown));
+  }
+
+  ast.sections
+    .filter(section => section.level <= 3)
+    .forEach((section) => {
+      const key = workSectionCopyKey(section);
+      const heading = `${'#'.repeat(section.level)} ${section.title}`;
+      const markdown = section.content ? `${heading}\n\n${section.content}` : heading;
+      addCopyEntry(key, 'WORK.md', section.title, markdown);
+    });
+
+  ast.logs.forEach((log) => {
+    const key = workLogCopyKey(log);
+    const taskSuffix = log.task ? ` - Task: ${log.task}` : '';
+    const heading = `### [${log.id}] - [${log.type}] - ${log.title}${taskSuffix}`;
+    const markdown = log.content ? `${heading}\n\n${log.content}` : heading;
+    addCopyEntry(key, 'WORK.md', `${log.id}: ${log.title}`, markdown);
+  });
+
+  const syncCheckboxes = (copyKey: string, checked: boolean) => {
+    document.querySelectorAll(`.copy-select-input[data-copy-key="${copyKey}"]`).forEach((input) => {
+      const checkbox = input as HTMLInputElement;
+      checkbox.checked = checked;
+    });
+  };
+
+  const getGroupKeys = (group: string): string[] => {
+    if (group === 'project') return copyOrder.filter((key) => key.startsWith('project-section-'));
+    if (group === 'architecture') return copyOrder.filter((key) => key.startsWith('architecture-section-'));
+    if (group === 'work') return copyOrder.filter((key) => key.startsWith('work-section-') || key.startsWith('work-log-'));
+    return [];
+  };
+
+  const flashCopyButtons = (text: string, isSuccess: boolean) => {
+    [copySelectedTop, copySelectedBtn, sheetCopySelectedBtn].forEach((btn) => {
+      if (!btn) return;
+      const original = btn.textContent || '📋 Copy';
+      btn.textContent = text;
+      btn.classList.toggle('copy-success', isSuccess);
+      btn.classList.toggle('copy-warning', !isSuccess);
+      setTimeout(() => {
+        btn.textContent = original.startsWith('📋') ? original : '📋 Copy';
+        btn.classList.remove('copy-success', 'copy-warning');
+      }, 1400);
+    });
+  };
+
+  const copySelectedSections = async () => {
+    const selected = new Set<string>();
+    document.querySelectorAll('.copy-select-input').forEach((input) => {
+      const checkbox = input as HTMLInputElement;
+      if (checkbox.checked && checkbox.dataset.copyKey) {
+        selected.add(checkbox.dataset.copyKey);
+      }
+    });
+
+    if (selected.size === 0) {
+      flashCopyButtons('Select items first', false);
+      return;
+    }
+
+    const orderedChunks = copyOrder
+      .filter(key => selected.has(key))
+      .map((key) => copyPayloads.get(key))
+      .filter((chunk): chunk is { source: string; title: string; markdown: string } => Boolean(chunk));
+
+    const payload = orderedChunks
+      .map((chunk) => `> Source: ${chunk.source} / ${chunk.title}\n\n${chunk.markdown}`)
+      .join('\n\n---\n\n');
+    try {
+      await navigator.clipboard.writeText(payload);
+      flashCopyButtons(`Copied ${orderedChunks.length}`, true);
+    } catch {
+      flashCopyButtons('Clipboard blocked', false);
+    }
+  };
+
+  document.querySelectorAll('.copy-select-input').forEach((input) => {
+    input.addEventListener('change', () => {
+      const checkbox = input as HTMLInputElement;
+      const copyKey = checkbox.dataset.copyKey;
+      if (!copyKey) return;
+      syncCheckboxes(copyKey, checkbox.checked);
+    });
+  });
+
+  document.querySelectorAll('.select-group-btn').forEach((button) => {
+    button.addEventListener('click', () => {
+      const group = (button as HTMLElement).dataset.selectGroup;
+      if (!group) return;
+      const keys = getGroupKeys(group);
+      if (!keys.length) return;
+
+      const allChecked = keys.every((key) => {
+        const checkbox = document.querySelector(`.copy-select-input[data-copy-key="${key}"]`) as HTMLInputElement | null;
+        return checkbox?.checked;
+      });
+
+      keys.forEach((key) => syncCheckboxes(key, !allChecked));
+    });
+  });
+
+  [copySelectedTop, copySelectedBtn, sheetCopySelectedBtn].forEach((btn) => {
+    btn?.addEventListener('click', () => {
+      void copySelectedSections();
+    });
+  });
   
   // ===== SCROLL OUTLINE TO ACTIVE ITEM =====
   // Reusable function to scroll the outline (sidebar or sheet) to show the currently active item

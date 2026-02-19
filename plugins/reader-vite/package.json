@@ -1,6 +1,6 @@
 {
   "name": "@luutuankiet/gsd-reader",
-  "version": "0.2.9",
+  "version": "0.2.10",
   "description": "Interactive Worklog Reader for GSD-Lite WORK.md files with live reload",
   "keywords": [
     "gsd-lite",

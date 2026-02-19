@@ -21,9 +21,11 @@ Then open http://localhost:3000 — the page auto-refreshes when WORK.md changes
 
 ## Features
 
-- 🔥 **Hot Reload** — Browser updates instantly when WORK.md changes (no manual refresh)
+- 🔥 **Hot Reload** — Browser updates instantly when `WORK.md`, `PROJECT.md`, or `ARCHITECTURE.md` changes
 - 📊 **Mermaid Diagrams** — Native SVG rendering with error handling
 - 🎨 **Full Markdown** — Tables, code blocks, lists, links, strikethrough
+- 🧩 **Multi-Doc View** — Single page sequence: `PROJECT.md` → `ARCHITECTURE.md` → `WORK.md`
+- 📋 **Copy Selected Sections** — Select root sections/logs from outline and copy markdown for LLM prompts
 - 📱 **Mobile Ready** — Responsive layout, touch-friendly navigation
 - ⚡ **Fast** — Vite's instant HMR, sub-second rebuilds
 
@@ -31,9 +33,9 @@ Then open http://localhost:3000 — the page auto-refreshes when WORK.md changes
 
 The Vite plugin (`src/vite-plugin-worklog.ts`) does three things:
 
-1. **Watches** — Uses chokidar to monitor the external WORK.md file
-2. **Serves** — Exposes `/_worklog` endpoint that returns the file content
-3. **Pushes** — Sends HMR events to the browser when the file changes
+1. **Watches** — Uses chokidar to monitor `WORK.md` and sibling `PROJECT.md` / `ARCHITECTURE.md`
+2. **Serves** — Exposes `/_worklog`, `/_project`, `/_architecture` endpoints
+3. **Pushes** — Sends HMR events to the browser when any of those files change
 
 ```
 ┌─────────────────┐     ┌──────────────────────┐     ┌─────────────┐
