@@ -2,6 +2,19 @@
 
 <!-- version list -->
 
+## v1.21.0 (2026-02-19)
+
+### Bug Fixes
+
+- Agent mermaid guide
+  ([`24604da`](https://github.com/luutuankiet/gsd-lite/commit/24604da8b028fe41dbe304a2127d4f2a3807a5e1))
+
+### Features
+
+- Enhance breadcrum and added project + arch into gsd reader
+  ([`6b6d1b9`](https://github.com/luutuankiet/gsd-lite/commit/6b6d1b947b1b3628fd1ba6e493749fe183eb6a1f))
+
+
 ## v1.20.0 (2026-02-18)
 
 ### Features
