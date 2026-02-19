@@ -11,6 +11,7 @@
 | `plugins/reader-vite/`   | **Reader Plugin**: TypeScript/Vite worklog viewer with live reload (see [Plugins](#plugins) section) |
 | `.planning/`             | **Context**: Upstream project planning and definition (Data Engineering Copilot Patterns) |
 | `.claude/`               | **Reference**: Original GSD reference implementation                                      |
+| `gsd-lite/docs/`         | **Style Guides**: UX and consistency guidelines for reader and future artifact conventions |
 | `gsd-lite/`              | **Bootstrap**: The "dogfooding" instance of GSD-Lite used to build this project           |
 
 ## Tech Stack
@@ -198,6 +199,13 @@ GSD-Lite worklogs grow to 9,000+ lines. Standard markdown viewers (GitHub, VS Co
 - Live reload when WORK.md changes
 
 The Reader solves this with a purpose-built worklog browser. See LOG-047 for the full vision.
+
+#### Style Consistency Contract
+
+Reader UX decisions and consistency constraints are documented in:
+- `gsd-lite/docs/reader-styleguide.md`
+
+Future reader changes should validate against this style guide before merge to avoid nav regressions (path bar context, outline behavior, copy/export consistency, XML render rules).
 
 #### Tech Stack
 

@@ -10,12 +10,15 @@
  */
 
 import { parseWorklog } from './parser';
+import { parseContextDocument } from './context-parser';
 import { renderWorklog, initializeInteractions } from './renderer';
 import { initDiagramOverlays } from './diagram-overlay';
 import { highlightCodeBlocks } from './syntax-highlight';
 
-// Endpoint served by vite-plugin-worklog
+// Endpoints served by vite plugin / production CLI server
 const WORKLOG_ENDPOINT = '/_worklog';
+const PROJECT_ENDPOINT = '/_project';
+const ARCHITECTURE_ENDPOINT = '/_architecture';
 
 // Track Mermaid errors for the error panel
 interface MermaidError {
@@ -41,38 +44,61 @@ async function loadAndRender(): Promise<void> {
   console.log(`[GSD-Lite Reader] Saving scroll position: ${savedScrollY}px`);
 
   try {
-    // Check for embedded content first (static dump mode)
-    // Then fall back to fetching from the dev server endpoint
-    let markdown: string;
-    
-    if ((window as any).__WORKLOG_CONTENT_B64__) {
-      // Static mode: content was injected during dump as Base64
-      // Use TextDecoder to properly handle UTF-8 (atob alone corrupts multi-byte chars like em-dash)
-      const binaryString = atob((window as any).__WORKLOG_CONTENT_B64__);
+    const decodeBase64Utf8 = (base64: string): string => {
+      const binaryString = atob(base64);
       const bytes = Uint8Array.from(binaryString, c => c.charCodeAt(0));
-      markdown = new TextDecoder('utf-8').decode(bytes);
+      return new TextDecoder('utf-8').decode(bytes);
+    };
+
+    // Load embedded content (static dump mode) OR fetch from server (dev/prod serve mode)
+    let worklogMarkdown = '';
+    let projectMarkdown = '';
+    let architectureMarkdown = '';
+
+    if ((window as any).__WORKLOG_CONTENT_B64__) {
+      worklogMarkdown = decodeBase64Utf8((window as any).__WORKLOG_CONTENT_B64__);
+      projectMarkdown = (window as any).__PROJECT_CONTENT_B64__
+        ? decodeBase64Utf8((window as any).__PROJECT_CONTENT_B64__)
+        : '';
+      architectureMarkdown = (window as any).__ARCHITECTURE_CONTENT_B64__
+        ? decodeBase64Utf8((window as any).__ARCHITECTURE_CONTENT_B64__)
+        : '';
       console.log('[GSD-Lite Reader] Using embedded content (static mode)');
     } else if ((window as any).__WORKLOG_CONTENT__) {
-      // Legacy: plain text injection (kept for backwards compatibility)
-      markdown = (window as any).__WORKLOG_CONTENT__;
+      // Legacy mode: only WORK content was injected
+      worklogMarkdown = (window as any).__WORKLOG_CONTENT__;
+      projectMarkdown = (window as any).__PROJECT_CONTENT__ || '';
+      architectureMarkdown = (window as any).__ARCHITECTURE_CONTENT__ || '';
       console.log('[GSD-Lite Reader] Using embedded content (static mode, legacy)');
     } else {
-      // Dev mode: fetch from the dev server
-      const response = await fetch(WORKLOG_ENDPOINT);
-      if (!response.ok) {
-        throw new Error(`Failed to load WORK.md: ${response.status} ${response.statusText}`);
+      const fetchOptional = async (endpoint: string): Promise<string> => {
+        const response = await fetch(endpoint);
+        if (!response.ok) return '';
+        return response.text();
+      };
+
+      const worklogResponse = await fetch(WORKLOG_ENDPOINT);
+      if (!worklogResponse.ok) {
+        throw new Error(`Failed to load WORK.md: ${worklogResponse.status} ${worklogResponse.statusText}`);
       }
-      markdown = await response.text();
+
+      [worklogMarkdown, projectMarkdown, architectureMarkdown] = await Promise.all([
+        worklogResponse.text(),
+        fetchOptional(PROJECT_ENDPOINT),
+        fetchOptional(ARCHITECTURE_ENDPOINT),
+      ]);
     }
 
-    // Parse into AST
-    const ast = parseWorklog(markdown);
+    // Parse into ASTs
+    const ast = parseWorklog(worklogMarkdown);
+    const projectDoc = parseContextDocument(projectMarkdown, 'project', 'PROJECT.md');
+    const architectureDoc = parseContextDocument(architectureMarkdown, 'architecture', 'ARCHITECTURE.md');
 
     // Render to DOM
-    app.innerHTML = renderWorklog(ast);
+    app.innerHTML = renderWorklog(ast, { projectDoc, architectureDoc });
 
-    // Initialize all interactive elements (outline, scroll, etc.)
-    initializeInteractions();
+    // Initialize all interactive elements (outline, scroll, copy, etc.)
+    initializeInteractions(ast, { projectDoc, architectureDoc });
 
     // Initialize Mermaid diagrams (this populates mermaidErrors)
     // Must complete BEFORE scroll restore since diagrams change page height

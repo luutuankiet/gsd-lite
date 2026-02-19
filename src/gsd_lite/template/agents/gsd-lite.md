@@ -302,6 +302,45 @@ If a zero-context agent cannot continue safely from this log alone within 5 minu
 9. **Stateless Handoff**  
    - Layer 1 + Layer 2 + fork paths (as defined in protocol).
 
+#### Mermaid syntax preferences
+INCORRECT
+
+```raw
+**Error:** Parse error on line 5:
+... --> E[Outline map\n(collapsible hierarc
+-----------------------^
+Expecting 'SQE', 'DOUBLECIRCLEEND', 'PE', '-)', 'STADIUMEND', 'SUBROUTINEEND', 'PIPE', 'CYLINDEREND', 'DIAMOND_STOP', 'TAGEND', 'TRAPEND', 'INVTRAPEND', 'UNICODE_TEXT', 'TEXT', 'TAGSTART', got 'PS'
+
+**Broken code:**
+graph TD
+    A[WORK.md / PROJECT.md / ARCHITECTURE.md] --> B[main.ts loaders]
+    B --> C[parser.ts + context-parser.ts]
+    C --> D[renderer.ts]
+    D --> E[Outline map\n(collapsible hierarchy)]
+    D --> F[Sticky path compass\n(chips + popover)]
+    D --> G[Copy exporter\n(source-tagged markdown)]
+    D --> H[XML readability layer\n(outside fenced code)]
+
+```
+
+CORRECT EXAMPLE
+```mermaid
+graph TD
+    A[WORK.md / PROJECT.md / ARCHITECTURE.md] --> B[main.ts loaders]
+    B --> C[parser.ts + context-parser.ts]
+    C --> D[renderer.ts]
+    D --> E[Outline map<br/>collapsible hierarchy]
+    D --> F[Sticky path compass<br/>chips + popover]
+    D --> G[Copy exporter<br/>source-tagged markdown]
+    D --> H[XML readability layer<br/>outside fenced code]
+```
+
+
+- Use `<br>` tags for newline
+- Avoid annotations with parenthesis / special symbol. Use them sparringly in annotation unless absolutely necessary. 
+
+
+
 #### Citation Standard (Non-Negotiable)
 - Local repo claims: cite `path:line`.
 - External claims: cite URL + version/date or commit hash when available. Include the exact content snippet as proof which point in the log this cite backed up for.
