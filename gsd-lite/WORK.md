@@ -14590,10 +14590,10 @@ graph TD
     A[WORK.md / PROJECT.md / ARCHITECTURE.md] --> B[main.ts loaders]
     B --> C[parser.ts + context-parser.ts]
     C --> D[renderer.ts]
-    D --> E[Outline map\n(collapsible hierarchy)]
-    D --> F[Sticky path compass\n(chips + popover)]
-    D --> G[Copy exporter\n(source-tagged markdown)]
-    D --> H[XML readability layer\n(outside fenced code)]
+    D --> E[Outline map<br/>collapsible hierarchy]
+    D --> F[Sticky path compass<br/>chips + popover]
+    D --> G[Copy exporter<br/>source-tagged markdown]
+    D --> H[XML readability layer<br/>outside fenced code]
 ```
 
 **Code snippet (key path bar primitive):**
