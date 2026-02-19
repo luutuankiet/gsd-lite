@@ -623,9 +623,11 @@ export function renderWorklog(ast: WorklogAST, docs: RenderContextDocs = {}): st
       </div>
     </header>
     
-    <!-- Sticky Breadcrumb (shows current position while scrolling) -->
+    <!-- Sticky Path Bar (shows current hierarchy while scrolling) -->
     <nav class="breadcrumb" id="breadcrumb">
-      <span class="breadcrumb-text">GSD-Lite Worklog</span>
+      <div class="breadcrumb-path" id="breadcrumbPath"></div>
+      <button class="breadcrumb-expand" id="breadcrumbExpand" title="Show full path">⋯</button>
+      <div class="breadcrumb-popover" id="breadcrumbPopover"></div>
     </nav>
     
     <!-- Outline Panel (Desktop) -->
@@ -1124,18 +1126,180 @@ export function initializeInteractions(ast: WorklogAST, docs: RenderContextDocs 
     }
   }
   
-  // ===== SCROLL SYNC: BREADCRUMB + OUTLINE HIGHLIGHTING =====
-  const breadcrumbText = breadcrumb?.querySelector('.breadcrumb-text');
+  // ===== SCROLL SYNC: PATH BAR + OUTLINE HIGHLIGHTING =====
+  const breadcrumbPath = document.getElementById('breadcrumbPath');
+  const breadcrumbExpand = document.getElementById('breadcrumbExpand');
+  const breadcrumbPopover = document.getElementById('breadcrumbPopover');
 
   // Find all trackable sections (log entries and sections with data-section-title)
   const trackableSections = document.querySelectorAll('[data-section-title]');
 
-  if (trackableSections.length > 0 && breadcrumbText) {
+  if (trackableSections.length > 0 && breadcrumb && breadcrumbPath && breadcrumbPopover) {
+    type BreadcrumbNode = {
+      label: string;
+      targetId: string | null;
+      kind: 'doc' | 'card' | 'section' | 'ellipsis';
+    };
+
     // Track which section is currently visible
     let currentSectionId: string | null = null;
     // Offset from top of viewport to consider as the "reading line"
     // Matches the sticky header area (top bar 50px + breadcrumb 36px + small buffer)
     const READING_LINE_OFFSET = 96;
+
+    const getDocKind = (element: HTMLElement): 'work' | 'project' | 'architecture' => {
+      if (element.id.startsWith('project-')) return 'project';
+      if (element.id.startsWith('architecture-')) return 'architecture';
+      return 'work';
+    };
+
+    const normalizeTitle = (title: string): string => {
+      return title
+        .replace(/^WORK\.md:\s*/i, '')
+        .replace(/^PROJECT\.md:\s*/i, '')
+        .replace(/^ARCHITECTURE\.md:\s*/i, '')
+        .trim();
+    };
+
+    const getHeadingLevel = (element: HTMLElement): number => {
+      const tagMatch = element.tagName.match(/^H([1-6])$/);
+      if (tagMatch) return parseInt(tagMatch[1], 10);
+      const ariaLevel = element.getAttribute('aria-level');
+      if (ariaLevel) {
+        const parsed = parseInt(ariaLevel, 10);
+        if (!Number.isNaN(parsed)) return parsed;
+      }
+      return 6;
+    };
+
+    const buildHeadingStack = (scope: HTMLElement, active: HTMLElement): BreadcrumbNode[] => {
+      const headings = Array.from(scope.querySelectorAll('[data-section-title]')) as HTMLElement[];
+      const stack: Array<{ level: number; node: BreadcrumbNode }> = [];
+
+      for (const heading of headings) {
+        if (!heading.id) continue;
+        if (heading === scope) continue;
+        const level = getHeadingLevel(heading);
+        while (stack.length > 0 && stack[stack.length - 1].level >= level) {
+          stack.pop();
+        }
+        stack.push({
+          level,
+          node: {
+            label: normalizeTitle(heading.dataset.sectionTitle || ''),
+            targetId: heading.id,
+            kind: 'section',
+          },
+        });
+        if (heading === active) break;
+      }
+
+      return stack.map(item => item.node);
+    };
+
+    const compressPath = (nodes: BreadcrumbNode[]): BreadcrumbNode[] => {
+      if (nodes.length <= 3) return nodes;
+
+      const isMobile = window.innerWidth < 768;
+      if (isMobile) {
+        const first = nodes[0];
+        const card = nodes.find(node => node.kind === 'card') || nodes[1];
+        const current = nodes[nodes.length - 1];
+
+        const result: BreadcrumbNode[] = [first];
+        if (card && card !== first && card !== current) result.push(card);
+        if (nodes.length > result.length + 1) {
+          result.push({ label: '...', targetId: null, kind: 'ellipsis' });
+        }
+        if (current !== first && current !== card) result.push(current);
+        return result;
+      }
+
+      const ellipsisNode: BreadcrumbNode = { label: '...', targetId: null, kind: 'ellipsis' };
+
+      return [
+        nodes[0],
+        nodes[1],
+        ellipsisNode,
+        nodes[nodes.length - 2],
+        nodes[nodes.length - 1],
+      ].filter((node, index, arr) => {
+        if (!node) return false;
+        if (node.kind === 'ellipsis') return true;
+        return arr.findIndex(n => n.targetId === node.targetId && n.label === node.label) === index;
+      });
+    };
+
+    const buildPathNodes = (active: HTMLElement): BreadcrumbNode[] => {
+      const docKind = getDocKind(active);
+      const nodes: BreadcrumbNode[] = [];
+
+      const docLabel = docKind === 'work' ? 'WORK.md' : docKind === 'project' ? 'PROJECT.md' : 'ARCHITECTURE.md';
+      nodes.push({ label: docLabel, targetId: null, kind: 'doc' });
+
+      const parentLogEntry = active.closest('.log-entry') as HTMLElement | null;
+      if (docKind === 'work' && parentLogEntry) {
+        nodes.push({
+          label: normalizeTitle(parentLogEntry.dataset.sectionTitle || 'Log Entry'),
+          targetId: parentLogEntry.id,
+          kind: 'card',
+        });
+
+        if (active !== parentLogEntry) {
+          const logContent = parentLogEntry.querySelector('.log-content') as HTMLElement | null;
+          if (logContent) {
+            const nestedHeadings = buildHeadingStack(logContent, active);
+            nestedHeadings.forEach(node => {
+              if (node.targetId !== parentLogEntry.id) nodes.push(node);
+            });
+          }
+        }
+
+        return nodes;
+      }
+
+      const parentContextCard = active.closest('.context-doc, .worklog-section') as HTMLElement | null;
+      if (parentContextCard) {
+        const cardTitle = normalizeTitle(parentContextCard.dataset.sectionTitle || 'Section');
+        nodes.push({ label: cardTitle, targetId: parentContextCard.id, kind: 'card' });
+
+        if (active !== parentContextCard) {
+          const cardContent = parentContextCard.querySelector('.section-content, .log-content') as HTMLElement | null;
+          if (cardContent) {
+            const nestedHeadings = buildHeadingStack(cardContent, active);
+            nestedHeadings.forEach(node => {
+              if (node.targetId !== parentContextCard.id) nodes.push(node);
+            });
+          }
+        }
+      }
+
+      return nodes;
+    };
+
+    const renderPath = (allNodes: BreadcrumbNode[]) => {
+      const visibleNodes = compressPath(allNodes);
+      breadcrumbPath.innerHTML = visibleNodes.map((node, index) => {
+        const separator = index > 0 ? '<span class="breadcrumb-sep">›</span>' : '';
+        if (node.kind === 'ellipsis') {
+          return `${separator}<button class="breadcrumb-chip breadcrumb-chip-ellipsis" data-path-action="expand" type="button">...</button>`;
+        }
+        const targetAttr = node.targetId ? ` data-target-id="${node.targetId}"` : '';
+        const kindClass = `breadcrumb-chip-${node.kind}`;
+        return `${separator}<button class="breadcrumb-chip ${kindClass}"${targetAttr} type="button">${escapeHtml(node.label)}</button>`;
+      }).join('');
+
+      breadcrumbPopover.innerHTML = `
+        <div class="breadcrumb-popover-title">Full Context Path</div>
+        <div class="breadcrumb-popover-list">
+          ${allNodes.map((node, index) => {
+            const targetAttr = node.targetId ? ` data-target-id="${node.targetId}"` : '';
+            const separator = index > 0 ? '<span class="breadcrumb-popover-sep">›</span>' : '';
+            return `${separator}<button class="breadcrumb-popover-item"${targetAttr} type="button">${escapeHtml(node.label)}</button>`;
+          }).join('')}
+        </div>
+      `;
+    };
 
     function updateCurrentSection() {
       // Find the last section whose top has scrolled past the reading line.
@@ -1165,20 +1329,11 @@ export function initializeInteractions(ast: WorklogAST, docs: RenderContextDocs 
       if (sectionId === currentSectionId) return;
 
       currentSectionId = sectionId;
-      
-      // For breadcrumb: Always show the parent LOG entry, not sub-headers
-      // This provides stable context ("I'm in LOG-063") while reading sub-sections
-      let breadcrumbTitle = activeElement.dataset.sectionTitle || 'GSD-Lite Worklog';
-      
-      // Check if this is a child element inside a log-entry
-      const parentLogEntry = activeElement.closest('.log-entry') as HTMLElement | null;
-      if (parentLogEntry && parentLogEntry !== activeElement) {
-        // We're inside a log but on a sub-header - use the log's title for breadcrumb
-        breadcrumbTitle = parentLogEntry.dataset.sectionTitle || breadcrumbTitle;
-      }
 
-      // Update breadcrumb with parent log context
-      breadcrumbText!.textContent = breadcrumbTitle;
+      const pathNodes = buildPathNodes(activeElement);
+      renderPath(pathNodes);
+
+      const parentLogEntry = activeElement.closest('.log-entry') as HTMLElement | null;
 
       // Update outline highlighting in BOTH sidebar and sheet
       document.querySelectorAll('.outline-link').forEach(link => {
@@ -1189,10 +1344,13 @@ export function initializeInteractions(ast: WorklogAST, docs: RenderContextDocs 
       let outlineLinks = document.querySelectorAll(`.outline-link[href="#${sectionId}"]`);
       
       // If no outline link for this exact section (e.g., sub-header not in outline),
-      // fall back to the parent log entry's outline link
-      if (outlineLinks.length === 0 && parentLogEntry) {
-        const parentId = parentLogEntry.id;
-        outlineLinks = document.querySelectorAll(`.outline-link[href="#${parentId}"]`);
+      // fall back to the nearest card container link
+      if (outlineLinks.length === 0) {
+        const parentCard = activeElement.closest('.log-entry, .context-doc, .worklog-section') as HTMLElement | null;
+        const parentId = parentCard?.id || parentLogEntry?.id;
+        if (parentId) {
+          outlineLinks = document.querySelectorAll(`.outline-link[href="#${parentId}"]`);
+        }
       }
       outlineLinks.forEach(outlineLink => {
         outlineLink.classList.add('active');
@@ -1227,6 +1385,51 @@ export function initializeInteractions(ast: WorklogAST, docs: RenderContextDocs 
         }
       }
     }
+
+    const closePopover = () => breadcrumbPopover.classList.remove('open');
+
+    breadcrumbPath.addEventListener('click', (event) => {
+      const target = event.target as HTMLElement;
+      const action = target.closest('[data-path-action="expand"]');
+      if (action) {
+        breadcrumbPopover.classList.toggle('open');
+        return;
+      }
+
+      const chip = target.closest('.breadcrumb-chip, .breadcrumb-popover-item') as HTMLElement | null;
+      const targetId = chip?.dataset.targetId;
+      if (!targetId) return;
+      document.getElementById(targetId)?.scrollIntoView({ behavior: 'smooth' });
+      closePopover();
+    });
+
+    breadcrumbPopover.addEventListener('click', (event) => {
+      const target = event.target as HTMLElement;
+      const item = target.closest('.breadcrumb-popover-item') as HTMLElement | null;
+      const targetId = item?.dataset.targetId;
+      if (!targetId) return;
+      document.getElementById(targetId)?.scrollIntoView({ behavior: 'smooth' });
+      closePopover();
+    });
+
+    breadcrumbExpand?.addEventListener('click', () => {
+      breadcrumbPopover.classList.toggle('open');
+    });
+
+    document.addEventListener('click', (event) => {
+      const target = event.target as Node;
+      if (!breadcrumb.contains(target)) {
+        closePopover();
+      }
+    });
+
+    window.addEventListener('resize', () => {
+      if (currentSectionId) {
+        const current = document.getElementById(currentSectionId);
+        if (current) renderPath(buildPathNodes(current as HTMLElement));
+      }
+      closePopover();
+    });
 
     // Use rAF-throttled scroll listener for snappy, direction-agnostic tracking
     let scrollTicking = false;

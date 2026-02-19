@@ -172,6 +172,7 @@ None — Evaluation pursuit is complete (reframed, not abandoned).
 | LOG-053 | DISCOVERY | READER-002 | The Node Distribution Model: npm Registry vs pnpm Efficiency |
 | LOG-057 | MILESTONE | READER-003 | Reader Published to npm (@luutuankiet/gsd-reader v0.1.1) |
 | LOG-058 | EXEC | READER-004 | Reader v0.2.0: Section Rendering & Scroll Sync (completing LOG-047 vision) |
+| **LOG-076** | **EXEC** | **READER-009** | **Multi-doc reader + XML readability + chip-path navigation + style guide baseline for future consistency** |
 
 
 ## 3. Atomic Session Log (Chronological)
@@ -14503,3 +14504,202 @@ graph TD
 - Run retro later → Follow LOG-074 procedure when confidence drops
 - Share results → LOG-073/074/075 form complete implementation story
 
+### [LOG-076] - [EXEC] - Reader IA Upgrade: Multi-Doc Context, XML Readability, Copy Workflows, and Chip Path Navigation - Task: READER-009
+**Timestamp:** 2026-02-19 18:40
+**Depends On:** LOG-047 (reader vision), LOG-058 (section rendering + scroll sync), LOG-066 (deep hierarchy UX), LOG-075 (lean artifact philosophy)
+
+---
+
+#### 1. Narrative Context
+
+We implemented a major information architecture upgrade for `plugins/reader-vite` to support real-world pair-programming continuation workflows on mobile and desktop.
+
+The trigger was a practical usage gap:
+- user could read `WORK.md` remotely,
+- but could not onboard a non-GSD LLM with `PROJECT.md` + `ARCHITECTURE.md` context in the same pass,
+- and XML-like context blocks in Section 1 were unreadable as escaped text.
+
+This execution focused on two goals:
+1. **Human readability** (especially XML-like context and sticky orientation while scrolling)
+2. **Transferability** (select/copy contextual chunks for external LLM handoff)
+
+Citations:
+- Multi-doc load entry points: `plugins/reader-vite/src/main.ts:20`, `plugins/reader-vite/src/main.ts:94`
+- New context parser: `plugins/reader-vite/src/context-parser.ts:33`
+- XML inline handling: `plugins/reader-vite/src/renderer.ts:317`, `plugins/reader-vite/src/renderer.ts:348`
+- Path bar + popover: `plugins/reader-vite/src/renderer.ts:628`, `plugins/reader-vite/src/renderer.ts:1291`
+
+---
+
+#### 2. Dependency Chain
+
+- **LOG-047** established the need for a purpose-built, navigation-first reader.
+- **LOG-058** established section rendering + scroll sync primitives we reused.
+- **LOG-066** introduced hierarchy semantics that informed path/outline behavior.
+- **LOG-075** reinforced lean artifact philosophy, motivating clean context transfer to external models.
+
+Chain:
+`LOG-076 <- LOG-066 <- LOG-058 <- LOG-047` and philosophically aligned with `LOG-075`.
+
+---
+
+#### 3. Evidence Ledger
+
+| Claim | Evidence | Citation |
+|---|---|---|
+| Reader now loads PROJECT/ARCH in addition to WORK | Added `/_project` and `/_architecture` fetch + parse paths in main app | `plugins/reader-vite/src/main.ts:20`, `plugins/reader-vite/src/main.ts:95` |
+| Root-level context parsing exists for PROJECT/ARCH | `parseContextDocument()` added with H2 extraction and anchors | `plugins/reader-vite/src/context-parser.ts:4`, `plugins/reader-vite/src/context-parser.ts:33` |
+| Group-level select-all for copy flow is implemented | Outline section headers now render group `All` controls | `plugins/reader-vite/src/renderer.ts:144`, `plugins/reader-vite/src/renderer.ts:784` |
+| Copy payload is source-labeled for mixed exports | Payload prefix format `> Source: ...` added | `plugins/reader-vite/src/renderer.ts:765` |
+| XML inline tags are readable outside code fences | `inlineTagMatch` + `xml-inline` rendering path | `plugins/reader-vite/src/renderer.ts:317`, `plugins/reader-vite/src/renderer.ts:348` |
+| Sticky breadcrumb replaced by hierarchical chip path | `breadcrumb-path` + popover rendering and click navigation | `plugins/reader-vite/src/renderer.ts:628`, `plugins/reader-vite/src/renderer.ts:1296`, `plugins/reader-vite/src/renderer.ts:1397` |
+| Card-level chip readability was prioritized | `breadcrumb-chip-card` style avoids truncation with horizontal path scroll | `plugins/reader-vite/index.html:95`, `plugins/reader-vite/index.html:124` |
+| Style consistency is now documented for future agents | New style guide + architecture backlink | `gsd-lite/docs/reader-styleguide.md:11`, `gsd-lite/ARCHITECTURE.md:203` |
+
+---
+
+#### 4. Step-by-Step Walkthrough
+
+1) **Expanded document model**
+- Added context doc parser and type surface for `PROJECT.md` and `ARCHITECTURE.md` root sections.
+- Wired main app to parse and render these docs before WORK content.
+
+2) **Upgraded copy workflow**
+- Added selectable checkboxes in outline rows.
+- Added section-group `All` controls (`PROJECT`, `ARCHITECTURE`, `WORK`).
+- Added source-aware payload framing for mixed exports.
+
+3) **Fixed XML readability**
+- Kept fenced code untouched.
+- Rendered XML-like lines (`<tag>`, `</tag>`, `<tag/>`, `<tag>value</tag>`) as readable UI tags.
+
+4) **Reworked sticky navigation context**
+- Replaced single breadcrumb label with chip path model:
+  - compact visible path,
+  - ellipsis compression,
+  - full path popover,
+  - clickable jump targets.
+- Preserved side/bottom map behavior for broad context.
+
+5) **Codified consistency contract**
+- Created `gsd-lite/docs/reader-styleguide.md` with non-regression rules.
+- Added architecture backlink so future agents discover it during onboarding.
+
+```mermaid
+graph TD
+    A[WORK.md / PROJECT.md / ARCHITECTURE.md] --> B[main.ts loaders]
+    B --> C[parser.ts + context-parser.ts]
+    C --> D[renderer.ts]
+    D --> E[Outline map\n(collapsible hierarchy)]
+    D --> F[Sticky path compass\n(chips + popover)]
+    D --> G[Copy exporter\n(source-tagged markdown)]
+    D --> H[XML readability layer\n(outside fenced code)]
+```
+
+**Code snippet (key path bar primitive):**
+```ts
+const pathNodes = buildPathNodes(activeElement);
+renderPath(pathNodes);
+```
+Source: `plugins/reader-vite/src/renderer.ts:1331`
+
+**Payload snippet (LLM transfer format):**
+```md
+> Source: ARCHITECTURE.md / Data Flow
+
+## Data Flow
+...content...
+
+---
+
+> Source: WORK.md / LOG-074: The Protocol Craft Retro...
+
+### [LOG-074] - [PROCEDURE] - ...
+...content...
+```
+
+---
+
+#### 5. Concrete Artifacts
+
+Files created:
+- `gsd-lite/docs/reader-styleguide.md`
+
+Files updated:
+- `plugins/reader-vite/src/main.ts`
+- `plugins/reader-vite/src/context-parser.ts`
+- `plugins/reader-vite/src/renderer.ts`
+- `plugins/reader-vite/index.html`
+- `plugins/reader-vite/src/vite-plugin-worklog.ts`
+- `plugins/reader-vite/cli.cjs`
+- `plugins/reader-vite/README.md`
+- `gsd-lite/ARCHITECTURE.md`
+
+---
+
+#### 6. Failure Modes + Safeguards
+
+1. **Failure:** Breadcrumb loses card ownership context during nested reads.
+   - **Safeguard:** Path node builder forces card/root node precedence; WORK path includes log card.
+   - Citation: `plugins/reader-vite/src/renderer.ts:1231`
+
+2. **Failure:** XML rendering corrupts code examples in fenced blocks.
+   - **Safeguard:** XML transform only runs outside code fences.
+   - Citation: `plugins/reader-vite/src/renderer.ts:281`, `plugins/reader-vite/src/renderer.ts:319`
+
+3. **Failure:** Mixed doc copy becomes ambiguous when pasted to external LLMs.
+   - **Safeguard:** Per-chunk `Source:` prefix in payload.
+   - Citation: `plugins/reader-vite/src/renderer.ts:765`
+
+4. **Failure:** Mobile truncates critical card identity.
+   - **Safeguard:** card chip non-truncated + horizontal path scrolling.
+   - Citation: `plugins/reader-vite/index.html:95`, `plugins/reader-vite/index.html:124`
+
+---
+
+#### 7. Decision Record
+
+**Chosen path:**
+- Build a unified single-page reader that sequences `PROJECT -> ARCHITECTURE -> WORK` and treats sticky path as a **compass**, while preserving outline panels as the **map**.
+
+**Alternatives considered:**
+- Keep single breadcrumb text and special-case WORK logs only.
+  - Rejected: loses context fidelity for PROJECT/ARCH and nested sections.
+- Introduce tabbed/doc-switched UI.
+  - Rejected for now: increases mode-switch friction; user asked single-page continuity.
+
+**Tradeoff:**
+- More rendering/state complexity in `renderer.ts`
+- In exchange, significantly better continuity for onboarding and external LLM handoff.
+
+---
+
+#### 8. Verification Plan
+
+Manual verification checklist:
+- [ ] `pnpm dev` renders PROJECT sections first, ARCH second, WORK third.
+- [ ] XML-like inline tags render as readable chips in Section 1 (outside fenced code).
+- [ ] Group `All` toggles select/deselect expected chunks in desktop and mobile sheet.
+- [ ] Copy payload includes `> Source: ...` prefixes and stable ordering.
+- [ ] Sticky path shows card-level context while reading nested H4/H5 content.
+- [ ] Breadcrumb popover shows full chain and click-jumps correctly.
+
+Note: compile/build command output not recorded in this log; run locally before release publish.
+
+---
+
+📦 STATELESS HANDOFF
+
+**Layer 1 — Local Context:**
+→ Last action: LOG-076 captured implementation + decisions for reader IA/navigation/styleguide upgrade
+→ Dependency chain: LOG-076 ← LOG-066 ← LOG-058 ← LOG-047 (aligned with LOG-075 philosophy)
+→ Next action: Run local verification checklist and, if stable, bump reader package version + publish notes
+
+**Layer 2 — Global Context:**
+→ Architecture: Reader now supports multi-doc context ingestion + compass/map nav split
+→ Patterns: Card-context-first navigation, source-labeled copy exports, XML readability outside code fences
+
+**Fork paths:**
+- Continue execution → validate checklist and publish versioned release notes
+- Future UX tuning → iterate within `gsd-lite/docs/reader-styleguide.md`
+- Protocol artifacts → use ARCHITECTURE backlink to keep agent onboarding consistent

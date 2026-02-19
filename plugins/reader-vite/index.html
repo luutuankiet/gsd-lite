@@ -83,19 +83,139 @@
       color: white;
       display: flex;
       align-items: center;
-      padding: 0 16px;
+      gap: 8px;
+      padding: 0 10px;
       z-index: 999;
       font-size: 13px;
       font-weight: 500;
       box-shadow: 0 1px 3px rgba(0,0,0,0.15);
-      overflow: hidden;
-      white-space: nowrap;
-      text-overflow: ellipsis;
+      overflow: visible;
     }
-    
-    .breadcrumb-text {
+
+    .breadcrumb-path {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      min-width: 0;
+      flex: 1;
+      overflow-x: auto;
+      overflow-y: hidden;
+      white-space: nowrap;
+      scrollbar-width: thin;
+      scroll-behavior: smooth;
+      padding-bottom: 1px;
+    }
+
+    .breadcrumb-chip {
+      border: 1px solid rgba(255, 255, 255, 0.35);
+      background: rgba(255, 255, 255, 0.16);
+      color: white;
+      border-radius: 999px;
+      padding: 2px 8px;
+      font-size: 11px;
+      max-width: 220px;
       overflow: hidden;
       text-overflow: ellipsis;
+      white-space: nowrap;
+      cursor: pointer;
+      flex-shrink: 0;
+    }
+
+    .breadcrumb-chip-card {
+      max-width: none;
+      overflow: visible;
+      text-overflow: clip;
+      font-weight: 600;
+      background: rgba(255, 255, 255, 0.24);
+    }
+
+    .breadcrumb-chip:hover {
+      background: rgba(255, 255, 255, 0.25);
+    }
+
+    .breadcrumb-chip-ellipsis {
+      min-width: 34px;
+      text-align: center;
+      padding: 2px 6px;
+    }
+
+    .breadcrumb-sep {
+      opacity: 0.8;
+      font-size: 12px;
+      flex-shrink: 0;
+    }
+
+    .breadcrumb-expand {
+      border: 1px solid rgba(255, 255, 255, 0.45);
+      background: rgba(255, 255, 255, 0.2);
+      color: white;
+      border-radius: 6px;
+      font-size: 12px;
+      line-height: 1;
+      padding: 4px 7px;
+      cursor: pointer;
+      flex-shrink: 0;
+    }
+
+    .breadcrumb-expand:hover {
+      background: rgba(255, 255, 255, 0.32);
+    }
+
+    .breadcrumb-popover {
+      position: absolute;
+      top: 38px;
+      right: 8px;
+      left: 8px;
+      background: white;
+      color: #1f2937;
+      border: 1px solid #d1d5db;
+      border-radius: 10px;
+      box-shadow: 0 12px 28px rgba(0, 0, 0, 0.18);
+      padding: 10px;
+      z-index: 1005;
+      display: none;
+      max-height: 50vh;
+      overflow-y: auto;
+    }
+
+    .breadcrumb-popover.open {
+      display: block;
+    }
+
+    .breadcrumb-popover-title {
+      font-size: 11px;
+      font-weight: 700;
+      color: #6b7280;
+      text-transform: uppercase;
+      margin-bottom: 8px;
+      letter-spacing: 0.3px;
+    }
+
+    .breadcrumb-popover-list {
+      display: flex;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+
+    .breadcrumb-popover-item {
+      border: 1px solid #dbeafe;
+      background: #eff6ff;
+      color: #1d4ed8;
+      border-radius: 999px;
+      padding: 4px 10px;
+      font-size: 12px;
+      cursor: pointer;
+      max-width: 100%;
+    }
+
+    .breadcrumb-popover-item:hover {
+      background: #dbeafe;
+    }
+
+    .breadcrumb-popover-sep {
+      color: #9ca3af;
+      font-size: 12px;
     }
     
     /* ===== OUTLINE PANEL ===== */
@@ -1094,6 +1214,30 @@
       /* Remove sticky positioning for section titles in sheet - let them scroll normally */
       .outline-sheet .outline-section-title {
         position: static;
+      }
+
+      .breadcrumb {
+        padding: 0 8px;
+        gap: 6px;
+      }
+
+      .breadcrumb-chip {
+        max-width: 130px;
+        font-size: 10px;
+        padding: 2px 7px;
+      }
+
+      .breadcrumb-chip-card {
+        max-width: none;
+      }
+
+      .breadcrumb-expand {
+        padding: 3px 6px;
+      }
+
+      .breadcrumb-popover {
+        left: 6px;
+        right: 6px;
       }
     }
 

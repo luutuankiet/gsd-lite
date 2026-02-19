@@ -377,11 +377,17 @@ function commandServe() {
 
   function serveFile(filePath, ext, res, mimeTypes) {
     const mimeType = mimeTypes[ext] || 'application/octet-stream';
-    
+
     try {
       const content = fs.readFileSync(filePath);
       res.setHeader('Content-Type', mimeType);
-      res.setHeader('Cache-Control', 'public, max-age=3600');
+
+      // Avoid stale UI when switching between CLI serve and Vite dev on same origin.
+      // Keep all assets non-cacheable in local serve mode for predictable reload behavior.
+      res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+      res.setHeader('Pragma', 'no-cache');
+      res.setHeader('Expires', '0');
+
       res.end(content);
     } catch (err) {
       res.statusCode = 500;
