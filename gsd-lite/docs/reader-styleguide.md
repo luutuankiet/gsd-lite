@@ -74,6 +74,7 @@ This guide defines UI and navigation consistency rules for `plugins/reader-vite/
 ## Visual Baseline
 
 - Code blocks: light theme baseline for both context docs and logs.
+- Ensure fenced code blocks use the same structural layout in both surfaces: `.log-content pre code` and `.section-content pre code` must render as block-level code containers to prevent per-line fragment boxes on wrapped lines.
 - Avoid introducing context-doc-only gradients/shaded cards.
 - Keep interaction affordances subtle and consistent (chips, pills, hover states).
 
@@ -85,6 +86,7 @@ This guide defines UI and navigation consistency rules for `plugins/reader-vite/
 - [ ] Copy export includes source markers and stable ordering
 - [ ] XML rendering still ignores fenced code blocks
 - [ ] Code block theme remains light and readable
+- [ ] Fenced code block structure parity holds for logs and context docs (`.log-content pre code` + `.section-content pre code`)
 
 ## Ownership
 

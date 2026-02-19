@@ -11678,46 +11678,46 @@ Generate synthetic PROJECT.md, ARCHITECTURE.md, and WORK.md for the API client t
 
 #### c3-onboarding/WORK.md (fresh start)
 ```
-## 1. Current Understanding (Read First)
-<current_mode>none</current_mode>
-<active_task>None — fresh session</active_task>
-<vision>Simple API client with caching</vision>
-<decisions>None yet</decisions>
-<blockers>None</blockers>
-<next_action>Discuss what to build</next_action>
+1. Current Understanding (Read First)
+<sample_current_mode>none</sample_current_mode>
+<sample_active_task>None — fresh session</sample_active_task>
+<sample_vision>Simple API client with caching</sample_vision>
+<sample_decisions>None yet</decisions>sample_
+<sample_blockers>None</sample_blockers>
+<sample_next_action>Discuss what to build</sample_next_action>
 ```
 
 #### s1-handoff/WORK.md (mid-execution)
 ```
-## 1. Current Understanding (Read First)
-<current_mode>execution</current_mode>
-<active_task>TASK-001: Add retry logic to client.py</active_task>
-<vision>Simple API client with caching</vision>
-<decisions>DECISION-001: Use exponential backoff</decisions>
-<blockers>None</blockers>
-<next_action>Implement retry in fetch_data()</next_action>
+1. Current Understanding (Read First)
+<sample_current_mode>execution</sample_current_mode>
+<sample_active_task>TASK-001: Add retry logic to client.py</sample_active_task>
+<sample_vision>Simple API client with caching</sample_vision>
+<sample_decisions>DECISION-001: Use exponential backoff</decisions>sample_
+<sample_blockers>None</sample_blockers>
+<sample_next_action>Implement retry in fetch_data()</sample_next_action>
 ```
 
 #### p2-pair-programming/WORK.md (discuss mode)
 ```
-## 1. Current Understanding (Read First)
-<current_mode>discuss</current_mode>
-<active_task>None — exploring options</active_task>
-<vision>Simple API client with caching</vision>
-<decisions>None yet</decisions>
-<blockers>None</blockers>
-<next_action>Clarify user's goal</next_action>
+1. Current Understanding (Read First)
+<sample_current_mode>discuss</sample_current_mode>
+<sample_active_task>None — exploring options</sample_active_task>
+<sample_vision>Simple API client with caching</sample_vision>
+<sample_decisions>None yet</decisions>sample_
+<sample_blockers>None</sample_blockers>
+<sample_next_action>Clarify user's goal</sample_next_action>
 ```
 
 #### j4-journalism/WORK.md (pending log)
 ```
-## 1. Current Understanding (Read First)
-<current_mode>execution</current_mode>
-<active_task>TASK-002: Document caching decision</active_task>
-<vision>Simple API client with caching</vision>
-<decisions>DECISION-002: Use file-based cache (pending logging)</decisions>
-<blockers>None</blockers>
-<next_action>Log DECISION-002 with full context</next_action>
+1. Current Understanding (Read First)
+<sample_current_mode>execution</sample_current_mode>
+<sample_active_task>TASK-002: Document caching decision</sample_active_task>
+<sample_vision>Simple API client with caching</sample_vision>
+<sample_decisions>DECISION-002: Use file-based cache (pending logging)</sample_decisions>
+<sample_blockers>None</sample_blockers>
+<sample_next_action>Log DECISION-002 with full context</sample_next_action>
 ```
 
 ## Tone
@@ -14703,3 +14703,174 @@ Note: compile/build command output not recorded in this log; run locally before 
 - Continue execution → validate checklist and publish versioned release notes
 - Future UX tuning → iterate within `gsd-lite/docs/reader-styleguide.md`
 - Protocol artifacts → use ARCHITECTURE backlink to keep agent onboarding consistent
+
+### [LOG-077] - [EXEC] - Reader Dev Stability Fixes: Context Code Block Parity + Vite HMR WebSocket Gating - Task: READER-010
+**Timestamp:** 2026-02-19 19:20
+**Depends On:** LOG-050 (hot reload loop architecture), LOG-076 (multi-doc reader IA/context rendering)
+
+---
+
+#### 1. Narrative Context
+
+After the READER-009 rollout, two regressions surfaced during live usage:
+
+1) Context-doc fenced code blocks (PROJECT/ARCHITECTURE sections) showed faint per-line fragment boxes on wrapped lines.
+2) In `pnpm dev`, HMR sometimes left the browser stuck at `Loading worklog...`, with repeated WebSocket disconnect/reconnect noise.
+
+The fixes were intentionally minimal and localized:
+- CSS structural parity for fenced code blocks in context docs.
+- Dev-mode gating so production WebSocket logic does not compete with Vite's own HMR socket.
+
+Citations:
+- WebSocket gating flags + condition: `plugins/reader-vite/src/main.ts:479`, `plugins/reader-vite/src/main.ts:480`, `plugins/reader-vite/src/main.ts:487`
+- Vite HMR event path still active: `plugins/reader-vite/src/main.ts:493`
+- Code block parity rule in runtime hljs style injection: `plugins/reader-vite/src/syntax-highlight.ts:196`, `plugins/reader-vite/src/syntax-highlight.ts:197`
+- Style guide codification: `gsd-lite/docs/reader-styleguide.md:77`, `gsd-lite/docs/reader-styleguide.md:89`
+
+---
+
+#### 2. Dependency Chain
+
+- **LOG-050** introduced the current hot-reload architecture and established dual-mode reload concerns (dev vs production).
+- **LOG-076** expanded context-doc rendering, which exposed styling divergence between `.log-content` and `.section-content` code blocks.
+
+Chain:
+`LOG-077 <- LOG-076 <- LOG-050`
+
+---
+
+#### 3. Evidence Ledger
+
+| Claim | Evidence | Citation |
+|---|---|---|
+| Production WebSocket is now disabled in Vite dev mode | Added `isViteDevMode` and guarded `connectWebSocket()` behind `!isViteDevMode` | `plugins/reader-vite/src/main.ts:480`, `plugins/reader-vite/src/main.ts:487` |
+| Dev still receives updates through Vite HMR | `import.meta.hot.on('worklog-update', ...)` remains the dev reload path | `plugins/reader-vite/src/main.ts:493` |
+| Context-doc fenced code now uses same block layout behavior as logs | Combined selector includes `.section-content pre code` | `plugins/reader-vite/src/syntax-highlight.ts:196`, `plugins/reader-vite/src/syntax-highlight.ts:197` |
+| Regression prevention is documented | Added style guide rule + checklist item for code block parity | `gsd-lite/docs/reader-styleguide.md:77`, `gsd-lite/docs/reader-styleguide.md:89` |
+| Reported dev symptom matched WS conflict pattern | Browser log showed repeated disconnect/reconnect while Vite client attempted WS token connection | User reproduction notes (session chat, 2026-02-19) |
+
+---
+
+#### 4. Step-by-Step Walkthrough
+
+1. Reproduced symptoms from browser logs and compared reload paths.
+2. Inspected `main.ts` live-reload section and found production WebSocket path active in dev.
+3. Added environment split:
+   - `isStaticMode` for static dump mode,
+   - `isViteDevMode` for Vite runtime,
+   - connect production WS only when `!isStaticMode && !isViteDevMode`.
+4. Inspected syntax style injection and found block-level layout rule applied only to `.log-content pre code`.
+5. Extended the same rule to `.section-content pre code` for visual parity.
+6. Captured the fix contract in style guide to prevent regression.
+
+```mermaid
+graph TD
+    A[Browser in pnpm dev] --> B[Vite HMR WebSocket]
+    A --> C[Reader production WebSocket]
+    B --> D[worklog-update event]
+    C --> E[disconnect reconnect loop]
+    E --> F[reload instability]
+    F --> G[stuck Loading worklog]
+    H[Fix: gate production WS in dev] --> I[only Vite HMR in dev]
+    I --> J[stable reload path]
+```
+
+**Code snippet (dev gating):**
+```ts
+const isStaticMode = Boolean((window as any).__WORKLOG_CONTENT_B64__ || (window as any).__WORKLOG_CONTENT__);
+const isViteDevMode = Boolean(import.meta.hot);
+
+if (!isStaticMode && !isViteDevMode) {
+  connectWebSocket();
+}
+```
+Source: `plugins/reader-vite/src/main.ts:479`
+
+**Payload/example snippet (event channel model):**
+```json
+{
+  "dev_mode": {
+    "reload_channel": "vite_hmr",
+    "custom_ws_enabled": false
+  },
+  "prod_cli_mode": {
+    "reload_channel": "custom_ws_reload_message",
+    "custom_ws_enabled": true
+  }
+}
+```
+
+---
+
+#### 5. Concrete Artifacts
+
+Files updated:
+- `plugins/reader-vite/src/main.ts`
+- `plugins/reader-vite/src/syntax-highlight.ts`
+- `gsd-lite/docs/reader-styleguide.md`
+
+---
+
+#### 6. Failure Modes + Safeguards
+
+1. **Failure:** Dev mode runs two socket systems and races reconnect/reload behavior.
+   - **Safeguard:** Runtime guard disables custom production WS when `import.meta.hot` is present.
+   - Citation: `plugins/reader-vite/src/main.ts:480`, `plugins/reader-vite/src/main.ts:487`
+
+2. **Failure:** Context-doc code blocks render differently from worklog code blocks and show per-line fragment artifacts.
+   - **Safeguard:** Shared block-level rule for both surfaces.
+   - Citation: `plugins/reader-vite/src/syntax-highlight.ts:196`, `plugins/reader-vite/src/syntax-highlight.ts:197`
+
+3. **Failure:** Future CSS edits regress parity silently.
+   - **Safeguard:** Style guide checklist now includes explicit parity check.
+   - Citation: `gsd-lite/docs/reader-styleguide.md:89`
+
+---
+
+#### 7. Decision Record
+
+**Chosen path:**
+- Keep dual architecture (Vite HMR for dev, custom WS for prod CLI), but enforce strict mode separation at runtime.
+- Apply minimal CSS structural parity fix instead of broader theme refactor.
+
+**Alternatives considered:**
+- Remove custom WS entirely and force one reload mechanism in all modes.
+  - Rejected: production CLI mode relies on custom WS path.
+- Rework code-block styling globally for all selectors.
+  - Rejected: unnecessary risk; narrow fix solved observed regression.
+
+**Tradeoff:**
+- Slightly more conditional logic in entrypoint.
+- In exchange, clearer mode boundaries and lower reload instability risk.
+
+---
+
+#### 8. Verification Plan
+
+Pass/fail checks:
+- [ ] In `pnpm dev`, no repeated `WebSocket disconnected, reconnecting...` spam from reader custom WS.
+- [ ] Vite HMR update (`worklog-update`) still triggers re-render.
+- [ ] Context-doc fenced blocks no longer show per-line fragment boxes on wrapped lines.
+- [ ] Worklog fenced block rendering remains unchanged.
+- [ ] Style guide checklist includes parity rule and remains discoverable.
+
+Observed signal in this session:
+- User confirmed: "all good" after applying HMR gating fix.
+
+---
+
+📦 STATELESS HANDOFF
+
+**Layer 1 — Local Context:**
+→ Last action: LOG-077 captured and code merged for dev WS gating + code block parity
+→ Dependency chain: LOG-077 ← LOG-076 ← LOG-050
+→ Next action: optional hardening only if flakiness reappears (add fetch retry/backoff in `loadAndRender()`)
+
+**Layer 2 — Global Context:**
+→ Architecture: reader has two reload channels by design (Vite dev HMR vs production CLI WS), now explicitly separated at runtime
+→ Patterns: visual parity between `.log-content` and `.section-content` code surfaces is a documented non-regression rule
+
+**Fork paths:**
+- Continue execution → monitor dev sessions for HMR stability over multiple edits
+- Future polish → add retry/backoff in `plugins/reader-vite/src/main.ts` if transient fetch errors recur
+- Docs maintenance → keep style guide checklist aligned with renderer/style changes

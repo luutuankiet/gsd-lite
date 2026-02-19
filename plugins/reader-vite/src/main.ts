@@ -436,8 +436,8 @@ async function initMermaid(): Promise<void> {
  * WebSocket client for production CLI live reload.
  * The CLI server (cli.js) sends 'reload' messages when WORK.md changes.
  * 
- * This runs in both dev and production, but in dev the Vite HMR below
- * will typically fire first (faster). Having both doesn't hurt.
+ * This runs only in production CLI mode.
+ * In Vite dev mode, we rely on Vite's own HMR WebSocket client.
  */
 function connectWebSocket(): void {
   // Determine WebSocket URL based on current page location
@@ -476,11 +476,15 @@ function connectWebSocket(): void {
   }
 }
 
+const isStaticMode = Boolean((window as any).__WORKLOG_CONTENT_B64__ || (window as any).__WORKLOG_CONTENT__);
+const isViteDevMode = Boolean(import.meta.hot);
+
 // Initial load
 loadAndRender();
 
-// Start WebSocket connection for CLI live reload (skip in static mode)
-if (!(window as any).__WORKLOG_CONTENT_B64__ && !(window as any).__WORKLOG_CONTENT__) {
+// Start WebSocket connection only in production CLI mode.
+// In Vite dev mode, this conflicts with Vite's own HMR socket lifecycle.
+if (!isStaticMode && !isViteDevMode) {
   connectWebSocket();
 }
 

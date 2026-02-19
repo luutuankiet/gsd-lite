@@ -193,7 +193,8 @@ function injectStyles(): void {
       box-shadow: 0 1px 3px rgba(0,0,0,0.08);
     }
 
-    .log-content pre code {
+    .log-content pre code,
+    .section-content pre code {
       display: block;
       padding: 0;
     }
