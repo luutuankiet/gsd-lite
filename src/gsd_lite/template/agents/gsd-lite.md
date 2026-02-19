@@ -232,75 +232,37 @@ When scope creep appears:
 
 ## 10. Journalism Standard (CORE)
 
-When writing log entries, ALWAYS include:
+**The one test:** Could a zero-context agent read this log in 5 minutes and continue safely with zero ambiguity?
 
-| # | Requirement |
-|---|-------------|
-| 1 | **Narrative context** — Zero-context reader can onboard |
-| 2 | **Code snippets** — Actual code with file paths |
-| 3 | **Synthesized examples** — Re-readable in 6 months |
-| 4 | **Citations** — URL, file:line, commit hash |
-| 5 | **Mermaid diagrams** — Never ASCII art |
-| 6 | **Dependency summary** — Which prior logs this builds on |
+If not, do not commit.
 
-**The Test:** Can someone reproduce this decision with ZERO additional research?
+### What every log must contain (substance, not structure)
 
-### Log Entry Template
+| # | What | Why |
+|---|------|-----|
+| 1 | **Narrative context** — what happened, what question was live, what changed your mind | Lets future agents onboard without replaying chat |
+| 2 | **What you got wrong** — if you pivoted, say so explicitly with old vs new | The most important thing for a cold reader |
+| 3 | **Raw evidence** — exact error text, exact curl output, exact payload snippet | Not paraphrased; the actual artifact so it can be replayed |
+| 4 | **Citations** — `file:line` for local, `URL + date` for external, exact snippet of what the cite backed up | Non-negotiable for any non-trivial claim |
+| 5 | **Decision record with rejected paths** — chosen path + why-not for each alternative | Prevents future agents from re-litigating closed decisions |
+| 6 | **Dependency chain** — backward chain of which prior logs this builds on, one line per dep | Enables safe partial reads |
+| 7 | **Mermaid diagram** when there is multi-system interaction, state flow, or auth/token flow | Never ASCII art |
+| 8 | **Stateless handoff** | Every log ends with one |
 
-```markdown
-### [LOG-NNN] - [TYPE] - {{summary}} - Task: TASK-ID
+### Log type vocabulary (use the most honest one)
 
-**Timestamp:** YYYY-MM-DD
-**Depends On:** LOG-XXX (context), LOG-YYY (context)
+`[VISION]` `[DISCOVERY]` `[DECISION]` `[PLAN]` `[EXEC]` `[BLOCKER]` `[BUG]` `[PIVOT]` `[BREAKTHROUGH]` `[RESEARCH]` `[OUTREACH]`
 
----
+- **PIVOT** means prior logs are partially wrong — say which ones and what changed.
+- **BREAKTHROUGH** means something you thought was blocked is now unblocked.
+- **BUG** means you reproduced a failure with exact steps and error text.
+- **RESEARCH** means you investigated something without yet reaching a decision.
 
-#### 1. {{Section Title}}
+### Structure: flexible, not fixed
 
-{{Narrative with code, citations, mermaid}}
+Use h4 `####` level headers inside a log. Name them whatever makes the story clear. The reference uses "Executive Summary," "The Discovery," "Why This Matters," "Root Cause Analysis" — all fine. What matters is that a cold reader can skim headers and understand the arc.
 
----
-
-📦 STATELESS HANDOFF
-[Format from §9]
-```
-
----
-
-### Journalism Quality Gate (MANDATORY FOR EVERY LOG WRITE)
-
-**Applies to ALL log writes in `WORK.md`**
-
-#### Prime Directive
-If a zero-context agent cannot continue safely from this log alone within 5 minutes, the log is incomplete and MUST NOT be committed.
-
-#### Required Sections (Every Log)
-1. **Narrative Context**  
-   - What happened, why now, what question/uncertainty is being resolved.
-2. **Dependency Chain**  
-   - Explicit backward chain: `LOG-NNN <- LOG-NNN <- ...` with one-line relevance per dependency.
-3. **Evidence Ledger (Table Required)**  
-   - Columns: `Claim | Evidence | Citation`.
-   - Every non-trivial claim MUST have a citation.
-4. **Step-by-Step Walkthrough**  
-   - Operator-level sequence (what runs in what order, inputs/outputs, decision branches).
-   - Include examples (real or synthesized) to help aid onboarding, remove friction in future agents onboarding the topic.
-   - Prefer adding mermaid diagram as visual aid to any concepts and or examples being shown. For example
-      - Multi-system interaction (client/app/API/storage),
-      - Auth/session/token flow,
-      - State transition/checkpoint progression,
-      - Failure/retry branch logic.
-5. **Concrete Artifacts (Mandatory)**  
-   - At least one code/pseudocode snippet.
-   - At least one payload/example snippet (JSON or equivalent).
-6. **Failure Modes + Safeguards**  
-   - Concrete corruption/failure scenarios and prevention.
-7. **Decision Record**  
-   - Chosen path + alternatives considered + tradeoffs.
-8. **Verification Plan**  
-   - Pass/fail checks and observable signals.
-9. **Stateless Handoff**  
-   - Layer 1 + Layer 2 + fork paths (as defined in protocol).
+Do not force every log into Part 1/Part 2/Part 3 shape. That structure exists to prevent gaps, not to impose form. If the story only needs three sections, use three.
 
 #### Mermaid syntax preferences
 INCORRECT
@@ -339,37 +301,12 @@ graph TD
 - Use `<br>` tags for newline
 - Avoid annotations with parenthesis / special symbol. Use them sparringly in annotation unless absolutely necessary. 
 
-
-
-#### Citation Standard (Non-Negotiable)
-- Local repo claims: cite `path:line`.
-- External claims: cite URL + version/date or commit hash when available. Include the exact content snippet as proof which point in the log this cite backed up for.
-- "General knowledge" is allowed only for trivial definitions; not for architecture or risk claims.
-
-#### Semantic goal for log types : 
-- DISCOVERY: evidence-heavy; include raw observations + contradictions.
-- DECISION: include rejected options with why-not.
-- PLAN: include concrete stages, gates, rollback path.
-- EXEC: include exactly what changed (files/commands) + outcomes. If have blocker : include reproduction steps + current hypothesis + unblock experiments.
-
 ### Auto-Fail Conditions (Do Not Commit If Any True)
 - No step-by-step walkthrough.
-- No concrete snippet (code or payload).
+- No concrete snippet (code or payload) and or mermaid diagramss.
 - No citations for core claims.
-- No failure modes.
 - No dependency chain.
 - Stateless handoff missing/incomplete.
-
-### Pre-Commit Self-Check (Agent Internal)
-Before writing a log, agent MUST confirm:
-- [ ] Zero-context readability passes. That a fresh 0 context agent can read the log and read dependencies and continue the session with 0 ambiguity.
-- [ ] Evidence ledger complete
-- [ ] At least one code snippet present
-- [ ] At least one payload/example present
-- [ ] Mermaid included when flow complexity requires it
-- [ ] Verification plan included
-- [ ] Stateless handoff included
-If any box is unchecked, continue research and revise before commit.
 
 ## 11. WORK.md Structure (3 Sections)
 
@@ -389,7 +326,7 @@ WORK.md has three `## ` level sections. Agents MUST understand their purpose:
 
 ### Section 3: Atomic Session Log (Chronological)
 - **Purpose:** Full history of all work — the "HOW we got here"
-- **Contains:** Type-tagged entries: [VISION], [DECISION], [DISCOVERY], [PLAN], [BLOCKER], [EXEC]
+- **Contains:** Type-tagged entries: [VISION], [DECISION], [DISCOVERY], [PLAN], [BLOCKER], [EXEC], etc.
 - **When to read:** Grep by ID, type, or task — NEVER read entire section
 - **When to write:** During execution, following Journalism Standard (§10)
 
@@ -402,8 +339,8 @@ WORK.md has three `## ` level sections. Agents MUST understand their purpose:
 
 ---
 
-#### Part 1: {{Section Title}}
-{{Narrative content with context, evidence, code snippets}}
+#### {{Section Title}}
+{{ journalism quality content }}
 
 ---
 
@@ -421,11 +358,6 @@ WORK.md has three `## ` level sections. Agents MUST understand their purpose:
 - Continue execution → {{specific logs}}
 - Discuss → {{specific logs}}
 ```
-
-**Field Requirements:**
-- `[TYPE]`: One of [VISION], [DECISION], [DISCOVERY], [PLAN], [BLOCKER], [EXEC]
-- `Depends On`: Prior logs this builds on — enables dependency chain tracing
-- `#### Part N`: Use level-4 headers inside logs (level-3 is for log headers only)
 
 ### Grep Patterns for Discovery
 - All logs: `grep "^### \[LOG-"`
