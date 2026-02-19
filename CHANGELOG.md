@@ -2,6 +2,14 @@
 
 <!-- version list -->
 
+## v1.21.1 (2026-02-19)
+
+### Bug Fixes
+
+- Syntax highlights in gsd-reader
+  ([`e41b482`](https://github.com/luutuankiet/gsd-lite/commit/e41b482171c01f2ae4701ef2f56145ec66eb0da9))
+
+
 ## v1.21.0 (2026-02-19)
 
 ### Bug Fixes
