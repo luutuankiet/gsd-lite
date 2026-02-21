@@ -2,6 +2,14 @@
 
 <!-- version list -->
 
+## v1.22.0 (2026-02-21)
+
+### Features
+
+- Reference response format
+  ([`c1d354c`](https://github.com/luutuankiet/gsd-lite/commit/c1d354c598bb593a32d0ccb83e9a35d71b4b556e))
+
+
 ## v1.21.2 (2026-02-19)
 
 ### Bug Fixes
