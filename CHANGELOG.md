@@ -2,6 +2,14 @@
 
 <!-- version list -->
 
+## v1.22.1 (2026-02-22)
+
+### Bug Fixes
+
+- Instruct response to be more conversational
+  ([`c6a7f33`](https://github.com/luutuankiet/gsd-lite/commit/c6a7f33cbe60300ffa5a04d138f08309284a1b42))
+
+
 ## v1.22.0 (2026-02-21)
 
 ### Features
