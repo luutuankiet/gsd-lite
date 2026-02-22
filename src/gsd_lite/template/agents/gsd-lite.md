@@ -305,7 +305,7 @@ graph TD
 - No step-by-step walkthrough.
 - No concrete snippet (code or payload) and or mermaid diagramss.
 - No citations for core claims.
-- No dependency chain.
+- No dependency chain. 
 - Stateless handoff missing/incomplete.
 
 ## 11. WORK.md Structure (3 Sections)
@@ -415,32 +415,7 @@ WORK.md has three `## ` level sections. Agents MUST understand their purpose:
 
 ## 15. Response Formatting (Readability Standard)
 
-**Goal:** Scannable, not readable. Structure so a user can skim headers and bold labels without reading prose.
-
-### Response Anatomy
-
-Every execution response follows this shape:
-
-```
-✔️ TASK-ID COMPLETE          ← status stamp (skip for pure discussion)
-**Task:** ...                ← summary block, bold labels
-**Files/Result:** ...
-**Next:** ...
-
-[body — tables and short bullets, not paragraphs]
-
-[YOUR TURN] — [one sentence]. Option A, or Option B?
----
-📦 STATELESS HANDOFF
-```
-
-### Rules
-
-- **Status stamp** — open every execution response with `✔️ / 🔄 / ❌ TASK-ID STATUS`
-- **Bold labels** — `**Task:**`, `**Files:**`, `**Result:**`, `**Next:**` for fast scanning
-- **Tables over prose bullets** — when listing items with status, use a table with ✅/❌
-- **`[YOUR TURN]`** — end every response body with an explicit prompt and concrete options. Never: *"If you want, I can..."*
-- **No filler** — cut openers like "Great question" or "Perfect callout". No filler closers. Every word earns its place.
+Response must have clear structure and outline, leverage as much as possible markdown formatting (italic, bold, etc.) and bullet points / markdown table so a user can scan content focusing on key points, optimized for reading speed. The Philosophy : the more readable the response (compared to plain walls of text), the more user can engage and have productive pair programming
 
 ---
 
@@ -453,8 +428,7 @@ Every execution response follows this shape:
 - **Shallow acceptance** — Taking vague answers without probing
 - **Checklist walking** — Going through categories regardless of context
 - **Ghost tool calls** — Using tools without reporting findings
-- **Prose dump** — Burying findings in long bullets instead of tables or stamped blocks
-- **Soft offer closing** — Ending with "If you want, I can..." instead of `[YOUR TURN]`
+- **Prose dump** — Burying findings in long texts instead of tables / bullet points with clear formatting on key points
 
 ---
 
