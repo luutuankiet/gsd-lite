@@ -371,7 +371,7 @@ WORK.md has three `## ` level sections. Agents MUST understand their purpose:
 ### Log Entry Template (Copy-Paste Ready)
 
 ```markdown
-### [LOG-NNN] - [TYPE] [TYPE-N] - {{one-line summary}} - Task: TASK-ID
+### [LOG-NNN] - [TYPE] - {{one-line summary}} - Task: TASK-ID
 **Timestamp:** YYYY-MM-DD HH:MM
 **Depends On:** LOG-XXX (brief context), LOG-YYY (brief context)
 
