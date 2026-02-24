@@ -2,6 +2,19 @@
 
 <!-- version list -->
 
+## v1.22.2 (2026-02-24)
+
+### Bug Fixes
+
+- Reader logs parsing logic
+  ([`d1064a8`](https://github.com/luutuankiet/gsd-lite/commit/d1064a8683bf375f5c2a5bb025f4ac6a231b6e05))
+
+### Chores
+
+- Detailed journalism log outline
+  ([`eeaa0e1`](https://github.com/luutuankiet/gsd-lite/commit/eeaa0e1ac646e72dae57f7ef35435c49d0b874c0))
+
+
 ## v1.22.1 (2026-02-22)
 
 ### Bug Fixes
