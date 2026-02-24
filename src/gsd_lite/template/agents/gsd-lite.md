@@ -236,33 +236,70 @@ When scope creep appears:
 
 If not, do not commit.
 
-### What every log must contain (substance, not structure)
+### What Makes a Log Self-Contained
 
-| # | What | Why |
-|---|------|-----|
-| 1 | **Narrative context** — what happened, what question was live, what changed your mind | Lets future agents onboard without replaying chat |
-| 2 | **What you got wrong** — if you pivoted, say so explicitly with old vs new | The most important thing for a cold reader |
-| 3 | **Raw evidence** — exact error text, exact curl output, exact payload snippet | Not paraphrased; the actual artifact so it can be replayed |
-| 4 | **Citations** — `file:line` for local, `URL + date` for external, exact snippet of what the cite backed up | Non-negotiable for any non-trivial claim |
-| 5 | **Decision record with rejected paths** — chosen path + why-not for each alternative | Prevents future agents from re-litigating closed decisions |
-| 6 | **Dependency chain** — backward chain of which prior logs this builds on, one line per dep | Enables safe partial reads |
-| 7 | **Mermaid diagram** when there is multi-system interaction, state flow, or auth/token flow | Never ASCII art |
-| 8 | **Stateless handoff** | Every log ends with one |
+A journalism-quality log tells a complete story. The specific sections and headers should fit the narrative — use whatever structure makes the story clear. What matters is that these elements appear *somewhere* in the log:
 
-### Log type vocabulary (use the most honest one)
+**Narrative arc** — What question was live, what happened, what changed your understanding. A cold reader should grasp the arc from headers alone.
+
+**Raw evidence with exact citations** — Not paraphrased. Include actual code snippets, error messages, API responses. In addition to providing the exact inline context (i.e. give the exact code snippet evidence, the quotes from user, the API payload), always cite `file:line` for local code or `URL + access date` for external sources. For logs with multiple evidence pieces, label them explicitly ("Evidence A:", "Evidence B:").
+
+**Hypothesis tracking** (for investigation logs) — When exploring unknowns, make hypotheses explicit:
+
+| Hypothesis | Likelihood | Test | Status |
+|------------|------------|------|--------|
+| A) Token mismatch | High | Manual curl test | ✅ CONFIRMED |
+| B) Scope issue | Medium | Check OAuth config | ❌ REJECTED |
+
+**Open questions with status** — Capture unresolved items so future agents know what's still live:
+
+| Question | Priority | Status |
+|----------|----------|--------|
+| Does API support PKCE? | 🔴 Critical | OPEN |
+
+**Source citations table** (for research-heavy logs):
+
+| Source | Location | Key Finding |
+|--------|----------|-------------|
+| OAuth spec | `cloud.google.com/docs/...` | Requires `code_verifier` param |
+| Source code | `looker.go:88-107` | `use_client_oauth` enables passthrough |
+
+**Decision record with rejected alternatives** — State chosen path AND why alternatives were rejected. This prevents future agents from re-litigating closed decisions.
+
+**Implementation checklists** (for execution logs):
+
+| Step | Action | Verification | Status |
+|------|--------|--------------|--------|
+| 1.1 | Deploy function | Logs show "ready" | ✅ |
+| 1.2 | Test OAuth flow | Consent screen appears | 🔲 |
+
+**Glossary** (when introducing domain terms unfamiliar to a general engineer):
+
+| Term | Definition |
+|------|------------|
+| PKCE | OAuth extension for public clients — requires `code_verifier` |
+
+**Mermaid diagrams** — Required for multi-system interactions, auth flows, or state machines. Use sequence diagrams for request/response flows, flowcharts for decision logic. Never ASCII art.
+
+**Dependency chain** — One line per prior log this builds on. Enables safe partial reads.
+
+**Stateless handoff** — Every log ends with one (see §9).
+
+
+Use h4 `####` level headers inside a log. Do not force every log into Part 1/Part 2/Part 3 shape. That structure exists to prevent gaps, not to impose form. If the story only needs three sections, use three.
+
+
+### Log type vocabulary
 
 `[VISION]` `[DISCOVERY]` `[DECISION]` `[PLAN]` `[EXEC]` `[BLOCKER]` `[BUG]` `[PIVOT]` `[BREAKTHROUGH]` `[RESEARCH]` `[OUTREACH]`
 
+
+- **separate tags, do not nest them as [DISCOVERY+EXEC]. Use [DISCOVERY] [EXEC]**
 - **PIVOT** means prior logs are partially wrong — say which ones and what changed.
 - **BREAKTHROUGH** means something you thought was blocked is now unblocked.
 - **BUG** means you reproduced a failure with exact steps and error text.
 - **RESEARCH** means you investigated something without yet reaching a decision.
 
-### Structure: flexible, not fixed
-
-Use h4 `####` level headers inside a log. Name them whatever makes the story clear. The reference uses "Executive Summary," "The Discovery," "Why This Matters," "Root Cause Analysis" — all fine. What matters is that a cold reader can skim headers and understand the arc.
-
-Do not force every log into Part 1/Part 2/Part 3 shape. That structure exists to prevent gaps, not to impose form. If the story only needs three sections, use three.
 
 #### Mermaid syntax preferences
 INCORRECT
@@ -302,11 +339,12 @@ graph TD
 - Avoid annotations with parenthesis / special symbol. Use them sparringly in annotation unless absolutely necessary. 
 
 ### Auto-Fail Conditions (Do Not Commit If Any True)
-- No step-by-step walkthrough.
-- No concrete snippet (code or payload) and or mermaid diagramss.
-- No citations for core claims.
-- No dependency chain. 
-- Stateless handoff missing/incomplete.
+- No concrete evidence (code snippets, payloads, error text, or diagrams)
+- No citations for non-trivial claims
+- No dependency chain
+- Stateless handoff missing
+- A cold reader would need to ask "what did you actually try?"
+
 
 ## 11. WORK.md Structure (3 Sections)
 
@@ -333,7 +371,7 @@ WORK.md has three `## ` level sections. Agents MUST understand their purpose:
 ### Log Entry Template (Copy-Paste Ready)
 
 ```markdown
-### [LOG-NNN] - [TYPE] - {{one-line summary}} - Task: TASK-ID
+### [LOG-NNN] - [TYPE] [TYPE-N] - {{one-line summary}} - Task: TASK-ID
 **Timestamp:** YYYY-MM-DD HH:MM
 **Depends On:** LOG-XXX (brief context), LOG-YYY (brief context)
 
