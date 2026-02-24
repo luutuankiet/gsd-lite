@@ -109,7 +109,7 @@ function renderOutlineItem(item: LogEntry | Section, isLog: boolean = false): st
           ${toggleBtn}
           ${renderCopyCheckbox(workLogCopyKey(log))}
           <a href="#${anchor}" class="outline-link">
-            <span class="badge badge-${log.type}">${log.type}</span>
+            ${log.type.split('+').map(t => `<span class="badge badge-${t}">${t}</span>`).join('')}
             <span class="log-id">${log.id}</span>
             <span class="log-title">${escapeHtml(log.title)}</span>
           </a>
@@ -178,7 +178,7 @@ function renderDocumentOutline(doc: ContextDocument, sectionTitle: string, icon:
  */
 function renderOutline(ast: WorklogAST, projectDoc?: ContextDocument, architectureDoc?: ContextDocument): string {
   const sectionsHtml = ast.sections.map(s => renderOutlineItem(s, false)).join('');
-  const logsHtml = [...ast.logs].reverse().map(log => renderOutlineItem(log, true)).join('');
+  const logsHtml = ast.logs.map(log => renderOutlineItem(log, true)).join('');
   const projectHtml = projectDoc ? renderDocumentOutline(projectDoc, 'PROJECT.md', 'P') : '';
   const architectureHtml = architectureDoc ? renderDocumentOutline(architectureDoc, 'ARCHITECTURE.md', 'A') : '';
 
@@ -209,7 +209,7 @@ function renderOutline(ast: WorklogAST, projectDoc?: ContextDocument, architectu
  */
 function renderBottomSheet(ast: WorklogAST, projectDoc?: ContextDocument, architectureDoc?: ContextDocument): string {
   const sectionsHtml = ast.sections.map(s => renderOutlineItem(s, false)).join('');
-  const logsHtml = [...ast.logs].reverse().map(log => renderOutlineItem(log, true)).join('');
+  const logsHtml = ast.logs.map(log => renderOutlineItem(log, true)).join('');
   const projectHtml = projectDoc ? renderDocumentOutline(projectDoc, 'PROJECT.md', 'P') : '';
   const architectureHtml = architectureDoc ? renderDocumentOutline(architectureDoc, 'ARCHITECTURE.md', 'A') : '';
 
@@ -537,7 +537,7 @@ function renderLogEntry(log: LogEntry): string {
     <article class="log-entry${supersededClass}" id="line-${log.lineNumber}" data-section-title="${escapeHtml(log.id + ': ' + log.title)}">
       <header class="log-header">
         <span class="log-badge">${log.id}</span>
-        <span class="log-type badge-${log.type}">${log.type}</span>
+        ${log.type.split('+').map(t => `<span class="log-type badge-${t}">${t}</span>`).join('')}
         ${log.task ? `<span class="log-task">${log.task}</span>` : ''}
       </header>
       <h2 class="log-title">${formatInline(escapeHtml(log.title))}</h2>

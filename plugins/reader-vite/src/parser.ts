@@ -13,8 +13,13 @@
 
 import type { WorklogAST, LogEntry, Section } from './types';
 
-// Regex patterns (matching Python implementation exactly)
-const LOG_HEADER_PATTERN = /^### \[LOG-(\d+)\] - \[([^\]]+)\] - (.+)$/;
+// Regex patterns
+// LOG_PREFIX_PATTERN: matches ### [LOG-NNN] and captures everything after
+// Tags are extracted separately to support flexible formats:
+//   ### [LOG-001] - [DISCOVERY] DISCOVERY-001 - title
+//   ### [LOG-002] - [DECISION] [EXEC]
+//   ### [LOG-002] - [DECISION+EXEC]
+const LOG_PREFIX_PATTERN = /^### \[LOG-(\d+)\](.*?)$/;
 const SECTION_HEADER_PATTERN = /^(#{2,5}) (.+)$/;
 const STRIKETHROUGH_PATTERN = /~~.+~~/;
 
@@ -76,9 +81,9 @@ export function parseWorklog(markdown: string): WorklogAST {
       continue;
     }
 
-    // Try LOG entry first (H3 with specific format)
-    const logMatch = line.match(LOG_HEADER_PATTERN);
-    if (logMatch) {
+    // Try LOG entry first (H3 with [LOG-NNN] prefix)
+    const logPrefixMatch = line.match(LOG_PREFIX_PATTERN);
+    if (logPrefixMatch) {
       // Save previous log's content (trimEnd only - preserve leading lines for anchor alignment)
       if (currentLog) {
         currentLog.content = currentContent.join('\n').trimEnd();
@@ -89,9 +94,19 @@ export function parseWorklog(markdown: string): WorklogAST {
         currentSection = null;
       }
 
-      const logId = `LOG-${logMatch[1]}`;
-      const logType = logMatch[2];
-      const logTitle = logMatch[3];
+      const logId = `LOG-${logPrefixMatch[1]}`;
+      const rest = logPrefixMatch[2];
+
+      // Extract all [TAG] tokens (supports [DECISION] [EXEC] and [DECISION+EXEC])
+      const tags = [...rest.matchAll(/\[([^\]]+)\]/g)].map(m => m[1]);
+      const logType = tags.join('+');
+
+      // Remove all [TAG] tokens and leading separator to get title
+      const logTitle = rest
+        .replace(/\[[^\]]+\]/g, '')
+        .replace(/^\s*-\s*/, '')
+        .trim();
+
       const superseded = STRIKETHROUGH_PATTERN.test(logTitle);
 
       // Extract task from title if present (e.g., "- Task: READER-002")
@@ -165,8 +180,8 @@ export function parseWorklog(markdown: string): WorklogAST {
         continue;
       }
 
-      // H3 non-log breaks current log
-      if (level === 3 && currentLog !== null && !logMatch) {
+      // H3 non-log breaks current log (logMatch is null here since log headers already continued)
+      if (level === 3 && currentLog !== null) {
         currentLog.content = currentContent.join('\n').trimEnd();
         sections.push(section);
         sectionStack = [{ level: 3, node: section }];
