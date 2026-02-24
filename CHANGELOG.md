@@ -2,6 +2,14 @@
 
 <!-- version list -->
 
+## v1.22.3 (2026-02-24)
+
+### Bug Fixes
+
+- Journalism worklog style
+  ([`99799f8`](https://github.com/luutuankiet/gsd-lite/commit/99799f8eb106c3a707efad2ecd2b238e4516a48d))
+
+
 ## v1.22.2 (2026-02-24)
 
 ### Bug Fixes
