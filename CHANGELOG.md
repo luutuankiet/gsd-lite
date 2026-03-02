@@ -2,6 +2,14 @@
 
 <!-- version list -->
 
+## v1.23.0 (2026-03-02)
+
+### Features
+
+- Reader sidebar hover UX
+  ([`895e2cb`](https://github.com/luutuankiet/gsd-lite/commit/895e2cb801ce4da4dc38fe953599ba4f4461b115))
+
+
 ## v1.22.3 (2026-02-24)
 
 ### Bug Fixes
