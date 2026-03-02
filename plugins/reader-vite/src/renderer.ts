@@ -633,6 +633,9 @@ export function renderWorklog(ast: WorklogAST, docs: RenderContextDocs = {}): st
     <!-- Outline Panel (Desktop) -->
     ${outline}
     
+    <!-- Outline Resize Handle (Desktop) -->
+    <div class="outline-resize-handle" id="outlineResizeHandle"></div>
+    
     <!-- Bottom Sheet (Mobile) -->
     ${bottomSheet}
     
@@ -927,6 +930,164 @@ export function initializeInteractions(ast: WorklogAST, docs: RenderContextDocs 
       }
     });
   });
+
+  // ===== DESKTOP SIDEBAR HOVER-TO-EXPAND & CLICK-TO-COLLAPSE =====
+  if (window.innerWidth >= 768) {
+    const DEFAULT_SIDEBAR_WIDTH = 300;
+    const MIN_SIDEBAR_WIDTH = 200;
+    const MAX_SIDEBAR_WIDTH = window.innerWidth * 0.8;
+    let expandedWidth = DEFAULT_SIDEBAR_WIDTH; // Remember last resized width
+    let isHovering = false;
+    let isManuallyExpanded = false; // Track if user manually resized
+    let isAnimating = false;
+    let isDragging = false;
+    const resizeHandle = document.getElementById('outlineResizeHandle') as HTMLElement | null;
+
+    const collapseSidebarToDefault = () => {
+      isAnimating = true;
+      outline.style.transition = 'width 0.3s ease';
+      outline.style.width = `${DEFAULT_SIDEBAR_WIDTH}px`;
+
+      setTimeout(() => {
+        outline.style.transition = '';
+        outline.style.width = '';
+        outline.classList.remove('expanded');
+        isAnimating = false;
+      }, 300);
+    };
+
+    // ===== DRAG-TO-RESIZE HANDLE =====
+    if (resizeHandle) {
+      let startX = 0;
+      let startWidth = 0;
+
+      // Position resize handle at right edge of sidebar
+      const updateHandlePosition = () => {
+        if (outline.classList.contains('hidden')) {
+          resizeHandle.style.display = 'none';
+        } else {
+          resizeHandle.style.display = 'block';
+          resizeHandle.style.left = `${outline.offsetWidth - 3}px`; // Center on edge
+        }
+      };
+
+      // Initial position and update on resize
+      updateHandlePosition();
+      const resizeObserver = new ResizeObserver(() => {
+        if (!isDragging) updateHandlePosition();
+      });
+      resizeObserver.observe(outline);
+
+      resizeHandle.addEventListener('mousedown', (e) => {
+        e.preventDefault();
+        isDragging = true;
+        startX = e.clientX;
+        startWidth = outline.offsetWidth;
+        resizeHandle.classList.add('dragging');
+        document.body.style.cursor = 'ew-resize';
+        document.body.style.userSelect = 'none';
+      });
+
+      document.addEventListener('mousemove', (e) => {
+        if (!isDragging) return;
+        
+        const deltaX = e.clientX - startX;
+        let newWidth = startWidth + deltaX;
+        
+        // Clamp to min/max
+        newWidth = Math.max(MIN_SIDEBAR_WIDTH, Math.min(MAX_SIDEBAR_WIDTH, newWidth));
+        
+        outline.style.width = `${newWidth}px`;
+        resizeHandle.style.left = `${newWidth - 3}px`; // Update handle position during drag
+        
+        // Track as expanded if beyond default
+        if (newWidth > DEFAULT_SIDEBAR_WIDTH) {
+          expandedWidth = newWidth;
+          isManuallyExpanded = true;
+          outline.classList.add('expanded');
+        } else {
+          outline.classList.remove('expanded');
+        }
+      });
+
+      document.addEventListener('mouseup', () => {
+        if (!isDragging) return;
+        isDragging = false;
+        resizeHandle.classList.remove('dragging');
+        document.body.style.cursor = '';
+        document.body.style.userSelect = '';
+      });
+
+      // Keep hover-zone stable when moving between outline and resize handle
+      resizeHandle.addEventListener('mouseenter', () => {
+        isHovering = true;
+      });
+
+      resizeHandle.addEventListener('mouseleave', (event) => {
+        if (isDragging || outline.classList.contains('hidden')) return;
+        const nextTarget = event.relatedTarget as Node | null;
+
+        // Moving back into outline should not collapse
+        if (nextTarget && outline.contains(nextTarget)) return;
+
+        isHovering = false;
+        if (outline.offsetWidth > DEFAULT_SIDEBAR_WIDTH) {
+          collapseSidebarToDefault();
+        }
+      });
+    }
+
+    // Hover to expand
+    outline.addEventListener('mouseenter', (event) => {
+      if (outline.classList.contains('hidden') || isDragging) return;
+
+      // Ignore edge-enter events so resize intent is not hijacked by hover-expand
+      const distanceFromRightEdge = outline.getBoundingClientRect().right - (event as MouseEvent).clientX;
+      if (distanceFromRightEdge <= 12) return;
+
+      isHovering = true;
+      
+      // Only expand if we have a remembered larger width
+      if (expandedWidth > DEFAULT_SIDEBAR_WIDTH) {
+        isAnimating = true;
+        outline.classList.add('expanded');
+        outline.style.transition = 'width 0.3s ease';
+        outline.style.width = `${expandedWidth}px`;
+        
+        // Clear transition after animation
+        setTimeout(() => {
+          outline.style.transition = '';
+          isAnimating = false;
+        }, 300);
+      }
+    });
+
+    // Mouse leave to collapse back to default
+    outline.addEventListener('mouseleave', (event) => {
+      if (outline.classList.contains('hidden') || isDragging) return;
+      const nextTarget = event.relatedTarget as Node | null;
+
+      // Moving from outline -> resize handle should not collapse
+      if (resizeHandle && nextTarget && resizeHandle.contains(nextTarget)) return;
+
+      isHovering = false;
+      if (outline.offsetWidth > DEFAULT_SIDEBAR_WIDTH) {
+        collapseSidebarToDefault();
+      }
+    });
+
+    // Click on content to collapse sidebar to default width
+    content.addEventListener('click', () => {
+      if (outline.classList.contains('hidden') || isDragging) return;
+      
+      // Only collapse if sidebar is expanded beyond default
+      const currentWidth = outline.offsetWidth;
+      if (currentWidth > DEFAULT_SIDEBAR_WIDTH) {
+        isManuallyExpanded = false;
+        collapseSidebarToDefault();
+      }
+    });
+  }
   
   // ===== MOBILE SCROLL THUMB =====
   if (scrollThumb) {

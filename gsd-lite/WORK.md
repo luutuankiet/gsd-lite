@@ -34,6 +34,7 @@ Status: IMPLEMENTATION COMPLETE (LOG-075)
 - TASK-CI-L1-001: Implement Layer 1 structural checks — **OPTIONAL** (structural hygiene, not quality gate)
 - RQ-3: Evaluate SKILLS.md pattern — defer until current architecture matures
 - TASK-EVAL-002d: Vertex L2 refactor — **DEPRIORITIZED** (text quality checks only, optional)
+- TASK-READER-011: Sidebar UX improvements — **COMPLETED** (LOG-078)
 </parked_tasks>
 
 <vision>
@@ -14874,3 +14875,291 @@ Observed signal in this session:
 - Continue execution → monitor dev sessions for HMR stability over multiple edits
 - Future polish → add retry/backoff in `plugins/reader-vite/src/main.ts` if transient fetch errors recur
 - Docs maintenance → keep style guide checklist aligned with renderer/style changes
+
+---
+
+### [LOG-078] - [EXEC] - Reader Sidebar UX Overhaul: Full-Height Resize, Horizontal Scroll, and Hover-to-Expand - Task: READER-011
+**Timestamp:** 2026-03-02 17:45
+**Depends On:** LOG-077 (reader dev stability), LOG-061 (mobile bottom sheet patterns)
+
+---
+
+#### 1. The UX Problem
+
+**User pain points:**
+1. Log titles with long text were truncated with trailing `...` (CSS `text-overflow: ellipsis`)
+2. To see full titles, user had to manually drag the tiny CSS resize handle at bottom-right corner
+3. Expanding sidebar to full title width made main content unreadable
+4. Manually resizing back created friction loop: expand → main content obscured → collapse → titles truncated again
+5. Resize handle was a tiny corner icon, hard to click/drag
+
+**User's request:**
+> "Can we have horizontal scrollbar for titles + full-height resize edge instead of tiny icon?"
+
+**Design goal:**
+- **Zero-truncation:** Long titles always visible via horizontal scroll
+- **Low-friction resize:** Full-height drag edge (6px wide) instead of tiny corner handle
+- **Hover-to-expand:** Mouse over sidebar → expands to last resized width
+- **Click-to-collapse:** Click main content → sidebar collapses to default 300px
+- **Overlay behavior:** Expanded sidebar floats over content (doesn't push it)
+
+Citations:
+- Sidebar CSS changes: `plugins/reader-vite/index.html:221-280`
+- Drag-to-resize implementation: `plugins/reader-vite/src/renderer.ts:932-1045`
+- Full-height resize handle HTML: `plugins/reader-vite/src/renderer.ts:187`
+
+---
+
+#### 2. Dependency Chain
+
+- **LOG-061** established mobile bottom sheet patterns with drag gestures and state management
+- **LOG-077** stabilized reader dev environment, making safe to implement complex JS interactions
+
+Chain:
+`LOG-078 ← LOG-077 ← LOG-061`
+
+---
+
+#### 3. Evidence Ledger
+
+| Claim | Evidence | Citation |
+|---|---|---|
+| Titles no longer truncate | Removed `text-overflow: ellipsis` from `.log-title`, set `overflow: visible` | `plugins/reader-vite/index.html:448-451` |
+| Sidebar has horizontal scrollbar | Changed `.outline` from `overflow-x: hidden` to `overflow-x: auto` | `plugins/reader-vite/index.html:234` |
+| Full-height resize edge implemented | Added `.outline-resize-handle` with `height: 100%`, `width: 6px`, `cursor: ew-resize` | `plugins/reader-vite/index.html:245-280` |
+| Drag-to-resize works | Implemented `mousedown`/`mousemove`/`mouseup` handlers with width clamping (200px-80vw) | `plugins/reader-vite/src/renderer.ts:945-986` |
+| Hover-to-expand remembers last width | `expandedWidth` variable tracks manual resize, hover expands to that width | `plugins/reader-vite/src/renderer.ts:937-1004` |
+| Click-on-content collapses sidebar | `content.addEventListener('click')` collapses if width > 300px | `plugins/renderer.ts:1006-1023` |
+| Overlay behavior preserved | Sidebar uses `position: fixed` → naturally overlays when expanded | `plugins/reader-vite/index.html:223-225` |
+| Visual feedback on expansion | Added `.outline.expanded` class with `box-shadow` | `plugins/reader-vite/index.html:242-244` |
+
+---
+
+#### 4. Step-by-Step Walkthrough
+
+**Phase 1: Horizontal scroll for titles**
+1. Identified truncation: `.log-title` had `overflow: hidden; text-overflow: ellipsis`
+2. Removed ellipsis CSS, set `overflow: visible`
+3. Changed `.outline` from `overflow-x: hidden` → `overflow-x: auto`
+4. Result: Titles never truncate, horizontal scrollbar appears for long titles
+
+**Phase 2: Full-height resize handle**
+1. Removed CSS `resize: horizontal` (only gives tiny corner handle)
+2. Added custom `.outline-resize-handle` element (6px × full height)
+3. Styled with `cursor: ew-resize` and purple highlight on hover
+4. Implemented drag logic:
+   - `mousedown` → capture start position and width
+   - `mousemove` → calculate `deltaX`, clamp to 200px-80vw range
+   - `mouseup` → finalize and track `expandedWidth`
+
+**Phase 3: Hover-to-expand behavior**
+1. Added `mouseenter` listener on `.outline`
+2. If `expandedWidth > 300px`, animate to that width (300ms transition)
+3. Added `mouseleave` listener → animate back to 300px
+4. Used `isAnimating` flag to prevent ResizeObserver interference
+
+**Phase 4: Click-to-collapse**
+1. Added click listener on main `content` element
+2. If current width > 300px, animate to 300px and clear inline styles
+3. Prevents accidental trigger during drag with `isDragging` guard
+
+**Phase 5: Visual polish**
+1. Added `.outline.expanded` class with subtle shadow when overlaying
+2. Resize handle shows vertical line indicator on hover
+3. All animations use 300ms ease transitions for smoothness
+
+```mermaid
+graph TD
+    A[User hovers sidebar] --> B{expandedWidth > 300?}
+    B -->|Yes| C[Animate to expandedWidth]
+    B -->|No| D[No action]
+    C --> E[User sees full titles]
+    E --> F[Mouse leaves sidebar]
+    F --> G[Animate back to 300px]
+    
+    H[User drags resize edge] --> I[Track new width]
+    I --> J[Update expandedWidth]
+    J --> K[Next hover uses new width]
+    
+    L[User clicks main content] --> M{width > 300?}
+    M -->|Yes| N[Collapse to 300px]
+    M -->|No| O[No action]
+```
+
+**Code snippet (drag-to-resize core):**
+```typescript
+resizeHandle.addEventListener('mousedown', (e) => {
+  e.preventDefault();
+  isDragging = true;
+  startX = e.clientX;
+  startWidth = outline.offsetWidth;
+  resizeHandle.classList.add('dragging');
+  document.body.style.cursor = 'ew-resize';
+  document.body.style.userSelect = 'none';
+});
+
+document.addEventListener('mousemove', (e) => {
+  if (!isDragging) return;
+  
+  const deltaX = e.clientX - startX;
+  let newWidth = startWidth + deltaX;
+  
+  // Clamp to min/max
+  newWidth = Math.max(MIN_SIDEBAR_WIDTH, Math.min(MAX_SIDEBAR_WIDTH, newWidth));
+  
+  outline.style.width = `${newWidth}px`;
+  
+  // Track as expanded if beyond default
+  if (newWidth > DEFAULT_SIDEBAR_WIDTH) {
+    expandedWidth = newWidth;
+    isManuallyExpanded = true;
+    outline.classList.add('expanded');
+  } else {
+    outline.classList.remove('expanded');
+  }
+});
+```
+Source: `plugins/reader-vite/src/renderer.ts:951-978`
+
+**CSS snippet (resize handle styling):**
+```css
+.outline-resize-handle {
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 6px;
+  height: 100%;
+  cursor: ew-resize;
+  background: transparent;
+  z-index: 10;
+  transition: background 0.2s ease;
+}
+
+.outline-resize-handle:hover,
+.outline-resize-handle.dragging {
+  background: rgba(102, 126, 234, 0.3); /* Purple highlight */
+}
+
+/* Visual indicator line */
+.outline-resize-handle::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 2px;
+  height: 40px;
+  background: #ccc;
+  border-radius: 1px;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+
+.outline-resize-handle:hover::after,
+.outline-resize-handle.dragging::after {
+  opacity: 1;
+  background: #667eea;
+}
+```
+Source: `plugins/reader-vite/index.html:245-280`
+
+---
+
+#### 5. Concrete Artifacts
+
+**Files modified:**
+- `plugins/reader-vite/index.html` (CSS: remove ellipsis, add horizontal scroll, resize handle styles)
+- `plugins/reader-vite/src/renderer.ts` (HTML: add resize handle element; JS: drag/hover/collapse handlers)
+
+**Behavior matrix:**
+
+| User Action | Sidebar Behavior | Main Content |
+|-------------|------------------|--------------|
+| Default state | 300px width, horizontal scroll for long titles | Full reading width |
+| Hover sidebar | Expands to last dragged width (smooth 300ms) | Covered by overlay |
+| Mouse leaves | Collapses to 300px (smooth 300ms) | Fully visible again |
+| Drag resize edge | Width follows cursor (200px-80vw) | Covered during expand |
+| Click main content | Collapses to 300px if expanded | Full reading width restored |
+| Horizontal scroll in sidebar | Scroll to see full title text | No change |
+
+---
+
+#### 6. Failure Modes + Safeguards
+
+1. **Failure:** Hover expand interferes with drag resize.
+   - **Safeguard:** `isDragging` guard prevents hover handlers during drag.
+   - Citation: `plugins/reader-vite/src/renderer.ts:989`, `plugins/reader-vite/src/renderer.ts:1001`, `plugins/reader-vite/src/renderer.ts:1009`
+
+2. **Failure:** Inline styles from JS prevent CSS resize from working.
+   - **Safeguard:** Clear inline `width` style after collapse animation completes.
+   - Citation: `plugins/reader-vite/src/renderer.ts:1000`, `plugins/reader-vite/src/renderer.ts:1020`
+
+3. **Failure:** Animation conflicts with ResizeObserver tracking.
+   - **Safeguard:** `isAnimating` flag prevents ResizeObserver from capturing animated width changes.
+   - Citation: `plugins/reader-vite/src/renderer.ts:941`, `plugins/reader-vite/src/renderer.ts:947-949`
+
+4. **Failure:** Sidebar pushes content instead of overlaying.
+   - **Safeguard:** Sidebar already uses `position: fixed`, naturally overlays. Added visual shadow for clarity.
+   - Citation: `plugins/reader-vite/index.html:223`, `plugins/reader-vite/index.html:242-244`
+
+5. **Failure:** Resize handle too small to click on mobile.
+   - **Mitigation:** Desktop-only feature (wrapped in `window.innerWidth >= 768` check). Mobile uses bottom sheet.
+   - Citation: `plugins/reader-vite/src/renderer.ts:933`
+
+---
+
+#### 7. Decision Record
+
+**Chosen path:**
+- Remove text truncation entirely, enable horizontal scroll
+- Replace CSS `resize: horizontal` with custom full-height drag handle
+- Implement hover-to-expand with memory of last manual resize
+- Add click-to-collapse as quick escape from expanded state
+
+**Alternatives considered:**
+
+| Alternative | Why Rejected |
+|-------------|--------------|
+| Keep CSS resize handle | Too small, hard to target. User explicitly requested full-height edge. |
+| Auto-fit sidebar to longest title | Would constantly change width on scroll, disorienting. |
+| Remove resize entirely, fixed width | Removes power-user flexibility. User wanted *both* scroll and resize. |
+| Push content instead of overlay | Causes reading position jump when expanding/collapsing. Overlay preserves position. |
+
+**Tradeoff:**
+- More JavaScript complexity (drag handlers, state management).
+- In exchange, dramatically lower friction for reading long titles across different width preferences.
+
+---
+
+#### 8. Verification Plan
+
+**Pass/fail checks:**
+- [ ] Long log titles show full text via horizontal scroll (no `...` truncation)
+- [ ] Hover over right edge of sidebar shows purple highlight + vertical line
+- [ ] Drag resize edge smoothly adjusts width (200px-80vw range)
+- [ ] After manual resize, hover expands to that exact width
+- [ ] Mouse leaves sidebar → collapses to 300px with smooth animation
+- [ ] Click on main content → collapses sidebar if expanded
+- [ ] Expanded sidebar shows subtle shadow (overlay visual feedback)
+- [ ] No interference between drag, hover, and click behaviors
+
+**User signal in this session:**
+- User confirmed: "all good let's log this down" after testing all behaviors
+
+---
+
+📦 STATELESS HANDOFF
+
+**Layer 1 — Local Context:**
+→ Last action: LOG-078 implemented and captured sidebar UX overhaul
+→ Dependency chain: LOG-078 ← LOG-077 ← LOG-061
+→ Next action: Build and ship reader v0.2.14 with sidebar improvements
+
+**Layer 2 — Global Context:**
+→ Architecture: Reader sidebar now has three interaction modes (scroll, drag, hover) with careful state isolation
+→ Patterns: Hover-to-expand pattern established, can be applied to other panels if needed
+
+**Fork paths:**
+- Ship to production → `cd plugins/reader-vite && pnpm build && npm version patch && npm publish`
+- Refine behavior → adjust transition timing in `renderer.ts` lines 996-1004
+- Mobile adaptation → consider similar patterns for bottom sheet if long section names appear

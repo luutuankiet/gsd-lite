@@ -230,13 +230,56 @@
       background: white;
       border-right: 1px solid #ddd;
       overflow-y: auto;
-      overflow-x: hidden;
+      overflow-x: auto; /* Enable horizontal scroll for long titles */
       z-index: 999;
       /* Mobile: hidden by default */
       transform: translateX(-100%);
       transition: transform 0.3s ease;
-      /* Resizable on desktop */
-      resize: horizontal;
+      /* Custom resize handle instead of CSS resize */
+    }
+
+    /* Shadow when sidebar is expanded (overlaying content) */
+    .outline.expanded {
+      box-shadow: 4px 0 12px rgba(0, 0, 0, 0.15);
+    }
+
+    /* Full-height resize handle on right edge - positioned as sibling to outline */
+    .outline-resize-handle {
+      position: fixed;
+      top: 86px; /* Match outline top */
+      left: 297px; /* Default: 300px sidebar - 3px to center on edge */
+      width: 6px;
+      height: calc(100vh - 86px);
+      cursor: ew-resize;
+      background: transparent;
+      z-index: 1001; /* Above outline */
+      transition: background 0.2s ease;
+    }
+
+    .outline-resize-handle:hover,
+    .outline-resize-handle.dragging {
+      background: rgba(102, 126, 234, 0.3);
+    }
+
+    /* Visual indicator line */
+    .outline-resize-handle::after {
+      content: '';
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: 2px;
+      height: 40px;
+      background: #ccc;
+      border-radius: 1px;
+      opacity: 0;
+      transition: opacity 0.2s ease;
+    }
+
+    .outline-resize-handle:hover::after,
+    .outline-resize-handle.dragging::after {
+      opacity: 1;
+      background: #667eea;
     }
     
     .outline.open {
@@ -447,8 +490,8 @@
     
     .log-title {
       color: #666;
-      overflow: hidden;
-      text-overflow: ellipsis;
+      /* No truncation - allow horizontal scroll to see full titles */
+      overflow: visible;
     }
     
     .log-item.superseded {
@@ -1210,6 +1253,10 @@
       .outline {
         display: none !important;
       }
+
+      .outline-resize-handle {
+        display: none !important;
+      }
       
       /* Remove sticky positioning for section titles in sheet - let them scroll normally */
       .outline-sheet .outline-section-title {
@@ -1299,6 +1346,10 @@
       
       .outline.hidden {
         transform: translateX(-100%);
+      }
+
+      .outline.hidden + .outline-resize-handle {
+        display: none;
       }
       
       .breadcrumb {
