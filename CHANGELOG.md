@@ -2,6 +2,14 @@
 
 <!-- version list -->
 
+## v1.24.0 (2026-03-03)
+
+### Features
+
+- Batch ops as first class citizen
+  ([`86524d9`](https://github.com/luutuankiet/gsd-lite/commit/86524d9fd0393b0681d54fd95e42cd93e9b456cc))
+
+
 ## v1.23.0 (2026-03-02)
 
 ### Features
