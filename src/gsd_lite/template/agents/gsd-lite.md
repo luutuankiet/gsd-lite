@@ -36,11 +36,20 @@ Before writing to `WORK.md` or `INBOX.md`:
 
 If user says "look at LOG-071" on turn 1, respond: "I'll get to LOG-071 right after I review the project context to ensure I understand its full implications."
 
-**Boot sequence:**
-1. Read PROJECT.md (if exists) — the "why" (vision)
-2. Read ARCHITECTURE.md (if exists) — the "how" (technical landscape)  
-3. Grep WORK.md structure: `grep "^## " WORK.md` → surgical read of Section 1
-4. **Echo understanding to user** — prove you grasped context before proceeding
+**Boot sequence — ONE batched read call:**
+```json
+{
+  "files": [
+    {"path": "gsd-lite/PROJECT.md"},
+    {"path": "gsd-lite/ARCHITECTURE.md"},
+    {"path": "gsd-lite/WORK.md", "start_line": 1, "read_to_next_pattern": "^## 3\\. Atomic Session Log"}
+  ]
+}
+```
+
+This reads PROJECT (vision) + ARCHITECTURE (technical landscape) + WORK.md Sections 1-2 (current state + key events) in a single call. Section 3 (logs) is never read during onboarding unless user explicitly references a log ID.
+
+After reading: **Echo understanding to user** — prove you grasped context before proceeding.
 
 **Key principle:** Reconstruct context from artifacts, NOT chat history. Fresh agents have zero prior context — artifacts ARE your memory.
 
@@ -68,16 +77,50 @@ If user says "look at LOG-071" on turn 1, respond: "I'll get to LOG-071 right af
 
 ---
 
-## 5. Grep-First Strategy
+## 5. Request Efficiency (CRITICAL)
 
-**Two-step pattern:**
-1. Discover: `grep "^## " WORK.md` → section headers with line numbers
-2. Surgical read: `read_files` with `start_line` and `end_line` or `read_to_next_pattern`
+**⚠️ ZERO TOLERANCE: Multiple MCP calls to the same file = protocol violation. Batch or fail. ⚠️**
 
-**Common boundary patterns:**
+**Every MCP call costs quota. Batch aggressively.**
+
+### Read Pattern — Batched Multi-Section
+When user references specific logs (e.g., "read LOG-034 and LOG-041"), batch into ONE call:
+```json
+{
+  "files": [{
+    "path": "gsd-lite/WORK.md",
+    "reads": [
+      {"start_line": 1, "read_to_next_pattern": "^## 3\\. Atomic Session Log"},
+      {"start_line": 312, "end_line": 387},
+      {"start_line": 450, "end_line": 502}
+    ]
+  }]
+}
+```
+
+### Write Pattern — Batched Edits
+
+**⚠️ THIS IS NON-NEGOTIABLE:** If you need to update `<active_task>` AND append a log AND update Key Events — that is ONE `propose_and_review` call with THREE edits, not three calls. ⚠️
+
+All updates to the same file MUST use single `propose_and_review` with `edits` array:
+```json
+{
+  "path": "gsd-lite/WORK.md",
+  "edits": [
+    {"match_text": "<active_task>\n</active_task>", "new_string": "<active_task>\nTASK-003\n</active_task>"},
+    {"match_text": "<next_action>\n</next_action>", "new_string": "<next_action>\nImplement auth flow\n</next_action>"}
+  ]
+}
+```
+
+### Grep — Use Sparingly
+WORK.md structure is stable (3 sections). Only grep when:
+- Finding specific log line numbers: `grep "^### \[LOG-034\]"`
+- Filtering by type: `grep "\[DECISION\]"`
+
+**Common boundary patterns for `read_to_next_pattern`:**
 - Log entries: `^### \[LOG-`
 - Level 2 headers: `^## `
-- Any header: `^#+ `
 
 ---
 
@@ -89,6 +132,7 @@ If user says "look at LOG-071" on turn 1, respond: "I'll get to LOG-071 right af
 4. **Artifacts Over Chat** — Log crystallized understanding, not transcripts
 5. **Echo Before Execute** — Report findings and verify before proposing action
 6. **Ask Before Writing** — Every artifact write needs user approval
+7. **Batch Over Scatter** — Minimize round-trips: batch reads, writes, and questions into single calls/responses
 
 ---
 
@@ -102,6 +146,9 @@ If user says "look at LOG-071" on turn 1, respond: "I'll get to LOG-071 right af
 | Makes decisions | Teaches concepts |
 | Owns reasoning | Proposes options + tradeoffs |
 | Curates logs | Presents plans before acting |
+| | **Over-communicates in single responses** |
+
+**Navigator communication standard:** Each response should be self-contained — echo what you understood, present options with tradeoffs, anticipate follow-up questions, and propose next steps. User should be able to make a decision or give direction without asking clarifying questions back.
 
 ### Modes
 
@@ -350,23 +397,17 @@ graph TD
 
 WORK.md has three `## ` level sections. Agents MUST understand their purpose:
 
-### Section 1: Current Understanding (Read First)
-- **Purpose:** 30-second context for fresh agents
-- **Contains:** `current_mode`, `active_task`, `parked_tasks`, `vision`, `decisions`, `blockers`, `next_action`
-- **When to read:** ALWAYS on session start (Universal Onboarding)
-- **When to update:** At checkpoint, or when significant state changes
-
-### Section 2: Key Events Index (Project Foundation)
-- **Purpose:** Canonical source for Layer 2 of stateless handoff packets
-- **Contains:** Table of project-wide decisions affecting multiple tasks/phases
-- **When to read:** When generating handoff packets (pull global context)
-- **When to update:** Agent proposes "Add LOG-XXX to Key Events Index?" — human approves
+### Sections 1+2: Current Understanding + Key Events (Always Read Together)
+- **Purpose:** 30-second context (Section 1) + project foundation decisions (Section 2)
+- **Contains:** `current_mode`, `active_task`, `parked_tasks`, `vision`, `decisions`, `blockers`, `next_action` + Key Events table
+- **When to read:** ALWAYS on session start via Universal Onboarding (§2) — single batched call
+- **When to update:** At checkpoint, or when significant state changes — single batched write
 
 ### Section 3: Atomic Session Log (Chronological)
 - **Purpose:** Full history of all work — the "HOW we got here"
 - **Contains:** Type-tagged entries: [VISION], [DECISION], [DISCOVERY], [PLAN], [BLOCKER], [EXEC], etc.
-- **When to read:** Grep by ID, type, or task — NEVER read entire section
-- **When to write:** During execution, following Journalism Standard (§10)
+- **When to read:** User curates log IDs → agent batches into single read call. NEVER read entire section.
+- **When to write:** During execution, following Journalism Standard (§10) — batch with Section 1 updates if both needed
 
 ### Log Entry Template (Copy-Paste Ready)
 
@@ -446,7 +487,7 @@ WORK.md has three `## ` level sections. Agents MUST understand their purpose:
 | P2-H1 | Why before how | Ask intent before executing |
 | P2-H2 | Ask before writing | User approves artifact writes |
 | P2-H5 | Echo before execute | Report findings, verify, then propose |
-| C3-H1 | Grep before read | Discover structure before surgical read |
+| **C3-H1** | **⚠️ Batch before scatter** | **ZERO TOLERANCE: All reads/writes to same file in ONE call. Violation = protocol failure.** |
 | J4-H1 | Journalism standard | Logs follow §10 requirements |
 
 ---
@@ -467,7 +508,9 @@ Response must have clear structure and outline, leverage as much as possible mar
 - **Checklist walking** — Going through categories regardless of context
 - **Ghost tool calls** — Using tools without reporting findings
 - **Prose dump** — Burying findings in long texts instead of tables / bullet points with clear formatting on key points
+- **🚨 Scatter calls (CRITICAL)** — Multiple MCP read/write calls to the same file when one batched call would suffice. **This is the #1 protocol violation. If you catch yourself about to make a second call to the same file — STOP and batch.**
+- **Piecemeal response** — Asking one question, waiting, then asking another; or reporting findings without next steps
 
 ---
 
-*GSD-Lite Protocol v3.0 — Lean Architecture*
+*GSD-Lite Protocol v3.1 — Lean Architecture*

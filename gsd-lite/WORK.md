@@ -15163,3 +15163,266 @@ Source: `plugins/reader-vite/index.html:245-280`
 - Ship to production → `cd plugins/reader-vite && pnpm build && npm version patch && npm publish`
 - Refine behavior → adjust transition timing in `renderer.ts` lines 996-1004
 - Mobile adaptation → consider similar patterns for bottom sheet if long section names appear
+
+---
+
+### [LOG-079] - [DECISION] - Request Efficiency Protocol: Batched MCP Calls & Over-Communicative Responses - Task: PROTOCOL-CRAFT-001
+**Timestamp:** 2026-03-03 14:30
+**Depends On:** LOG-073 (Lean Architecture), LOG-075 (Template Minimization)
+
+---
+
+#### The Problem: Scattered MCP Calls Burning Quota
+
+**Symptom observed in production:**
+The gsd-lite agent was making multiple separate MCP calls to read/write different sections of the same WORK.md file:
+
+```
+# Onboarding behavior (wasteful)
+Call 1: grep "^## " WORK.md          # Get structure
+Call 2: read Section 1 (Current Understanding)
+Call 3: read Section 2 (Key Events Index)
+Call 4: read specific LOG entry
+
+# Write behavior (wasteful)
+Call 1: update <active_task> in Section 1
+Call 2: update <next_action> in Section 1
+Call 3: append new LOG entry to Section 3
+```
+
+**Impact:** Each MCP call consumes API quota. The agent's careful, surgical approach was burning budget before meaningful work could begin.
+
+**Evidence from fs-mcp maintainer (user):**
+> "The agent made careful, surgical read calls for parts in the same docs (for instance 3 mcp read files just to get in the same WORK.md file the current understanding, decisions done, the latest worklog. The same happens for work log write: it will make 3 calls for adding work log, update current understanding, the decisions board ALL IN THE SAME file.)"
+
+---
+
+#### Root Cause: Instructions Encouraged Fragmentation
+
+The gsd-lite.md protocol actively promoted this pattern:
+
+| Section | Problematic Guidance |
+|---------|---------------------|
+| **Universal Onboarding (§2)** | "Grep WORK.md structure → surgical read of Section 1" (implies separate grep + read) |
+| **Grep-First Strategy (§5)** | Emphasized surgical precision over batching |
+| **WORK.md Structure (§11)** | Described sections separately, encouraging separate reads |
+
+**No explicit batching mandate.** The protocol said "be surgical" but never said "batch surgeries into one operation."
+
+---
+
+#### The Solution: Request Efficiency as Core Principle
+
+**Three-pronged approach:**
+
+##### 1. New Golden Rule (#7): "Batch Over Scatter"
+
+Added to §6:
+> "Minimize round-trips: batch reads, writes, and questions into single calls/responses"
+
+##### 2. Rewrite Universal Onboarding (§2) → Single Batched Call
+
+**Before:**
+```
+1. Read PROJECT.md
+2. Read ARCHITECTURE.md
+3. Grep WORK.md structure → surgical read of Section 1
+```
+
+**After:**
+```json
+{
+  "files": [
+    {"path": "gsd-lite/PROJECT.md"},
+    {"path": "gsd-lite/ARCHITECTURE.md"},
+    {"path": "gsd-lite/WORK.md", "start_line": 1, "read_to_next_pattern": "^## 3\\. Atomic Session Log"}
+  ]
+}
+```
+
+**Rationale:** WORK.md structure is stable (3 sections). No grep needed. Read Sections 1+2 together using pattern-based boundary detection.
+
+##### 3. New "Request Efficiency" Section (§5)
+
+Replaced "Grep-First Strategy" with explicit batching patterns:
+
+**Read Pattern — Batched Multi-Section:**
+When user curates logs (e.g., "read LOG-034 and LOG-041"), batch into ONE call using the `reads` array:
+
+```json
+{
+  "files": [{
+    "path": "gsd-lite/WORK.md",
+    "reads": [
+      {"start_line": 1, "read_to_next_pattern": "^## 3\\. Atomic Session Log"},
+      {"start_line": 312, "end_line": 387},
+      {"start_line": 450, "end_line": 502}
+    ]
+  }]
+}
+```
+
+**Write Pattern — Batched Edits:**
+All updates to the same file MUST use single `propose_and_review` with `edits` array:
+
+```json
+{
+  "path": "gsd-lite/WORK.md",
+  "edits": [
+    {"match_text": "<active_task>\n</active_task>", "new_string": "<active_task>\nTASK-003\n</active_task>"},
+    {"match_text": "<next_action>\n</next_action>", "new_string": "<next_action>\nImplement auth flow\n</next_action>"}
+  ]
+}
+```
+
+**Grep → Use Sparingly:**
+WORK.md structure is stable. Only grep when finding specific log line numbers or filtering by type.
+
+---
+
+#### The Tooling Enabler: fs-mcp `reads` Array Feature
+
+**User is fs-mcp maintainer and committed to implementing:**
+
+```json
+{
+  "files": [
+    {
+      "path": "src/main.py",
+      "reads": [
+        {"head": 50},
+        {"start_line": 100, "end_line": 150}
+      ]
+    }
+  ]
+}
+```
+
+This enables **multiple reading modes per file in a single request** — the technical foundation for greedy batching.
+
+**Current state:** Examples in gsd-lite.md show the target syntax. Until fs-mcp implements `reads`, agents can still batch multiple files in one call (just not multiple ranges within one file).
+
+---
+
+#### The Communication Layer: Over-Communicate in Single Responses
+
+**Extended the Navigator role (§7):**
+
+Added row to Navigator responsibilities:
+> "Over-communicates in single responses"
+
+Added paragraph:
+> "Navigator communication standard: Each response should be self-contained — echo what you understood, present options with tradeoffs, anticipate follow-up questions, and propose next steps. User should be able to make a decision or give direction without asking clarifying questions back."
+
+**Rationale:** Request efficiency isn't just about MCP calls. It's about minimizing **all** round-trips — including conversational ones.
+
+**Example from this session:**
+Instead of:
+1. Ask "What's the onboarding issue?" → wait
+2. Ask "Should we batch?" → wait
+3. Ask "Where should this live?" → wait
+
+Do:
+1. Echo problem understanding, propose 3 solutions with tradeoffs, ask which resonates — user replies ONCE with direction.
+
+---
+
+#### Updated WORK.md Structure Guidance (§11)
+
+**Merged Section 1 and Section 2:**
+
+**Before:**
+- Section 1: Current Understanding (read first)
+- Section 2: Key Events Index (read for handoff)
+
+**After:**
+- Sections 1+2: Current Understanding + Key Events (Always Read Together)
+
+**Clarified Section 3:**
+> "User curates log IDs → agent batches into single read call. NEVER read entire section."
+
+---
+
+#### Anti-Patterns (Added Two)
+
+- **Scatter calls** — Multiple MCP read/write calls to the same file when one batched call would suffice
+- **Piecemeal response** — Asking one question, waiting, then asking another; or reporting findings without next steps
+
+---
+
+#### Implementation Evidence
+
+**All changes made to:** `src/gsd_lite/template/agents/gsd-lite.md`
+
+| Change | Lines Modified | Token Impact |
+|--------|---------------|--------------|
+| Add Golden Rule #7 | §6 | +15 tokens |
+| Rewrite Universal Onboarding | §2 | +120 tokens (JSON example) |
+| Replace Grep-First → Request Efficiency | §5 | +180 tokens (two examples) |
+| Enhance Navigator role | §7 | +50 tokens |
+| Merge WORK.md sections | §11 | -30 tokens (consolidation) |
+| Add anti-patterns | End | +25 tokens |
+| **Net increase** | | **~360 tokens** |
+
+**Version bump:** v3.0 → v3.1
+
+**Verified token budget:** Current instruction file is ~2,414 tokens (before this change). Adding ~360 tokens → ~2,774 tokens. Well under 10k headroom target (LOG-020).
+
+---
+
+#### The Philosophy: "Greedy Reads, Zero Tolerance for Scatter"
+
+**User's articulation:**
+> "I want to embed in the protocol (the gsd-lite.md file) that ALL behaviors, not just MCP tool call, must be request efficient. batch it whenever possible."
+
+**Design constraints established:**
+
+| Aspect | Target Behavior |
+|--------|----------------|
+| **Onboarding reads** | Single call: PROJECT + ARCHITECTURE + WORK.md Sections 1-2 |
+| **Log reads** | User curates log IDs → agent batches with `reads` array |
+| **Writes** | Single `propose_and_review` with `edits` array — **zero tolerance** for multiple calls |
+| **Grep for WORK structure** | Remove — structure is stable (3 sections) |
+| **Response style** | Over-communicate context, echo understanding, propose next steps, anticipate questions |
+
+**Key insight from session:**
+This session itself demonstrated the principle — we had a highly productive back-and-forth with minimal round-trips because the agent:
+1. Echoed understanding ("What I'm hearing")
+2. Proposed options with tradeoffs
+3. Anticipated follow-up questions
+4. Asked for confirmation in batches
+
+User noted:
+> "I like that you suggest things and echo back what you hear and even probe future questions. This session has been productive in terms of back and forth least number of calls."
+
+---
+
+#### Downstream Impact
+
+**For fs-mcp maintainer:**
+The `reads` array feature request is now motivated by real protocol requirements. Implementation unlocks the full batching potential shown in gsd-lite.md examples.
+
+**For future gsd-lite agents:**
+The protocol now explicitly rewards batching and penalizes scatter. Constitutional behavior C3-H1 updated:
+> "Batch before scatter — Batch reads/writes to same file; grep only for targeted discovery"
+
+**For users:**
+Faster sessions, lower token burn, more budget for actual pair programming.
+
+---
+
+📦 STATELESS HANDOFF
+
+**Layer 1 — Local Context:**
+→ Last action: LOG-079 (Embedded request efficiency into gsd-lite protocol)
+→ Dependency chain: LOG-079 ← LOG-073 (Lean Architecture) ← LOG-075 (Template Minimization)
+→ Next action: User validates protocol changes in next gsd-lite session (watch for batched onboarding behavior)
+
+**Layer 2 — Global Context:**
+→ Architecture: Lean single-file protocol (gsd-lite.md ~2.4k tokens fixed cost)
+→ Patterns: Batched MCP calls, pattern-based section reads, zero-tolerance scatter policy
+
+**Fork paths:**
+- Test in production → Start fresh gsd-lite session, observe onboarding (should be single batched read)
+- Implement fs-mcp feature → `reads` array for multi-range file reads
+- Refine further → Token audit gsd-housekeeping.md (6,549 tokens, next optimization target)
