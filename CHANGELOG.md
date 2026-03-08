@@ -2,6 +2,19 @@
 
 <!-- version list -->
 
+## v1.25.0 (2026-03-08)
+
+### Bug Fixes
+
+- Adds exac overview in agent response
+  ([`b1419bb`](https://github.com/luutuankiet/gsd-lite/commit/b1419bba1c8cee3fecbc9c8769d543f05ec2704a))
+
+### Features
+
+- Mermaid zoom 5000%
+  ([`f637194`](https://github.com/luutuankiet/gsd-lite/commit/f637194957839a74a7b1a7ef87c134884492ca0f))
+
+
 ## v1.24.0 (2026-03-03)
 
 ### Features
