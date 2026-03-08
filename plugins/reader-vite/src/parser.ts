@@ -123,8 +123,10 @@ export function parseWorklog(markdown: string): WorklogAST {
         task,
         superseded,
         lineNumber,
+        endLine: 0,  // Will be calculated in post-processing
         level: 3,
         content: '',
+        rawText: '',  // Will be calculated in post-processing
         children: [],
       };
       logs.push(currentLog);
@@ -146,6 +148,7 @@ export function parseWorklog(markdown: string): WorklogAST {
         level,
         title: sectionTitle,
         lineNumber,
+        endLine: 0,  // Will be calculated in post-processing
         children: [],
       };
 
@@ -229,6 +232,40 @@ export function parseWorklog(markdown: string): WorklogAST {
   // Don't forget last section's content
   if (currentSection) {
     currentSection.content = currentContent.join('\n').trimEnd();
+  }
+
+  // Post-processing: Calculate endLine and rawText for all entries
+  // This is cleaner than tracking during the main loop
+  const allEntries: Array<{ lineNumber: number; entry: LogEntry | Section; isLog: boolean }> = [
+    ...logs.map(log => ({ lineNumber: log.lineNumber, entry: log, isLog: true })),
+    ...sections.filter(s => s.level <= 3).map(section => ({ lineNumber: section.lineNumber, entry: section, isLog: false })),
+  ].sort((a, b) => a.lineNumber - b.lineNumber);
+
+  for (let i = 0; i < allEntries.length; i++) {
+    const current = allEntries[i];
+    const next = allEntries[i + 1];
+    
+    // endLine is either the line before the next entry, or the last non-empty line
+    let endLine: number;
+    if (next) {
+      endLine = next.lineNumber - 1;
+    } else {
+      // Last entry: find the last non-empty line
+      endLine = lines.length;
+      while (endLine > current.lineNumber && lines[endLine - 1].trim() === '') {
+        endLine--;
+      }
+    }
+    
+    current.entry.endLine = endLine;
+    
+    // Extract rawText from original lines (1-indexed to 0-indexed)
+    const rawLines = lines.slice(current.lineNumber - 1, endLine);
+    if (current.isLog) {
+      (current.entry as LogEntry).rawText = rawLines.join('\n');
+    } else {
+      (current.entry as Section).rawText = rawLines.join('\n');
+    }
   }
 
   const parseTime = Math.round(performance.now() - startTime);

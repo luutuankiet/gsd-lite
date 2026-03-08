@@ -10,9 +10,11 @@ export interface LogEntry {
   title: string;        // e.g., "The Hot Reload Pivot"
   task?: string;        // e.g., "READER-002"
   superseded: boolean;  // true if title contains ~~strikethrough~~
-  lineNumber: number;   // Original line number in WORK.md
+  lineNumber: number;   // Original line number in WORK.md (1-indexed, start of entry)
+  endLine: number;      // End line number (1-indexed, last line of content)
   level: number;        // Header level (2 = ##, 3 = ###)
   content: string;      // Full content including nested sections
+  rawText: string;      // Exact text from file (header + content) for edit blocks
   children: Section[];  // Nested H4/H5 sections under this log
 }
 
@@ -20,10 +22,12 @@ export interface LogEntry {
 export interface Section {
   title: string;
   level: number;
-  lineNumber: number;
+  lineNumber: number;   // Start line (1-indexed)
+  endLine: number;      // End line (1-indexed, last line of content)
   children: Section[];
-  content?: string;   // Content between this section and next header
-  logs?: LogEntry[];  // Optional - not always populated
+  content?: string;     // Content between this section and next header
+  rawText?: string;     // Exact text from file (header + content) for edit blocks
+  logs?: LogEntry[];    // Optional - not always populated
 }
 
 /** Parsed worklog structure */
@@ -42,9 +46,11 @@ export interface WorklogAST {
 export interface DocSection {
   key: string;
   title: string;
-  lineNumber: number;
+  lineNumber: number;   // Start line (1-indexed)
+  endLine: number;      // End line (1-indexed)
   anchorId: string;
   markdown: string;
+  rawText: string;      // Exact text from file for edit blocks
   content: string;
 }
 

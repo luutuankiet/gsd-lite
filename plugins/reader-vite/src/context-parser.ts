@@ -10,15 +10,19 @@ function buildSection(
   markdownLines: string[],
   index: number,
 ): DocSection {
-  const markdown = markdownLines.join('\n').trimEnd();
+  const rawText = markdownLines.join('\n');  // Preserve exact text for edit blocks
+  const markdown = rawText.trimEnd();
   const content = markdownLines.slice(1).join('\n').trimEnd();
+  const endLine = lineNumber + markdownLines.length - 1;
 
   return {
     key: `${kind}-section-${index}`,
     title,
     lineNumber,
+    endLine,
     anchorId: `${kind}-line-${lineNumber}`,
     markdown,
+    rawText,
     content,
   };
 }
@@ -89,8 +93,10 @@ export function parseContextDocument(
         key: `${kind}-section-0`,
         title: 'Overview',
         lineNumber: 1,
+        endLine: lines.length,
         anchorId: `${kind}-line-1`,
         markdown: `## Overview\n\n${fallbackContent}`,
+        rawText: markdown,
         content: fallbackContent,
       });
     }

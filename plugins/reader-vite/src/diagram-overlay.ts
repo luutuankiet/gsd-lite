@@ -38,8 +38,8 @@ const state: OverlayState = {
   lastPanY: 0,
 };
 
-const ZOOM_MIN = 0.25;
-const ZOOM_MAX = 4;
+const ZOOM_MIN = 0.1;   // 10% - can see whole diagram even if huge
+const ZOOM_MAX = 50;    // 5000% - effectively unlimited for reading tiny text
 const ZOOM_STEP = 0.25;
 
 // ============================================================
@@ -135,11 +135,9 @@ function createOverlayDOM(): void {
       /* Container */
       .diagram-overlay-container {
         flex: 1;
-        overflow: hidden;
+        overflow: visible;
         cursor: grab;
-        display: flex;
-        align-items: center;
-        justify-content: center;
+        position: relative;
       }
       .diagram-overlay-container.dragging {
         cursor: grabbing;
@@ -147,6 +145,9 @@ function createOverlayDOM(): void {
       
       /* SVG Wrapper */
       .diagram-svg-wrapper {
+        position: absolute;
+        top: 50%;
+        left: 50%;
         transform-origin: center center;
         transition: transform 0.1s ease;
         background: white;
@@ -363,7 +364,8 @@ function resetView(): void {
 function updateTransform(): void {
   if (!svgWrapper || !zoomDisplay) return;
   
-  svgWrapper.style.transform = `translate(${state.panX}px, ${state.panY}px) scale(${state.zoom})`;
+  // Start centered (translate -50%, -50%), then apply user pan and zoom
+  svgWrapper.style.transform = `translate(calc(-50% + ${state.panX}px), calc(-50% + ${state.panY}px)) scale(${state.zoom})`;
   zoomDisplay.textContent = `${Math.round(state.zoom * 100)}%`;
 }
 

@@ -141,7 +141,7 @@ function renderOutlineItem(item: LogEntry | Section, isLog: boolean = false): st
   `;
 }
 
-function renderOutlineSectionHeader(title: string, count: number, group: 'project' | 'architecture' | 'work'): string {
+function renderOutlineSectionHeader(title: string, count: number, group: 'project' | 'architecture' | 'work-sections' | 'work-logs'): string {
   return `
     <h3 class="outline-section-title">
       <span>${title} (${count})</span>
@@ -195,9 +195,9 @@ function renderOutline(ast: WorklogAST, projectDoc?: ContextDocument, architectu
       <div class="outline-content">
         ${projectHtml}
         ${architectureHtml}
-        ${renderOutlineSectionHeader('WORK Sections', ast.sections.length, 'work')}
+        ${renderOutlineSectionHeader('WORK Sections', ast.sections.length, 'work-sections')}
         <ul class="outline-list">${sectionsHtml}</ul>
-        ${renderOutlineSectionHeader('WORK Logs', ast.logs.length, 'work')}
+        ${renderOutlineSectionHeader('WORK Logs', ast.logs.length, 'work-logs')}
         <ul class="outline-list">${logsHtml}</ul>
       </div>
     </nav>
@@ -234,9 +234,9 @@ function renderBottomSheet(ast: WorklogAST, projectDoc?: ContextDocument, archit
       <div class="sheet-content">
         ${projectHtml}
         ${architectureHtml}
-        ${renderOutlineSectionHeader('WORK Sections', ast.sections.length, 'work')}
+        ${renderOutlineSectionHeader('WORK Sections', ast.sections.length, 'work-sections')}
         <ul class="outline-list">${sectionsHtml}</ul>
-        ${renderOutlineSectionHeader('WORK Logs', ast.logs.length, 'work')}
+        ${renderOutlineSectionHeader('WORK Logs', ast.logs.length, 'work-logs')}
         <ul class="outline-list">${logsHtml}</ul>
       </div>
     </div>
@@ -682,22 +682,62 @@ export function initializeInteractions(ast: WorklogAST, docs: RenderContextDocs 
   let allExpanded = false;
 
   const copyOrder: string[] = [];
-  const copyPayloads = new Map<string, { source: string; title: string; markdown: string }>();
+  // Extended payload includes line info and raw text for agent edit blocks
+  interface CopyPayload {
+    source: string;      // e.g., "WORK.md"
+    title: string;       // e.g., "1. Current Understanding"
+    markdown: string;    // Rendered markdown content
+    startLine: number;   // 1-indexed start line in source file
+    endLine: number;     // 1-indexed end line in source file
+    rawText: string;     // Exact text from file for propose_and_review match_text
+  }
+  const copyPayloads = new Map<string, CopyPayload>();
 
   const { projectDoc, architectureDoc } = docs;
 
-  const addCopyEntry = (key: string, source: string, title: string, markdown: string) => {
+  const addCopyEntry = (
+    key: string,
+    source: string,
+    title: string,
+    markdown: string,
+    startLine: number,
+    endLine: number,
+    rawText: string,
+  ) => {
     if (!markdown.trim()) return;
     copyOrder.push(key);
-    copyPayloads.set(key, { source, title, markdown: markdown.trimEnd() });
+    copyPayloads.set(key, {
+      source,
+      title,
+      markdown: markdown.trimEnd(),
+      startLine,
+      endLine,
+      rawText: rawText.trimEnd(),
+    });
   };
 
   if (projectDoc) {
-    projectDoc.sections.forEach((section) => addCopyEntry(section.key, 'PROJECT.md', section.title, section.markdown));
+    projectDoc.sections.forEach((section) => addCopyEntry(
+      section.key,
+      'PROJECT.md',
+      section.title,
+      section.markdown,
+      section.lineNumber,
+      section.endLine,
+      section.rawText,
+    ));
   }
 
   if (architectureDoc) {
-    architectureDoc.sections.forEach((section) => addCopyEntry(section.key, 'ARCHITECTURE.md', section.title, section.markdown));
+    architectureDoc.sections.forEach((section) => addCopyEntry(
+      section.key,
+      'ARCHITECTURE.md',
+      section.title,
+      section.markdown,
+      section.lineNumber,
+      section.endLine,
+      section.rawText,
+    ));
   }
 
   ast.sections
@@ -706,7 +746,15 @@ export function initializeInteractions(ast: WorklogAST, docs: RenderContextDocs 
       const key = workSectionCopyKey(section);
       const heading = `${'#'.repeat(section.level)} ${section.title}`;
       const markdown = section.content ? `${heading}\n\n${section.content}` : heading;
-      addCopyEntry(key, 'WORK.md', section.title, markdown);
+      addCopyEntry(
+        key,
+        'WORK.md',
+        section.title,
+        markdown,
+        section.lineNumber,
+        section.endLine,
+        section.rawText || markdown,  // Fallback to markdown if rawText not available
+      );
     });
 
   ast.logs.forEach((log) => {
@@ -714,7 +762,15 @@ export function initializeInteractions(ast: WorklogAST, docs: RenderContextDocs 
     const taskSuffix = log.task ? ` - Task: ${log.task}` : '';
     const heading = `### [${log.id}] - [${log.type}] - ${log.title}${taskSuffix}`;
     const markdown = log.content ? `${heading}\n\n${log.content}` : heading;
-    addCopyEntry(key, 'WORK.md', `${log.id}: ${log.title}`, markdown);
+    addCopyEntry(
+      key,
+      'WORK.md',
+      `${log.id}: ${log.title}`,
+      markdown,
+      log.lineNumber,
+      log.endLine,
+      log.rawText,
+    );
   });
 
   const syncCheckboxes = (copyKey: string, checked: boolean) => {
@@ -727,7 +783,8 @@ export function initializeInteractions(ast: WorklogAST, docs: RenderContextDocs 
   const getGroupKeys = (group: string): string[] => {
     if (group === 'project') return copyOrder.filter((key) => key.startsWith('project-section-'));
     if (group === 'architecture') return copyOrder.filter((key) => key.startsWith('architecture-section-'));
-    if (group === 'work') return copyOrder.filter((key) => key.startsWith('work-section-') || key.startsWith('work-log-'));
+    if (group === 'work-sections') return copyOrder.filter((key) => key.startsWith('work-section-'));
+    if (group === 'work-logs') return copyOrder.filter((key) => key.startsWith('work-log-'));
     return [];
   };
 
@@ -762,11 +819,33 @@ export function initializeInteractions(ast: WorklogAST, docs: RenderContextDocs 
     const orderedChunks = copyOrder
       .filter(key => selected.has(key))
       .map((key) => copyPayloads.get(key))
-      .filter((chunk): chunk is { source: string; title: string; markdown: string } => Boolean(chunk));
+      .filter((chunk): chunk is CopyPayload => Boolean(chunk));
 
-    const payload = orderedChunks
-      .map((chunk) => `> Source: ${chunk.source} / ${chunk.title}\n\n${chunk.markdown}`)
+    // Build single-content output with edit metadata inline
+    // Format:
+    // <gsd>
+    // <gsd_doc file="FILE" start_line="N" end_line="M">
+    // > Source: FILE / Section
+    // [content - raw text that can be used directly as match_text]
+    // </gsd_doc>
+    // </gsd>
+    //
+    // Agent usage:
+    // 1. Read content for context understanding
+    // 2. Use raw text inside <gsd_doc> directly as match_text for propose_and_review
+    // 3. start_line/end_line tell where to append new content
+
+    const contentBlocks = orderedChunks
+      .map((chunk) => {
+        const filePath = `gsd-lite/${chunk.source}`;
+        // Use rawText as the content since it's the exact file text
+        // This eliminates duplication - one content serves both context and edit purposes
+        return `<gsd_doc file="${filePath}" start_line="${chunk.startLine}" end_line="${chunk.endLine}">\n> Source: ${chunk.source} / ${chunk.title}\n\n${chunk.rawText}\n</gsd_doc>`;
+      })
       .join('\n\n---\n\n');
+
+    const payload = `<gsd>\n${contentBlocks}\n</gsd>`;
+
     try {
       await navigator.clipboard.writeText(payload);
       flashCopyButtons(`Copied ${orderedChunks.length}`, true);
