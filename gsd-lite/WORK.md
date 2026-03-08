@@ -133,6 +133,15 @@ DECISION-072b: Reframe to "Protocol Craft" (LOG-072)
 
 DECISION-072c: Practice over measurement (LOG-072)
 - Rationale: GSD-Lite is like meditation — hard to prove it works, but practitioners report benefits. The 71 logs ARE the evidence. The kudos ARE the evaluation. Trust the practice.
+
+DECISION-080a: Two-layer memory system — GSD logs + sticky block (LOG-080)
+- Rationale: GSD logs are high-cost/high-fidelity for deep dives; sticky block is zero-cost/low-fidelity for turn-by-turn orientation. Neither replaces the other.
+
+DECISION-080b: Only 2 tag types in sticky block: H (high level) and L (low level) (LOG-080)
+- Rationale: Every added tag type is cognitive overhead. H/L is the minimum viable taxonomy for exhausted human brains.
+
+DECISION-080c: Human writes sticky, agent reads it — not the other way around (LOG-080)
+- Rationale: Agent writing the sticky defeats the purpose. This is human orientation, not agent memory.
 </decisions>
 
 <blockers>
@@ -143,12 +152,14 @@ None — Evaluation pursuit is complete (reframed, not abandoned).
 **Practice Path (Recommended):**
 1. Continue using GSD-Lite daily — the practice IS the benefit
 2. Apply Craft Cycle when friction noticed — design → apply → notice → refine
-3. Curate showcase portfolio — 3-5 WORK.md excerpts + resulting PRs
+3. Use sticky block (H/L format) for real-time session orientation — human-owned, near-zero cost
+4. Curate showcase portfolio — 3-5 WORK.md excerpts + resulting PRs
 
 **Optional Structural Hygiene:**
 - Token audit: Run tiktoken on workflow files, rank by value-per-token
 - Log granularity: Apply revised 100-word prompt, do 48-hour cold-read test
 - Housekeeping: Create `housekeeping-sandbox/` for workflow prototyping
+- Consider adding sticky block mention to gsd-lite.md as lightweight companion pattern
 </next_action>
 
 ---
@@ -15426,3 +15437,163 @@ Faster sessions, lower token burn, more budget for actual pair programming.
 - Test in production → Start fresh gsd-lite session, observe onboarding (should be single batched read)
 - Implement fs-mcp feature → `reads` array for multi-range file reads
 - Refine further → Token audit gsd-housekeeping.md (6,549 tokens, next optimization target)
+
+---
+
+### [LOG-080] - [DISCOVERY] [VISION] - The Sticky Block: Lightweight Human-Owned Session Orientation - Task: PROTOCOL-CRAFT-001
+**Timestamp:** 2026-03-08
+**Depends On:** LOG-079 (Request Efficiency Protocol), LOG-073 (Lean Architecture)
+
+---
+
+#### The Gap: GSD-Lite Has No Lightweight Turn-by-Turn Layer
+
+During a Tableau → Looker migration session (separate project), a critical observation surfaced about GSD-Lite's session management pattern:
+
+> *"The fundamental issue with agent is context window. It will eventually fill out at some point. But the state of it goes — I am depending on it to consume data. One tool so far is gsd-lite protocol but that still depends on the agent to drive the conversation. Asking it to write down detailed logs is one thing that proved to work, but very context exhausting. I only want to use it for critical, detailed deep dive. For turn by turn I need a dumb lightweight block that I am noodling on."*
+
+GSD-Lite's existing memory architecture had a gap:
+
+| Layer | Tool | Who Drives | Cost | Gap |
+|-------|------|------------|------|-----|
+| Deep dives + decisions | WORK.md logs | Agent writes, human curates | High tokens | ✅ Solved |
+| Stateless handoffs | LOG footer | Agent writes | Medium tokens | ✅ Solved |
+| **Turn-by-turn orientation** | ??? | **Human** | **Near zero** | ❌ Missing |
+
+**The symptom:** When agent sessions scatter wide (agent presents huge info → many topics expand → human reads everything → context balloons), the human has no cheap mechanism to track "where am I right now" and "what must I not forget" without burning token budget on yet another WORK.md write.
+
+---
+
+#### The Existing Human Workflow (Solo, Already Working)
+
+User already had a proven personal GTD system for solo deep work:
+
+```
+🚩focus: [one thing]
+- notes and thoughts under this focus
+loops: [off-topic items, handle later]
+✅ DONE | 🚩focus: [previous done item]
+```
+
+**Why it works:** One focus at a time, linear, human-driven, zero agent involvement. The brain handles one thread.
+
+**Why it breaks with agents:** Agent responses are non-linear — a single response can present 14 building blocks, 3 strategic options, 5 ambiguities, and 2 decisions simultaneously. The focus system can't absorb that without exploding into 20 focus nodes.
+
+---
+
+#### The Solution: The Sticky Block — A Second Memory Layer
+
+**Design principle:** Don't replace the focus system. Add ONE block that lives alongside it.
+
+```
+====
+[SESSION TOPIC]
+
+H01 - 
+H02 - 
+
+L01 - 
+L02 - 
+====
+```
+
+**Tag semantics (kept maximally simple):**
+
+| Tag | Meaning | Survives session death? | Who updates |
+|-----|---------|------------------------|-------------|
+| **H** | High level — strategic, don't lose sight of this | ✅ Yes | Human |
+| **L** | Low level — next action, tactical | ❌ Rolls over | Human |
+
+**The rule:** After every big agent response → 30 seconds → update the sticky. Nothing else.
+
+**Example (from the Tableau session):**
+
+```
+====
+Tableau Migration
+
+H01 - TWB XML required for params/filters/joins (BQ metadata insufficient)
+H02 - 2 docs per workbook only: _migration_contract.md + _build_log.md
+
+L01 - Delete 3 redundant docs from workspace/workbook_749/
+L02 - Skill blueprint: 5 open questions before building p0-twb-extractor skill
+====
+```
+
+---
+
+#### How It Integrates with GSD-Lite
+
+```mermaid
+graph TD
+    subgraph "Human's Notes App"
+        F1["🚩focus: current task"]
+        F2["✅ DONE | 🚩focus: prev"]
+        SB["==== Sticky Block ====<br/>H01 - strategic<br/>L01 - next action"]
+    end
+
+    subgraph "GSD-Lite WORK.md"
+        L["LOG-NNN: Deep dive<br/>journalism quality<br/>evidence + decisions"]
+    end
+
+    F1 -->|"Big agent response<br/>30-sec update"| SB
+    SB -->|"Paste at start of<br/>new session"| AG["Agent re-orients<br/>in 10 seconds"]
+    F1 -->|"Critical decision<br/>or deep dive"| L
+```
+
+**The two systems are complementary, not competing:**
+
+| When | Tool | Why |
+|------|------|-----|
+| Real-time orientation | Sticky block | Zero token cost, human-owned |
+| Session re-entry | Paste sticky → agent reads | Agent gets context in one turn |
+| Critical decisions | GSD-Lite log | Journalism quality, survives forever |
+| Deep technical dive | GSD-Lite log | Full evidence trail for future agents |
+
+---
+
+#### Why This Is a GSD-Lite Protocol Observation
+
+This discovery happened because GSD-Lite was **used in production on a real migration project**, and friction was noticed:
+
+1. Session topics expanded faster than logs could capture
+2. Human cognitive load spiked when agent dumped large structured info
+3. The stateless handoff (LOG footer) helps agents, not humans — humans need their OWN orientation layer
+
+**The Craft Cycle applied:**
+- **Noticed:** Friction when tracking multiple high-level + low-level items across a long session
+- **Designed:** Sticky block format (H/L tags, 30-sec update rule)
+- **Applied:** Used immediately in the same Tableau session
+- **Result:** Clear what to carry forward, what to act on next
+
+**This is the protocol evolving through practice — exactly what LOG-072 predicted.**
+
+---
+
+#### Design Decisions
+
+| Decision | Choice | Rationale |
+|----------|--------|-----------|
+| **DECISION-080a** | Two-layer memory: GSD logs + sticky block | GSD logs are high-cost/high-fidelity; sticky is low-cost/low-fidelity. Neither replaces the other |
+| **DECISION-080b** | Only 2 tag types: H and L | Every added tag type is cognitive overhead. H/L is the minimum viable taxonomy |
+| **DECISION-080c** | Human writes sticky, agent reads it | Agent writing the sticky defeats the purpose — this is human orientation, not agent memory |
+| **DECISION-080d** | 30-second update rule | Forces human to process and distill before continuing — the act of updating IS the synthesis |
+| **DECISION-080e** | No emoji, no status indicators, no blockers in sticky | Brain exhaustion is real. Simplicity compounds. Every extra element = more decision fatigue |
+
+---
+
+📦 STATELESS HANDOFF
+
+**Layer 1 — Local Context:**
+→ Last action: LOG-080 (The Sticky Block — lightweight human-owned session orientation layer)
+→ Dependency chain: LOG-080 ← LOG-079 (Request Efficiency) ← LOG-073 (Lean Architecture)
+→ Next action: Protocol is complete as-is — no implementation needed. Human applies sticky in next session naturally.
+
+**Layer 2 — Global Context:**
+→ Architecture: Lean single-file protocol (gsd-lite.md ~2.4k tokens fixed cost)
+→ Patterns: Two-layer memory (sticky block for human orientation, WORK.md for agent memory)
+
+**Fork paths:**
+- Continue dogfooding → Apply sticky block in next real project session, notice what works/doesn't
+- Embed in protocol → Add sticky block mention to gsd-lite.md as optional lightweight companion
+- New session → Paste sticky block to re-orient agent immediately

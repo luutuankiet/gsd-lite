@@ -238,42 +238,74 @@ When scope creep appears:
 
 ---
 
-## 9. Stateless Handoff (CORE)
+## 9. Response Orientation (CORE)
 
-**Every turn ends with a handoff packet.** Enables any future agent to continue with zero chat history.
+**Every response has a topic frame.** Helps the human track what you believe matters — strategic vs tactical.
 
-### Two-Layer Structure
+### Why This Exists
 
-| Layer | Purpose | Source |
-|-------|---------|--------|
-| Layer 1 — Local | This task's dependency chain | Agent traces backwards |
-| Layer 2 — Global | Project foundation decisions | Key Events Index in WORK.md |
+Agent responses can present many topics at once (14 building blocks, 3 options, 5 ambiguities). The human needs to see at a glance:
+- What are we focusing on? (high level)
+- What's the next action? (low level)
 
-### Canonical Format
 
+### Response Structure
+
+**Top of response — brief framing (1-2 lines):**
+```
+📋 **Working on:** [plain English description of focus]
+```
+
+**Bottom of response — topic summary with reason/impact:**
 ```
 ---
-📦 STATELESS HANDOFF
+**High level** (strategic — don't lose sight of these)
+- [topic] → [because: evidence from session] → [impact: what this affects]
 
-**Layer 1 — Local Context:**
-→ Last action: LOG-XXX (brief description)
-→ Dependency chain: LOG-XXX ← LOG-YYY ← LOG-ZZZ
-→ Next action: [specific next step]
-
-**Layer 2 — Global Context:**
-→ Architecture: [from Key Events Index]
-→ Patterns: [from Key Events Index]
-
-**Fork paths:**
-- Continue → [specific logs]
-- Pivot to new topic → [L2 refs] + state your question
+**Low level** (tactical — next actions)
+- [action] → [triggered by: what surfaced this] → [unblocks: what this enables]
 ```
 
-### Variations
+### The Reason/Impact Pattern
 
-**Mid-discussion:** `Status: Discussing [topic] — no decision yet`
-**Post-decision:** `Last action: LOG-XXX (DECISION-NNN: [title])`
-**First turn:** `Onboarded via: [LOG-XXX] | Current action: [what you're doing]`
+Each item flows: **what** → **because** → **impact**
+
+| Element | What It Tells Human |
+|---------|---------------------|
+| **Topic/Action** | What the item IS |
+| **Because/Triggered by** | Why it surfaced (your input, agent discovery, grep result, discussion point) |
+| **Impact/Unblocks** | Why it matters (what it affects, what it enables, why not to forget) |
+
+**Constraint:** One line per item. If it needs two lines, split it or it belongs in a LOG.
+
+### Rules
+
+| Rule | Rationale |
+|------|----------|
+| Plain English only | No IDs like "H01" or "LOG-XXX" — human maintains their own numbering privately |
+| High level = strategic | Decisions, architecture, things that affect multiple workstreams |
+| Low level = tactical | Immediate next actions, can be checked off |
+
+### Example
+
+```
+📋 **Working on:** TWB XML extraction — validating query patterns before building skill
+
+[... full response content ...]
+
+---
+**High level**
+- TWB XML required for params/filters/joins → proved: grep "Start Date" in BQ = 0 matches → team needs XML extraction skill
+- Two-doc-per-workbook model → decided: 5 docs is sprawl → cleaner workspace, clearer ownership
+
+**Low level**
+- Delete 3 redundant docs → doc audit showed overlap with contract → unblocks contract Section 7 merge
+- Review blueprint open questions → 5 design decisions need input → unblocks p0-twb-extractor build
+```
+
+### Handoff in LOG Entries (Different Purpose)
+
+The `📦 STATELESS HANDOFF` block still appears **inside LOG entries** (see §10-11). That's for future agents reading durable artifacts, not for turn-by-turn orientation.
 
 ---
 
@@ -330,7 +362,7 @@ A journalism-quality log tells a complete story. The specific sections and heade
 
 **Dependency chain** — One line per prior log this builds on. Enables safe partial reads.
 
-**Stateless handoff** — Every log ends with one (see §9).
+**Stateless handoff** — Every log ends with one (the `📦 STATELESS HANDOFF` block for future agents reading the log).
 
 
 Use h4 `####` level headers inside a log. Do not force every log into Part 1/Part 2/Part 3 shape. That structure exists to prevent gaps, not to impose form. If the story only needs three sections, use three.
@@ -423,19 +455,11 @@ WORK.md has three `## ` level sections. Agents MUST understand their purpose:
 
 ---
 
-📦 STATELESS HANDOFF
-**Layer 1 — Local Context:**
-→ Last action: LOG-NNN (brief description)
-→ Dependency chain: LOG-NNN ← LOG-XXX ← LOG-YYY
-→ Next action: {{specific next step}}
-
-**Layer 2 — Global Context:**
-→ Architecture: {{from Key Events Index}}
-→ Patterns: {{from Key Events Index}}
-
-**Fork paths:**
-- Continue execution → {{specific logs}}
-- Discuss → {{specific logs}}
+📦 STATELESS HANDOFF (for future agents reading this log)
+**Dependency chain:** LOG-NNN ← LOG-XXX ← LOG-YYY
+**What was decided:** {{brief summary of decision/finding}}
+**Next action:** {{specific next step}}
+**If pivoting:** Start from {{specific logs}} + {{what context is needed}}
 ```
 
 ### Grep Patterns for Discovery
@@ -483,7 +507,7 @@ WORK.md has three `## ` level sections. Agents MUST understand their purpose:
 
 | ID | Behavior | Check |
 |----|----------|-------|
-| S1-H1 | Stateless handoff | Every response ends with `📦 STATELESS HANDOFF` |
+| S1-H1 | Response orientation | Every response has topic frame (top framing + bottom high/low summary) |
 | P2-H1 | Why before how | Ask intent before executing |
 | P2-H2 | Ask before writing | User approves artifact writes |
 | P2-H5 | Echo before execute | Report findings, verify, then propose |
@@ -513,4 +537,4 @@ Response must have clear structure and outline, leverage as much as possible mar
 
 ---
 
-*GSD-Lite Protocol v3.1 — Lean Architecture*
+*GSD-Lite Protocol v3.2 — Response Orientation Update*
