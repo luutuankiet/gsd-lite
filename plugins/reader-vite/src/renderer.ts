@@ -835,9 +835,10 @@ export function initializeInteractions(ast: WorklogAST, docs: RenderContextDocs 
     // 2. Use raw text inside <gsd_doc> directly as match_text for propose_and_review
     // 3. start_line/end_line tell where to append new content
 
+    const basePath = (window as any).__GSD_BASE_PATH__ || 'gsd-lite';
     const contentBlocks = orderedChunks
       .map((chunk) => {
-        const filePath = `gsd-lite/${chunk.source}`;
+        const filePath = `${basePath}/${chunk.source}`;
         // Use rawText as the content since it's the exact file text
         // This eliminates duplication - one content serves both context and edit purposes
         return `<gsd_doc file="${filePath}" start_line="${chunk.startLine}" end_line="${chunk.endLine}">\n> Source: ${chunk.source} / ${chunk.title}\n\n${chunk.rawText}\n</gsd_doc>`;

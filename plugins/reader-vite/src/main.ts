@@ -19,6 +19,7 @@ import { highlightCodeBlocks } from './syntax-highlight';
 const WORKLOG_ENDPOINT = '/_worklog';
 const PROJECT_ENDPOINT = '/_project';
 const ARCHITECTURE_ENDPOINT = '/_architecture';
+const META_ENDPOINT = '/_meta';
 
 // Track Mermaid errors for the error panel
 interface MermaidError {
@@ -49,6 +50,19 @@ async function loadAndRender(): Promise<void> {
       const bytes = Uint8Array.from(binaryString, c => c.charCodeAt(0));
       return new TextDecoder('utf-8').decode(bytes);
     };
+
+    // Fetch base path metadata (CWD-relative path for copy export)
+    if (!(window as any).__GSD_BASE_PATH__) {
+      try {
+        const metaRes = await fetch(META_ENDPOINT);
+        if (metaRes.ok) {
+          const meta = await metaRes.json();
+          (window as any).__GSD_BASE_PATH__ = meta.basePath || 'gsd-lite';
+        }
+      } catch {
+        // Fallback handled in renderer
+      }
+    }
 
     // Load embedded content (static dump mode) OR fetch from server (dev/prod serve mode)
     let worklogMarkdown = '';
