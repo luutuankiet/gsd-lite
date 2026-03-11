@@ -7,7 +7,7 @@
 
 import type { Plugin, ViteDevServer } from 'vite';
 import { readFileSync, existsSync } from 'fs';
-import { resolve, dirname, join } from 'path';
+import { resolve, dirname, join, relative } from 'path';
 import type { ServerResponse } from 'http';
 
 export interface WorklogPluginOptions {
@@ -23,6 +23,8 @@ export interface WorklogPluginOptions {
   projectEndpoint?: string;
   /** Endpoint to serve ARCHITECTURE.md content (default: /_architecture) */
   architectureEndpoint?: string;
+  /** Endpoint to serve metadata JSON (default: /_meta) */
+  metaEndpoint?: string;
 }
 
 const DEFAULT_OPTIONS: Required<WorklogPluginOptions> = {
@@ -32,6 +34,7 @@ const DEFAULT_OPTIONS: Required<WorklogPluginOptions> = {
   endpoint: '/_worklog',
   projectEndpoint: '/_project',
   architectureEndpoint: '/_architecture',
+  metaEndpoint: '/_meta',
 };
 
 function serveFileOr404(res: ServerResponse, filePath: string, label: string): void {
@@ -80,7 +83,20 @@ export function worklogPlugin(options: WorklogPluginOptions = {}): Plugin {
     configureServer(devServer) {
       server = devServer;
 
+      // Compute worklog path relative to CWD (where the server was launched)
+      const cwd = process.cwd();
+      const worklogRelPath = relative(cwd, resolvedWorklogPath);
+      // Base path is the directory portion, e.g. "tmp/project/gsd-lite"
+      const basePath = dirname(worklogRelPath);
+
       devServer.middlewares.use((req, res, next) => {
+        if (req.url === opts.metaEndpoint) {
+          res.setHeader('Content-Type', 'application/json; charset=utf-8');
+          res.setHeader('Cache-Control', 'no-cache');
+          res.end(JSON.stringify({ basePath }));
+          return;
+        }
+
         if (req.url === opts.endpoint) {
           serveFileOr404(res, resolvedWorklogPath, 'WORK.md');
           return;

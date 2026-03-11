@@ -120,7 +120,8 @@ async function commandDump() {
   const worklogBase64 = Buffer.from(worklogContent, 'utf-8').toString('base64');
   const projectBase64 = Buffer.from(projectContent, 'utf-8').toString('base64');
   const architectureBase64 = Buffer.from(architectureContent, 'utf-8').toString('base64');
-  const injectScript = `<script>window.__WORKLOG_CONTENT_B64__ = "${worklogBase64}";window.__PROJECT_CONTENT_B64__ = "${projectBase64}";window.__ARCHITECTURE_CONTENT_B64__ = "${architectureBase64}";</script>`;
+  const dumpBasePath = path.dirname(path.relative(process.cwd(), resolvedWorklog));
+  const injectScript = `<script>window.__WORKLOG_CONTENT_B64__ = "${worklogBase64}";window.__PROJECT_CONTENT_B64__ = "${projectBase64}";window.__ARCHITECTURE_CONTENT_B64__ = "${architectureBase64}";window.__GSD_BASE_PATH__ = "${dumpBasePath}";</script>`;
   indexHtml = indexHtml.replace('</head>', `${injectScript}\n</head>`);
   fs.writeFileSync(indexPath, indexHtml);
   
@@ -276,6 +277,8 @@ function commandServe() {
   const WORKLOG = positionalArgs[0] || './gsd-lite/WORK.md';
   const WORKLOG_PATH = path.resolve(WORKLOG);
   const ARTIFACT_DIR = path.dirname(WORKLOG_PATH);
+  // Base path relative to CWD where the server was launched
+  const BASE_PATH = path.dirname(path.relative(process.cwd(), WORKLOG_PATH));
   const PROJECT_PATH = path.join(ARTIFACT_DIR, 'PROJECT.md');
   const ARCHITECTURE_PATH = path.join(ARTIFACT_DIR, 'ARCHITECTURE.md');
 
@@ -302,6 +305,14 @@ function commandServe() {
   const server = http.createServer((req, res) => {
     const url = new URL(req.url, `http://${req.headers.host}`);
     const pathname = url.pathname;
+
+    // API endpoint: serve metadata (base path relative to CWD)
+    if (pathname === '/_meta') {
+      res.setHeader('Content-Type', 'application/json; charset=utf-8');
+      res.setHeader('Cache-Control', 'no-cache');
+      res.end(JSON.stringify({ basePath: BASE_PATH }));
+      return;
+    }
 
     // API endpoint: serve WORK.md content
     if (pathname === '/_worklog') {
