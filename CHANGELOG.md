@@ -2,6 +2,15 @@
 
 <!-- version list -->
 
+## v1.25.1 (2026-03-11)
+
+### Bug Fixes
+
+- Make gsd_doc file paths relative to CWD where server is launched
+  ([#20](https://github.com/luutuankiet/gsd-lite/pull/20),
+  [`1f5a15f`](https://github.com/luutuankiet/gsd-lite/commit/1f5a15f8181c9097a6c4d8bf1861ff6ad6240140))
+
+
 ## v1.25.0 (2026-03-08)
 
 ### Bug Fixes
