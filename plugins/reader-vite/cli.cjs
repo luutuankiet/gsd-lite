@@ -56,8 +56,8 @@ const positionalArgs = args.filter(a => !a.startsWith('--') && a !== command);
 
 async function commandDump() {
   const worklogPath = positionalArgs[0] || './gsd-lite/WORK.md';
-  const remote = getFlag('remote');
-  const user = getFlag('user');
+  const remote = getFlag('remote') || process.env.GSD_READER_REMOTE;
+  const user = getFlag('user') || process.env.GSD_READER_USER;
   
   if (!remote) {
     console.error('❌ --remote=URL is required');
@@ -93,6 +93,59 @@ async function commandDump() {
     process.exit(1);
   }
 
+  // --- Markdown mode (default) ---
+  // Sends raw markdown to server; server does the rendering.
+  // Use --legacy flag to fall back to tar.gz upload.
+  if (!hasFlag('legacy')) {
+    console.log('[dump] Reading markdown artifacts...');
+    const workContent = fs.readFileSync(resolvedWorklog, 'utf-8');
+    const projContent = fs.existsSync(resolvedProject) ? fs.readFileSync(resolvedProject, 'utf-8') : '';
+    const archContent = fs.existsSync(resolvedArchitecture) ? fs.readFileSync(resolvedArchitecture, 'utf-8') : '';
+
+    const payload = JSON.stringify({
+      work: workContent,
+      project: projContent,
+      architecture: archContent,
+      base_path: path.dirname(resolvedWorklog),
+    });
+
+    // Get password
+    let password = getFlag('pass') || process.env.GSD_READER_PASS;
+    if (!password && user) {
+      password = await promptPassword(`Password for ${user}: `);
+    }
+
+    const payloadBuf = Buffer.from(payload, 'utf-8');
+    const sizeKB = (payloadBuf.length / 1024).toFixed(0);
+    const uploadUrl = new URL(`/upload-markdown/${projectName}`, remote);
+    console.log(`[dump] Uploading ${sizeKB}KB markdown -> ${uploadUrl}`);
+
+    const uploadOptions = {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Content-Length': payloadBuf.length,
+        'User-Agent': 'Mozilla/5.0 (compatible; gsd-lite-reader/1.0)',
+      },
+    };
+
+    if (user && password) {
+      const auth = Buffer.from(`${user}:${password}`).toString('base64');
+      uploadOptions.headers['Authorization'] = `Basic ${auth}`;
+    }
+
+    try {
+      const response = await httpRequest(uploadUrl, uploadOptions, payloadBuf);
+      console.log(`[dump] \u2705 Upload complete: ${response}`);
+      console.log(`[dump] View at: ${remote}/${projectName}/`);
+    } catch (err) {
+      console.error(`[dump] \u274C Upload failed: ${err.message}`);
+      process.exit(1);
+    }
+    return;
+  }
+
+  // --- Legacy mode (--legacy flag): build static site + tar.gz upload ---
   // Step 1: Build the static site
   console.log('[dump] Building static site...');
   const distDir = path.join(__dirname, 'dist');
@@ -120,7 +173,8 @@ async function commandDump() {
   const worklogBase64 = Buffer.from(worklogContent, 'utf-8').toString('base64');
   const projectBase64 = Buffer.from(projectContent, 'utf-8').toString('base64');
   const architectureBase64 = Buffer.from(architectureContent, 'utf-8').toString('base64');
-  const dumpBasePath = path.dirname(path.relative(process.cwd(), resolvedWorklog));
+  // Absolute path from origin machine — persists when static dump is served remotely
+  const dumpBasePath = path.dirname(resolvedWorklog);
   const injectScript = `<script>window.__WORKLOG_CONTENT_B64__ = "${worklogBase64}";window.__PROJECT_CONTENT_B64__ = "${projectBase64}";window.__ARCHITECTURE_CONTENT_B64__ = "${architectureBase64}";window.__GSD_BASE_PATH__ = "${dumpBasePath}";</script>`;
   indexHtml = indexHtml.replace('</head>', `${injectScript}\n</head>`);
   fs.writeFileSync(indexPath, indexHtml);
@@ -144,7 +198,7 @@ async function commandDump() {
   console.log(`[dump] Archive created: ${(tarStats.size / 1024).toFixed(1)} KB`);
 
   // Step 3: Get password
-  let password = getFlag('pass');
+  let password = getFlag('pass') || process.env.GSD_READER_PASS;
   if (!password && user) {
     password = await promptPassword(`Password for ${user}: `);
   }
@@ -242,28 +296,35 @@ function promptPassword(prompt) {
   });
 }
 
-function httpRequest(url, options, data) {
-  return new Promise((resolve, reject) => {
-    const protocol = url.protocol === 'https:' ? https : http;
-    
-    const req = protocol.request(url, options, (res) => {
-      let body = '';
-      res.on('data', (chunk) => body += chunk);
-      res.on('end', () => {
-        if (res.statusCode >= 200 && res.statusCode < 300) {
-          resolve(body.trim() || `HTTP ${res.statusCode}`);
-        } else if (res.statusCode === 401) {
-          reject(new Error('Authentication failed (401). Check username/password.'));
-        } else {
-          reject(new Error(`HTTP ${res.statusCode}: ${body}`));
-        }
-      });
+async function httpRequest(url, options, data) {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 300000); // 5 min (intercontinental uploads)
+
+  try {
+    const res = await fetch(url, {
+      method: options.method || 'POST',
+      headers: options.headers,
+      body: data,
+      signal: controller.signal,
     });
-    
-    req.on('error', reject);
-    req.write(data);
-    req.end();
-  });
+
+    const body = await res.text();
+
+    if (res.ok) {
+      return body.trim() || `HTTP ${res.status}`;
+    } else if (res.status === 401) {
+      throw new Error('Authentication failed (401). Check username/password.');
+    } else {
+      throw new Error(`HTTP ${res.status}: ${body}`);
+    }
+  } catch (err) {
+    if (err.name === 'AbortError') {
+      throw new Error('Request timed out after 300s. Check server/proxy status.');
+    }
+    throw err;
+  } finally {
+    clearTimeout(timeout);
+  }
 }
 
 // =============================================================================
@@ -277,8 +338,8 @@ function commandServe() {
   const WORKLOG = positionalArgs[0] || './gsd-lite/WORK.md';
   const WORKLOG_PATH = path.resolve(WORKLOG);
   const ARTIFACT_DIR = path.dirname(WORKLOG_PATH);
-  // Base path relative to CWD where the server was launched
-  const BASE_PATH = path.dirname(path.relative(process.cwd(), WORKLOG_PATH));
+  // Absolute path to gsd-lite directory on the origin machine
+  const BASE_PATH = path.dirname(WORKLOG_PATH);
   const PROJECT_PATH = path.join(ARTIFACT_DIR, 'PROJECT.md');
   const ARCHITECTURE_PATH = path.join(ARTIFACT_DIR, 'ARCHITECTURE.md');
 
@@ -485,11 +546,18 @@ function commandServe() {
   process.on('SIGINT', () => {
     console.log('\n[gsd-reader] Shutting down...');
     watcher.close();
+    // Force-terminate all WebSocket clients immediately
+    wss.clients.forEach(client => client.terminate());
     wss.close();
     server.close(() => {
       console.log('[gsd-reader] Goodbye!');
       process.exit(0);
     });
+    // Safety net: force exit after 2s if connections still linger
+    setTimeout(() => {
+      console.log('[gsd-reader] Force exit (connections still open)');
+      process.exit(0);
+    }, 2000).unref();
   });
 
   process.on('SIGTERM', () => {

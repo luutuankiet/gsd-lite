@@ -185,6 +185,8 @@ None — Evaluation pursuit is complete (reframed, not abandoned).
 | LOG-057 | MILESTONE | READER-003 | Reader Published to npm (@luutuankiet/gsd-reader v0.1.1) |
 | LOG-058 | EXEC | READER-004 | Reader v0.2.0: Section Rendering & Scroll Sync (completing LOG-047 vision) |
 | **LOG-076** | **EXEC** | **READER-009** | **Multi-doc reader + XML readability + chip-path navigation + style guide baseline for future consistency** |
+| **LOG-081** | **EXEC** | **READER-012** | **⭐ Auto-dump: fs-mcp post-commit hook + native Python POST to /upload-markdown/. 860KB/50s → 50KB/2-3s. Opt-in via env var.** |
+| **LOG-082** | **DISCOVERY+DECISION** | **PROTOCOL-CRAFT-003** | **⭐ TaskCreate as GTD session flow control. Convention: `[Pn]` titles + WHY/NEXT/STOPPED AT descriptions. Spinner as focus anchor. Proactive-suggest enforcement. Complements sticky block.** |
 
 
 ## 3. Atomic Session Log (Chronological)
@@ -15597,3 +15599,452 @@ This discovery happened because GSD-Lite was **used in production on a real migr
 - Continue dogfooding → Apply sticky block in next real project session, notice what works/doesn't
 - Embed in protocol → Add sticky block mention to gsd-lite.md as optional lightweight companion
 - New session → Paste sticky block to re-orient agent immediately
+
+### [LOG-081] - [EXEC] - Auto-Dump: fs-mcp Post-Commit Hook + Server-Side Markdown Rendering - Task: READER-012
+**Timestamp:** 2026-03-14 14:00
+**Depends On:** LOG-056 (reader distribution architecture), LOG-057 (npm publish workflow)
+
+---
+
+#### The Problem
+
+Every time a GSD artifact was updated via `propose_and_review`, the remote reader at `gsd.kenluu.org` went stale until the user manually ran:
+
+```bash
+npx -y @luutuankiet/gsd-reader@latest dump ./project/gsd-lite/WORK.md --remote=https://gsd.kenluu.org --user=ken
+```
+
+This friction meant the remote reader was always behind — defeating its purpose as a live reference.
+
+---
+
+#### What Was Built
+
+##### 1. Post-Commit Hook in fs-mcp (`server.py`)
+
+Added auto-dump logic that fires after every successful `propose_and_review` or `commit_review` to a GSD artifact:
+
+```python
+# In propose_and_review:
+result = await propose_and_review_logic(...)
+if "COMMITTED" in result:
+    try:
+        committed_path = validate_path(path)
+        if _is_gsd_artifact(committed_path):  # WORK.md, PROJECT.md, ARCHITECTURE.md in gsd-lite/
+            _trigger_gsd_dump(committed_path)
+    except Exception:
+        pass  # Never breaks the main flow
+```
+
+**Key design decisions:**
+
+| Decision | Rationale |
+|----------|----------|
+| 10s debounce via `threading.Timer` | Multiple agents doing rapid commits (20s cycles) coalesce into one upload |
+| `timer.daemon = True` | Won't prevent server shutdown |
+| Per-path debounce key (`str(worklog_path)`) | Different project dirs get independent timers — parallel uploads for different workspaces |
+| Opt-in via `GSD_READER_REMOTE` env var | No env = `return` immediately. Zero overhead for non-GSD users |
+| `try/except` wrapping all hook code | Dump failure never breaks `propose_and_review` return |
+
+##### 2. Architecture Evolution: npx → Native Python POST
+
+The implementation evolved through three phases in-session:
+
+**Phase 1: npx subprocess (initial)**
+```
+fs-mcp → subprocess.Popen(["npx", "gsd-reader", "dump", ...]) → 860KB tar.gz → /upload/
+```
+- Problem: npx downloads package, builds static site, creates tar.gz, uploads everything
+- 860KB payload at 17KB/s (Asia→Finland) = ~50 seconds
+
+**Phase 2: Bugs discovered**
+- `stderr=subprocess.PIPE` with nobody reading → pipe buffer fills → npx blocks forever
+- No `try/except` around `_do_dump` body → daemon thread crashes silently
+- No `flush=True` on prints → output buffered in daemon thread, never appears
+- Cloudflare error 1010 → Python's default `User-Agent: Python-urllib/3.x` blocked by Browser Integrity Check
+
+**Phase 3: Native Python POST (final)**
+```
+fs-mcp → urllib.request.urlopen(JSON payload) → ~50KB → /upload-markdown/
+```
+
+The Go server (built by parallel agent session) added `/upload-markdown/{project}` endpoint that accepts raw markdown and does rendering server-side. The `_do_dump` function was rewritten to:
+
+```python
+def _do_dump():
+    # Read 3 markdown files
+    work_content = worklog_path.read_text(encoding="utf-8")
+    project_content = (gsd_dir / "PROJECT.md").read_text(...) if exists else ""
+    arch_content = (gsd_dir / "ARCHITECTURE.md").read_text(...) if exists else ""
+
+    # POST JSON directly — no npx, no tar.gz, no Node.js
+    payload = json.dumps({"work": ..., "project": ..., "architecture": ..., "base_path": ...})
+    req = urllib.request.Request(url, data=payload.encode(), headers={...})
+    urllib.request.urlopen(req, timeout=300)
+```
+
+| Metric | Before (npx) | After (native POST) |
+|--------|-------------|---------------------|
+| Upload size | 860KB tar.gz | ~50KB JSON |
+| Time at 17KB/s | ~50 seconds | ~2-3 seconds |
+| Dependencies | Node.js, npm, npx | Zero (stdlib only) |
+| Process overhead | Spawn child process | In-process HTTP call |
+
+##### 3. cli.cjs Updates
+
+| Change | Detail |
+|--------|--------|
+| Env var fallbacks | `--remote` / `--user` / `--pass` fall back to `GSD_READER_REMOTE` / `GSD_READER_USER` / `GSD_READER_PASS` |
+| Timeout bump | 60s → 300s for intercontinental links |
+| Markdown mode (default) | `npx dump` now POSTs raw markdown to `/upload-markdown/` — same speed benefit as server.py |
+| `--legacy` flag | Falls back to old tar.gz upload if needed |
+
+##### 4. Go Server: `/upload-markdown/` Endpoint (parallel session)
+
+```
+POST /upload-markdown/{project-path}
+Content-Type: application/json
+{"work": "...", "project": "...", "architecture": "...", "base_path": "gsd-lite"}
+```
+
+Server-side rendering: accepts raw markdown, injects Base64 into cached `dist/` template (baked into Docker image via multi-stage build). Client never ships static assets.
+
+---
+
+#### Setup
+
+One-time in `.zshrc` (or equivalent for fs-mcp process):
+
+```bash
+export GSD_READER_REMOTE="https://gsd.kenluu.org"
+export GSD_READER_USER="ken"
+export GSD_READER_PASS="yourpassword"
+```
+
+Restart fs-mcp. Every commit to `gsd-lite/WORK.md`, `PROJECT.md`, or `ARCHITECTURE.md` auto-uploads after 10s quiet period.
+
+---
+
+#### Files Modified
+
+| File | Server | Changes |
+|------|--------|---------|
+| `src/fs_mcp/server.py` | remote-fs-1 | `import sys, urllib.request, urllib.error` + `_is_gsd_artifact()` + `_trigger_gsd_dump()` with debounce + hooks in `propose_and_review` and `commit_review` |
+| `plugins/reader-vite/cli.cjs` | remote-fs-2 | Env var fallbacks, 300s timeout, markdown-mode default with `--legacy` fallback |
+| Go server `main.go` | remote (Hetzner) | `/upload-markdown/` endpoint with server-side rendering |
+| Go server `Dockerfile` | remote (Hetzner) | 3-stage build: npm dist → Go binary → alpine runtime |
+
+---
+
+#### Bugs Found & Fixed
+
+| Bug | Symptom | Root Cause | Fix |
+|-----|---------|------------|-----|
+| Silent daemon thread crash | "Scheduled" in stderr, nothing after | `stderr=subprocess.PIPE` — pipe buffer fills, npx blocks forever | Changed to `stderr=sys.stderr` |
+| No error output from `_do_dump` | Timer fires, no trace | No top-level `try/except` in daemon thread | Wrapped entire function body |
+| Buffered prints | Prints in daemon thread not visible | No `flush=True` — Python buffers stderr in threads | Added `flush=True` to all prints |
+| Cloudflare 1010 | `HTTP 403: error code: 1010` | Python `urllib` default User-Agent blocked by Browser Integrity Check | Set `User-Agent: Mozilla/5.0 (compatible; gsd-lite-autodump/1.0)` |
+| Upload timeout | `Request timed out after 60s` | 860KB at 17KB/s Asia→Finland = 50s, CLI timeout was 60s | Bumped to 300s + architectural fix (markdown-only = 2-3s) |
+
+---
+
+```mermaid
+sequenceDiagram
+    participant A as Agent
+    participant FS as fs-mcp<br/>propose_and_review
+    participant T as Debounce Timer<br/>10s
+    participant PY as Python urllib
+    participant GO as Go Server<br/>upload-markdown
+    participant CF as Cloudflare
+
+    A->>FS: propose_and_review gsd-lite/WORK.md
+    FS-->>A: COMMITTED immediate
+    FS->>T: Schedule dump in 10s
+
+    Note over T: Agent commits again within 10s
+    A->>FS: propose_and_review gsd-lite/WORK.md
+    FS-->>A: COMMITTED immediate
+    FS->>T: Cancel + reschedule 10s
+
+    Note over T: 10s quiet
+    T->>PY: _do_dump
+    PY->>PY: Read WORK.md + PROJECT.md + ARCH.md
+    PY->>CF: POST /upload-markdown/ ~50KB JSON
+    CF->>GO: Forward
+    GO->>GO: Base64 inject into dist template
+    GO-->>PY: 200 Rendered
+    PY->>PY: print Done to stderr
+```
+
+---
+
+📦 STATELESS HANDOFF (for future agents reading this log)
+**Dependency chain:** LOG-081 ← LOG-056 (distribution arch) ← LOG-057 (npm publish)
+**What was decided:** Auto-dump on commit via native Python POST to `/upload-markdown/`. No npx dependency. 10s debounce. Opt-in via `GSD_READER_REMOTE` env var.
+**Next action:** Monitor in production — verify debounce works across multiple concurrent agent sessions. Consider adding retry logic (currently fire-and-forget with single attempt).
+**If pivoting:** The `--legacy` flag in cli.cjs preserves the old tar.gz upload path if the Go server's `/upload-markdown/` endpoint has issues.
+
+### [LOG-082] - [DISCOVERY] [DECISION] - Claude Code TaskCreate as GTD Session Flow Control - Task: PROTOCOL-CRAFT-003
+**Timestamp:** 2026-03-15
+**Depends On:** LOG-080 (Sticky Block — human-owned orientation layer), LOG-002 (sandbox-cc subagent mechanics)
+
+---
+
+#### The Gap: No Shared Flow Control Between Human and Agent
+
+LOG-080 established the sticky block as the human's private orientation layer (H/L tags in a notes app). But during a real cross-project session (ticktick_dbt poller work → sandbox-cc skill debugging), a second gap surfaced: **neither party had a shared mechanism to park topics, track detours, and enforce return paths.**
+
+The session scattered five levels deep:
+
+```
+Poller auth-halt (Python) → subagent path errors → filesystem rules 
+  → skill architecture review → CLAUDE.md vs skill design → TaskCreate meta-discussion
+```
+
+Without explicit markers, the original work (poller) was orphaned with no bookmark.
+
+---
+
+#### Discovery: TaskCreate Is a Session Flow Control Tool
+
+Claude Code's Task tools (TaskCreate, TaskUpdate, TaskList, TaskGet) were designed for multi-step project management, but their properties make them ideal for **GTD-style session flow control**:
+
+| Property | Why It Matters for Flow Control |
+|----------|-------------------------------|
+| **Survives context compaction** | Tasks persist even when conversation history compresses |
+| **Visible to both parties** | `Ctrl+T` shows task list in terminal footer; agent sees via TaskList |
+| **Spinner as focus anchor** | `activeForm` text shows in terminal during `in_progress` — constant visual reminder |
+| **Cheap to create/update** | Zero token cost to conversation context |
+| **Status lifecycle** | `pending` → `in_progress` → `completed` maps to GTD next-action states |
+
+#### What The User Sees vs What The Agent Sees
+
+```mermaid
+graph LR
+    subgraph Terminal TUI
+        TL[Task List<br/>Ctrl+T toggle]
+        SP[Spinner<br/>activeForm text]
+        CK[Checkmark<br/>completed tasks]
+    end
+
+    subgraph Agent Tools
+        TC[TaskCreate]
+        TU[TaskUpdate]
+        TLS[TaskList<br/>subject + status + blockedBy]
+        TG[TaskGet<br/>full description]
+    end
+
+    TC -->|creates| TL
+    TU -->|in_progress| SP
+    TU -->|completed| CK
+    TLS -->|reads| TL
+    TG -->|reads details| TL
+```
+
+---
+
+#### Interface Audit: What The Tool Can and Cannot Do
+
+**Tested live in session.** Key findings:
+
+| Capability | Status | Evidence |
+|-----------|--------|----------|
+| Title length | Unlimited in data, **truncated in TUI** (~80 chars) | Long pipe-delimited title accepted but cut with `…` in terminal |
+| Description visibility | Agent-only (via TaskGet) | Not shown in TaskList or TUI |
+| Metadata field | Dead — not shown in TaskGet or TaskList | Tested: metadata passed but never surfaced |
+| Priority reordering | Via `[Pn]` prefix hack in subject | TaskUpdate can rename subjects freely |
+| Batch creation ordering | **Random IDs** when created in parallel | GitHub #32347 — must create sequentially |
+| Status transitions | Any direction allowed | Can reopen completed tasks |
+| blockedBy/addBlocks | Works but persists after blocker completion | GitHub #22100 — display-only unblock |
+
+#### The TUI Truncation Constraint
+
+GitHub #31626 confirmed: `maxWidth = Math.max(15, terminalColumns - 15 - ownerLabelWidth)`. No hover, no expand, no workaround. This killed the initial `subject | WHY: ... | NEXT: ...` convention — context must live in description instead.
+
+---
+
+#### Decision: Task Title Convention
+
+**DECISION-082a: Short imperative titles with priority prefix**
+
+```
+[Pn] Short imperative headline
+```
+
+~40-50 chars max. Scannable in `Ctrl+T`. Priority 1 = highest, reorderable via TaskUpdate on subject.
+
+**DECISION-082b: GTD context lives in description (agent-side)**
+
+```
+WHY: why this task exists or why it's parked
+NEXT: specific resumption action  
+STOPPED AT: where we were when we parked (bookmark)
+CONTEXT: relevant log IDs, file paths, discussion points
+```
+
+Description is invisible to user but survives compaction. Agent calls TaskGet to recover context when resuming a parked task.
+
+**DECISION-082c: activeForm is the live focus text**
+
+Always set meaningful `activeForm` for `in_progress` tasks — this is the spinner text the user sees in their terminal footer. It's the shared "what are we doing right now" signal.
+
+**DECISION-082d: Sequential creation only**
+
+Never batch-create tasks — IDs come back random (GitHub #32347). Create one at a time so creation order reflects intended priority.
+
+**DECISION-082e: Proactive-suggest enforcement**
+
+Agent should:
+- Create tasks when user says "park this" or "let's switch"
+- Suggest tasking when scope creep detected: "Want me to task that and stay focused?"
+- Suggest prioritization when 3+ topics are live: "We have N open tasks — want to prioritize?"
+- NOT refuse to switch topics — suggest, don't enforce
+
+---
+
+#### How Tasks Complement The Sticky Block
+
+```mermaid
+graph TD
+    subgraph Human Private
+        SB[Sticky Block<br/>H: strategic items<br/>L: tactical items<br/>30-sec update rule]
+    end
+
+    subgraph Shared
+        TK[Task List<br/>Ctrl+T in terminal<br/>Pn priority prefix<br/>Spinner for active task]
+    end
+
+    subgraph Agent Private  
+        TD[Task Description<br/>WHY / NEXT / STOPPED AT<br/>Survives compaction]
+        WM[WORK.md Logs<br/>Journalism quality<br/>Durable forever]
+    end
+
+    SB -.->|Human pastes at session start| TK
+    TK -->|Agent reads TaskList| TD
+    TD -->|Critical decisions escalate to| WM
+```
+
+| Layer | Owner | Visible to | Survives | Purpose |
+|-------|-------|-----------|----------|----------|
+| Sticky block | Human | Human only | Manual carry-forward | Human orientation — what matters strategically |
+| Task list | Both | Both (Ctrl+T + TaskList) | Compaction + session death | Shared queue — what's parked, what's active |
+| Task description | Agent | Agent (TaskGet) | Compaction | GTD context — why parked, how to resume |
+| WORK.md logs | Agent (human approves) | Both | Forever | Deep dives, decisions, evidence trail |
+
+---
+
+#### Lifecycle Rules
+
+```mermaid
+stateDiagram-v2
+    [*] --> pending: TaskCreate
+    pending --> in_progress: Start working
+    in_progress --> pending: Park it — detour
+    in_progress --> completed: Done
+    pending --> deleted: No longer relevant
+    completed --> pending: Reopen
+    
+    note right of pending: Visible in Ctrl+T<br/>Description has WHY/NEXT
+    note right of in_progress: Spinner shows activeForm<br/>Both parties see focus
+    note right of completed: Checkmark shown<br/>Stays in list until cleared
+```
+
+| Trigger | Agent Action |
+|---------|-------------|
+| User: "let's discuss X" (new topic) | TaskCreate for X, set in_progress with activeForm |
+| User: "park this, switch to Y" | Current → pending (update description with STOPPED AT), Y → in_progress |
+| User raises issue mid-flow | Suggest: "Want me to task that and stay focused?" |
+| 3+ topics live | Suggest: "We have N open tasks — want to prioritize?" |
+| Work completed | TaskUpdate → completed, TaskList to find next |
+| Session start with pending tasks | TaskList, then TaskGet on highest priority to recover context |
+
+---
+
+#### Research: Community Patterns and Known Issues
+
+| Source | Finding | Impact for Us |
+|--------|---------|---------------|
+| GitHub #31626 | TUI truncation is by design, no expand | Keep titles short |
+| GitHub #32347 | Batch TaskCreate gives random IDs | Create sequentially |
+| GitHub #24936 | "Parking lot" / "icebox" proposed, closed not_planned | We're building this ourselves via task convention |
+| GitHub #28232 | Persistent reminders proposed via `[PINNED]` prefix | Similar to our `[Pn]` approach |
+| GitHub #30492 | Mid-execution steering via PreToolUse hook | Alternative to task-based flow control |
+| GitHub #34188 | Compaction priority markers requested | Tasks already survive compaction — free win |
+| Raven GTD / cc-gtd | Full GTD skills exist in community | Our approach is lighter — session-scoped, not project-scoped |
+
+---
+
+📦 STATELESS HANDOFF (for future agents reading this log)
+**Dependency chain:** LOG-082 ← LOG-080 (Sticky Block) ← LOG-079 (Request Efficiency)
+**What was decided:** TaskCreate is the shared session flow control tool. Convention: `[Pn] short title` + GTD description (WHY/NEXT/STOPPED AT/CONTEXT). activeForm for spinner. Sequential creation. Proactive-suggest enforcement. Complements (not replaces) human's sticky block.
+**Next action:** Codify task convention into gsd-lite.md agent definition as core protocol behavior. Then continue with pending tasks: CLAUDE.md → subagent-strategy rewrite → poller auth-halt widening.
+**If pivoting:** For the full task interface audit, read this log's "Interface Audit" section. For the community research, see the "Research" table.
+
+### [LOG-083] - [EXEC] [BUG] - Absolute Path Propagation Fix Across Upload Pipeline - Task: READER-012
+**Timestamp:** 2026-03-21 ~15:00
+**Depends On:** LOG-081 (Auto-Dump: fs-mcp post-commit hook + server-side markdown rendering)
+
+---
+
+#### The Problem: Remote Uploads Dropped Absolute Paths
+
+The `gsd_doc file=` attribute is how agents resolve file paths for MCP tool calls. The gsd-lite protocol §0.4 requires absolute paths from the origin machine so agents can mechanically translate them to MCP-relative paths.
+
+**Discovery:** Two of four code paths that set `__GSD_BASE_PATH__` were stripping the path to just the directory name (`"gsd-lite"`) instead of preserving the full absolute path (`"/Users/luutuankiet/dev/project/gsd-lite"`).
+
+#### Pipeline Audit: 4 Code Paths, 2 Broken
+
+| Code Path | Component | Before | After | Status |
+|-----------|-----------|--------|-------|--------|
+| Vite dev server (`/_meta`) | `vite-plugin-worklog.ts:89` | `dirname(resolvedWorklogPath)` → absolute | — | ✅ Already correct |
+| CLI local dump (static HTML) | `cli.cjs:177` | `path.dirname(resolvedWorklog)` → absolute | — | ✅ Already correct |
+| CLI `--remote` upload | `cli.cjs:109` | `path.basename(path.dirname(...))` → `"gsd-lite"` | `path.dirname(resolvedWorklog)` | 🔧 **Fixed** |
+| fs-mcp auto-dump | `server.py:305` | `gsd_dir.name` → `"gsd-lite"` | `str(gsd_dir)` → absolute | 🔧 **Fixed** |
+
+#### Root Cause
+
+```javascript
+// cli.cjs:109 — BEFORE (basename strips to just folder name)
+base_path: path.basename(path.dirname(resolvedWorklog)),
+// → "gsd-lite"
+
+// cli.cjs:109 — AFTER (dirname preserves full path)
+base_path: path.dirname(resolvedWorklog),
+// → "/Users/luutuankiet/dev/gsd_lite/gsd-lite"
+```
+
+```python
+# server.py:305 — BEFORE
+"base_path": gsd_dir.name,       # → "gsd-lite"
+
+# server.py:305 — AFTER
+"base_path": str(gsd_dir),       # → "/Users/luutuankiet/dev/gsd_lite/gsd-lite"
+```
+
+#### Data Flow (unchanged components)
+
+```mermaid
+graph LR
+    A[CLI / fs-mcp] -->|"POST base_path"| B[Go server<br/>main.go:425]
+    B -->|"injects __GSD_BASE_PATH__"| C[index.html script tag]
+    C -->|"window global"| D[renderer.ts:838]
+    D -->|"basePath + / + chunk.source"| E[gsd_doc file= attribute]
+```
+
+The Go server (`main.go`) is a pure passthrough — it injects `req.BasePath` into `__GSD_BASE_PATH__` without transformation. `renderer.ts` reads the global and prepends it to `chunk.source`. **Neither needed changes.**
+
+#### Files Changed
+
+| File | Repo | Change |
+|------|------|--------|
+| `plugins/reader-vite/cli.cjs:109` | `gsd_lite` | `path.basename(path.dirname(...))` → `path.dirname(...)` |
+| `src/fs_mcp/server.py:305` | `fs-mcp` | `gsd_dir.name` → `str(gsd_dir)` |
+
+---
+
+📦 STATELESS HANDOFF (for future agents reading this log)
+**Dependency chain:** LOG-083 ← LOG-081 (Auto-Dump pipeline)
+**What was decided:** All upload paths must send the full absolute path from the origin machine as `base_path`. This aligns with gsd-lite protocol §0.4 which requires `file=` attributes to carry absolute paths for mechanical MCP path translation.
+**What was fixed:** CLI remote upload (`cli.cjs`) and fs-mcp auto-dump (`server.py`) were sending `basename` only. Two 1-line fixes.
+**Next action:** Verify by triggering an auto-dump or CLI upload and checking the resulting `__GSD_BASE_PATH__` value in the deployed HTML.
+**If pivoting:** The Go server and renderer.ts are passthrough — any future path format changes only need to touch the upload clients (cli.cjs, server.py).

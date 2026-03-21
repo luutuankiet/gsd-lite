@@ -7,7 +7,7 @@
 
 import type { Plugin, ViteDevServer } from 'vite';
 import { readFileSync, existsSync } from 'fs';
-import { resolve, dirname, join, relative } from 'path';
+import { resolve, dirname, join } from 'path';
 import type { ServerResponse } from 'http';
 
 export interface WorklogPluginOptions {
@@ -83,11 +83,10 @@ export function worklogPlugin(options: WorklogPluginOptions = {}): Plugin {
     configureServer(devServer) {
       server = devServer;
 
-      // Compute worklog path relative to CWD (where the server was launched)
-      const cwd = process.cwd();
-      const worklogRelPath = relative(cwd, resolvedWorklogPath);
-      // Base path is the directory portion, e.g. "tmp/project/gsd-lite"
-      const basePath = dirname(worklogRelPath);
+      // Absolute path to the gsd-lite directory on the origin machine.
+      // This persists through static dumps pushed to remote servers,
+      // enabling agents to resolve file paths without workspace declarations.
+      const basePath = dirname(resolvedWorklogPath);
 
       devServer.middlewares.use((req, res, next) => {
         if (req.url === opts.metaEndpoint) {
