@@ -2,6 +2,14 @@
 
 <!-- version list -->
 
+## v1.26.0 (2026-03-21)
+
+### Features
+
+- Gsd dump asbpath
+  ([`5bec6ac`](https://github.com/luutuankiet/gsd-lite/commit/5bec6ac3684c0c01a2f98e87b773b87aff5e2119))
+
+
 ## v1.25.1 (2026-03-11)
 
 ### Bug Fixes
