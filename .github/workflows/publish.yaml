@@ -1,0 +1,50 @@
+name: Publish to npm
+on:
+  push:
+    tags:
+      - "v*"
+permissions:
+  contents: read
+  id-token: write
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Verify package contents
+        run: npm pack --dry-run
+  publish:
+    runs-on: ubuntu-latest
+    needs: test
+    permissions:
+      id-token: write
+      contents: read
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Upgrade npm for OIDC trusted publishing
+        run: npm install -g npm@latest
+      - name: Set version from tag
+        run: npm version "${GITHUB_REF_NAME#v}" --no-git-tag-version
+      - name: Determine npm dist-tag
+        id: dist-tag
+        run: |
+          TAG="${GITHUB_REF_NAME:-manual}"
+          if [[ "$TAG" =~ -dev\\. ]]; then
+            echo "tag=dev" >> "$GITHUB_OUTPUT"
+          elif [[ "$TAG" =~ -(rc|beta|alpha)\\. ]]; then
+            echo "tag=next" >> "$GITHUB_OUTPUT"
+          else
+            echo "tag=latest" >> "$GITHUB_OUTPUT"
+          fi
+      - name: Publish to npm (OIDC provenance)
+        run: npm publish --access public --provenance --tag ${{ steps.dist-tag.outputs.tag }}
