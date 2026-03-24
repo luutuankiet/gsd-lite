@@ -49,6 +49,98 @@ When you start Claude, the GSD-Lite agent reads your artifacts and asks what you
 
 ---
 
+## How It Maps to Claude Code
+
+GSD-Lite uses Claude Code's native extension points. No magic — just files in the right places.
+
+### Activation Chain
+
+When you run `claude`, here's what happens:
+
+```mermaid
+sequenceDiagram
+    participant U as You
+    participant CC as Claude Code
+    participant S as .claude/settings.json
+    participant A as .claude/agents/gsd-lite.md
+    participant F as gsd-lite/ artifacts
+
+    U->>CC: claude
+    CC->>S: Read settings.json
+    Note over S: agent: gsd-lite
+    S->>CC: Use gsd-lite agent
+    CC->>A: Load gsd-lite.md as system prompt
+    A->>CC: Protocol instructions loaded
+    CC->>F: Read PROJECT + ARCHITECTURE + WORK
+    CC->>U: Echo understanding and ask what to work on
+```
+
+### File Ownership Map
+
+GSD-Lite only touches its own files. Your existing Claude Code config stays untouched.
+
+```mermaid
+graph TD
+    subgraph Claude Code owns
+        S1[.claude/settings.json<br/>GSD-Lite merges agent key only]
+        OA[.claude/agents/your-agent.md<br/>Untouched]
+        OC[.claude/commands/your-cmd.md<br/>Untouched]
+        H[.claude/hooks/<br/>Untouched]
+        CM[CLAUDE.md<br/>Still loads normally]
+    end
+    subgraph GSD-Lite owns
+        GA[.claude/agents/gsd-lite.md<br/>The protocol - always updated]
+        GC[.claude/commands/gsd/<br/>Slash commands - always updated]
+        W[gsd-lite/WORK.md<br/>Preserved on re-run]
+        P[gsd-lite/PROJECT.md<br/>Preserved on re-run]
+        AR[gsd-lite/ARCHITECTURE.md<br/>Preserved on re-run]
+        I[gsd-lite/INBOX.md<br/>Preserved on re-run]
+        HI[gsd-lite/HISTORY.md<br/>Preserved on re-run]
+    end
+
+    S1 --- GA
+    GA --- GC
+    GC --- W
+```
+
+### Slash Commands = Claude Code Commands
+
+Each file in `.claude/commands/gsd/` becomes a slash command:
+
+```mermaid
+graph LR
+    subgraph Files installed by npx
+        L[commands/gsd/learn.md]
+        NP[commands/gsd/new-project.md]
+        MC[commands/gsd/map-codebase.md]
+        PR[commands/gsd/progress.md]
+    end
+    subgraph What you type in Claude
+        L --> SL[/gsd learn]
+        NP --> SNP[/gsd new-project]
+        MC --> SMC[/gsd map-codebase]
+        PR --> SPR[/gsd progress]
+    end
+```
+
+### Settings Merge Detail
+
+If you already have a `settings.json`, GSD-Lite merges safely:
+
+```
+Before:                          After:
+{
+  "hooks": { ... },             "hooks": { ... },        <-- preserved
+  "statusLine": { ... },        "statusLine": { ... },   <-- preserved
+  "permissions": { ... }        "permissions": { ... },  <-- preserved
+                                 "agent": "gsd-lite"      <-- added
+}
+```
+
+No keys are removed. Only `"agent": "gsd-lite"` is added (or updated if different).
+
+---
+
 ## The Core Idea
 
 Most AI workflows treat the agent as a task executor: you command, it obeys. This produces code you don't fully understand and decisions you can't defend.
