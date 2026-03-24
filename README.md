@@ -115,11 +115,11 @@ graph LR
         MC[commands/gsd/map-codebase.md]
         PR[commands/gsd/progress.md]
     end
-    subgraph What you type in Claude
-        L --> SL[/gsd learn]
-        NP --> SNP[/gsd new-project]
-        MC --> SMC[/gsd map-codebase]
-        PR --> SPR[/gsd progress]
+    subgraph What you type in Claude Code
+        L --> SL["/gsd learn"]
+        NP --> SNP["/gsd new-project"]
+        MC --> SMC["/gsd map-codebase"]
+        PR --> SPR["/gsd progress"]
     end
 ```
 
