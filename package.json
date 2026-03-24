@@ -1,5 +1,5 @@
 {
-  "name": "gsd-lite",
+  "name": "@luutuankiet/gsd-lite",
   "version": "2.0.0",
   "description": "Pair programming protocol for AI agents — structured collaboration with Claude Code",
   "type": "module",

@@ -2,7 +2,7 @@
 
 **A pair programming protocol for AI agents.** Turn Claude into a thinking partner who challenges your assumptions, teaches you concepts, and helps you own every decision.
 
-[![npm](https://img.shields.io/npm/v/gsd-lite)](https://www.npmjs.com/package/gsd-lite)
+[![npm](https://img.shields.io/npm/v/@luutuankiet/gsd-lite)](https://www.npmjs.com/package/@luutuankiet/gsd-lite)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
 ---
@@ -11,7 +11,7 @@
 
 ```bash
 # In your project directory:
-npx gsd-lite
+npx @luutuankiet/gsd-lite
 
 # Start Claude Code:
 claude
@@ -171,8 +171,8 @@ When new ideas pop up mid-work, the agent suggests parking them:
 | `gsd-lite/WORK.md` | Session state, decisions, execution log | Agent during work |
 | `gsd-lite/INBOX.md` | Parked ideas and questions | Agent when scope creeps |
 | `gsd-lite/HISTORY.md` | Archive of completed phases | Agent at milestones |
-| `.claude/agents/gsd-lite.md` | The protocol itself | `npx gsd-lite` |
-| `.claude/settings.json` | Points Claude to gsd-lite agent | `npx gsd-lite` |
+| `.claude/agents/gsd-lite.md` | The protocol itself | `npx @luutuankiet/gsd-lite` |
+| `.claude/settings.json` | Points Claude to gsd-lite agent | `npx @luutuankiet/gsd-lite` |
 
 ---
 
@@ -201,7 +201,7 @@ graph TD
 Run the installer again to update the protocol and commands while preserving your artifacts:
 
 ```bash
-npx gsd-lite@latest
+npx @luutuankiet/gsd-lite@latest
 ```
 
 Your `WORK.md`, `PROJECT.md`, and other artifacts are never overwritten (unless you pass `--force`).

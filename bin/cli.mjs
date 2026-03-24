@@ -89,9 +89,9 @@ function showHelp() {
   console.log(bold("  gsd-lite") + " — Pair programming protocol for Claude Code");
   console.log();
   console.log("  " + bold("Usage:"));
-  console.log("    npx gsd-lite          Install into current project");
-  console.log("    npx gsd-lite --force   Overwrite all files (including user artifacts)");
-  console.log("    npx gsd-lite --help    Show this help");
+  console.log("    npx @luutuankiet/gsd-lite          Install into current project");
+  console.log("    npx @luutuankiet/gsd-lite --force   Overwrite all files (including user artifacts)");
+  console.log("    npx @luutuankiet/gsd-lite --help    Show this help");
   console.log();
   console.log("  " + bold("What it does:"));
   console.log("    Copies .claude/ config and gsd-lite/ artifacts into your project.");
