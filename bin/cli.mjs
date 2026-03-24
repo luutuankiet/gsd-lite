@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-import { copyFileSync, existsSync, mkdirSync, readdirSync, statSync, readFileSync } from "fs";
+import { copyFileSync, existsSync, mkdirSync, readdirSync, statSync, readFileSync, writeFileSync } from "fs";
 import { join, dirname, relative } from "path";
 import { fileURLToPath } from "url";
 
@@ -16,7 +16,7 @@ const bold = (s) => `\x1b[1m${s}\x1b[0m`;
 const dim = (s) => `\x1b[2m${s}\x1b[0m`;
 
 function copyDir(src, dest, opts = {}) {
-  const { preserveExisting = false, label = "" } = opts;
+  const { preserveExisting = false } = opts;
   const created = [];
   const skipped = [];
 
@@ -42,6 +42,31 @@ function copyDir(src, dest, opts = {}) {
   return { created, skipped };
 }
 
+// Merge settings.json: add "agent": "gsd-lite" without clobbering existing keys
+function mergeSettings(claudeDir) {
+  const settingsPath = join(claudeDir, "settings.json");
+
+  if (existsSync(settingsPath)) {
+    try {
+      const existing = JSON.parse(readFileSync(settingsPath, "utf8"));
+      if (existing.agent === "gsd-lite") {
+        return "already_set";
+      }
+      existing.agent = "gsd-lite";
+      writeFileSync(settingsPath, JSON.stringify(existing, null, 2) + "\n");
+      return "merged";
+    } catch {
+      // Malformed JSON — write fresh
+      writeFileSync(settingsPath, JSON.stringify({ agent: "gsd-lite" }, null, 2) + "\n");
+      return "created";
+    }
+  } else {
+    mkdirSync(claudeDir, { recursive: true });
+    writeFileSync(settingsPath, JSON.stringify({ agent: "gsd-lite" }, null, 2) + "\n");
+    return "created";
+  }
+}
+
 function install(args) {
   const force = args.includes("--force") || args.includes("-f");
 
@@ -50,15 +75,32 @@ function install(args) {
   console.log(dim("  Pair programming protocol for AI agents"));
   console.log();
 
-  // 1. Install .claude/ config (agents, commands, settings)
-  const claudeResult = copyDir(
-    join(TEMPLATE, ".claude"),
-    join(CWD, ".claude"),
-    { preserveExisting: false } // Always update agent + commands
-  );
-  console.log(green("  \u2714 Installed") + " .claude/ config" + dim(` (${claudeResult.created.length} files)`));
+  // 1. Install agent (ONLY gsd-lite.md — never touch other agents)
+  const agentSrc = join(TEMPLATE, ".claude", "agents", "gsd-lite.md");
+  const agentDest = join(CWD, ".claude", "agents", "gsd-lite.md");
+  mkdirSync(dirname(agentDest), { recursive: true });
+  copyFileSync(agentSrc, agentDest);
+  console.log(green("  \u2714 Installed") + " .claude/agents/gsd-lite.md");
 
-  // 2. Install gsd-lite/ artifacts (preserve user data)
+  // 2. Install commands (ONLY under commands/gsd/ — never touch other commands)
+  const cmdResult = copyDir(
+    join(TEMPLATE, ".claude", "commands", "gsd"),
+    join(CWD, ".claude", "commands", "gsd"),
+    { preserveExisting: false }
+  );
+  console.log(green("  \u2714 Installed") + " .claude/commands/gsd/" + dim(` (${cmdResult.created.length} files)`));
+
+  // 3. Merge settings.json (add agent key, preserve existing hooks/statusLine/etc.)
+  const settingsAction = mergeSettings(join(CWD, ".claude"));
+  if (settingsAction === "merged") {
+    console.log(green("  \u2714 Updated") + " .claude/settings.json" + dim(" (merged — preserved existing config)"));
+  } else if (settingsAction === "created") {
+    console.log(green("  \u2714 Created") + " .claude/settings.json");
+  } else {
+    console.log(yellow("  \u2139 Unchanged") + " .claude/settings.json" + dim(" (agent already set)"));
+  }
+
+  // 4. Install gsd-lite/ artifacts (preserve user data unless --force)
   const artifactResult = copyDir(
     join(TEMPLATE, "gsd-lite"),
     join(CWD, "gsd-lite"),
@@ -71,7 +113,7 @@ function install(args) {
     console.log(yellow("  \u2139 Preserved") + " existing artifacts" + dim(` (${artifactResult.skipped.length} files)`));
   }
 
-  // 3. Print summary
+  // 5. Summary
   const version = JSON.parse(readFileSync(join(__dirname, "..", "package.json"), "utf8")).version;
   console.log();
   console.log(bold("  Installation complete!") + dim(` v${version}`));
@@ -86,7 +128,7 @@ function install(args) {
 
 function showHelp() {
   console.log();
-  console.log(bold("  gsd-lite") + " — Pair programming protocol for Claude Code");
+  console.log(bold("  @luutuankiet/gsd-lite") + " — Pair programming protocol for Claude Code");
   console.log();
   console.log("  " + bold("Usage:"));
   console.log("    npx @luutuankiet/gsd-lite          Install into current project");
@@ -94,8 +136,14 @@ function showHelp() {
   console.log("    npx @luutuankiet/gsd-lite --help    Show this help");
   console.log();
   console.log("  " + bold("What it does:"));
-  console.log("    Copies .claude/ config and gsd-lite/ artifacts into your project.");
-  console.log("    Your existing WORK.md, PROJECT.md etc. are preserved (use --force to overwrite).");
+  console.log("    Installs .claude/agents/gsd-lite.md and .claude/commands/gsd/ into your project.");
+  console.log("    Merges \"agent\": \"gsd-lite\" into settings.json without touching your existing config.");
+  console.log("    Scaffolds gsd-lite/ artifacts (preserved on re-run, use --force to overwrite).");
+  console.log();
+  console.log("  " + bold("Safe by design:"));
+  console.log("    - Your existing .claude/settings.json hooks, permissions, etc. are preserved");
+  console.log("    - Other agents and commands are never touched");
+  console.log("    - WORK.md, PROJECT.md, etc. are never overwritten without --force");
   console.log();
 }
 
