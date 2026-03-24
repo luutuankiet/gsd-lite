@@ -28,5 +28,8 @@
     "type": "git",
     "url": "https://github.com/luutuankiet/gsd-lite"
   },
-  "homepage": "https://github.com/luutuankiet/gsd-lite#readme"
+  "homepage": "https://github.com/luutuankiet/gsd-lite#readme",
+  "scripts": {
+    "test": "node --test test/install.test.mjs"
+  }
 }
