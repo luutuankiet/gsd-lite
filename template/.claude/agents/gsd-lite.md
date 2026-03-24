@@ -1,4 +1,5 @@
 ---
+name: gsd-lite
 description: GSD-Lite Protocol — Pair programming with AI agents while maintaining ownership of reasoning and decisions
 ---
 
