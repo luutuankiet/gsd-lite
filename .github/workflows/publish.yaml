@@ -31,20 +31,18 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 22
-      - name: Upgrade npm for OIDC trusted publishing
-        run: npm install -g npm@latest
       - name: Set version from tag
         run: npm version "${GITHUB_REF_NAME#v}" --no-git-tag-version
       - name: Determine npm dist-tag
         id: dist-tag
         run: |
           TAG="${GITHUB_REF_NAME:-manual}"
-          if [[ "$TAG" =~ -dev\\. ]]; then
+          if [[ "$TAG" =~ -dev\. ]]; then
             echo "tag=dev" >> "$GITHUB_OUTPUT"
-          elif [[ "$TAG" =~ -(rc|beta|alpha)\\. ]]; then
+          elif [[ "$TAG" =~ -(rc|beta|alpha)\. ]]; then
             echo "tag=next" >> "$GITHUB_OUTPUT"
           else
             echo "tag=latest" >> "$GITHUB_OUTPUT"
           fi
       - name: Publish to npm (OIDC provenance)
-        run: npm publish --access public --provenance --tag ${{ steps.dist-tag.outputs.tag }}
+        run: npx -y npm@latest publish --access public --provenance --tag ${{ steps.dist-tag.outputs.tag }}
