@@ -32,7 +32,7 @@ jobs:
         with:
           node-version: 22
       - name: Set version from tag
-        run: npm version "${GITHUB_REF_NAME#v}" --no-git-tag-version
+        run: npm version "${GITHUB_REF_NAME#v}" --no-git-tag-version --allow-same-version
       - name: Determine npm dist-tag
         id: dist-tag
         run: |
