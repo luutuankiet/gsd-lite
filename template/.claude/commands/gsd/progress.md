@@ -8,9 +8,9 @@ description: Check project progress — review current state, active tasks, rece
 
 ## Steps
 
-1. Read `gsd-lite/PROJECT.md` for project context
-2. Read `gsd-lite/WORK.md` — focus on Sections 1-2 (current state + key events)
-3. Read `gsd-lite/INBOX.md` for any parked items
+1. Read `gsd-lite/PROJECT.md` for project context (whole file, it is small)
+2. Read `gsd-lite/WORK.md` Sections 1-2 only — `rg -n '^## 2b\.'` → line N, read with `limit: N`. Never read this file unbounded; Section 3 is the append-only log.
+3. Read `gsd-lite/INBOX.md` for any parked items, if it exists
 
 ## Report Format
 
@@ -24,7 +24,7 @@ Present a concise progress report:
 [Last 3-5 key events from WORK.md Section 2]
 
 ### Open Items
-[Any items from INBOX.md]
+[Any items from INBOX.md; omit this heading if the file does not exist]
 
 ### Parked Tasks
 [Tasks on hold from WORK.md]

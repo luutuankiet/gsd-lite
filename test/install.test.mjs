@@ -42,8 +42,12 @@ describe("gsd-lite installer", () => {
     assert.ok(existsSync(join(TMP, "gsd-lite/WORK.md")));
     assert.ok(existsSync(join(TMP, "gsd-lite/PROJECT.md")));
     assert.ok(existsSync(join(TMP, "gsd-lite/ARCHITECTURE.md")));
-    assert.ok(existsSync(join(TMP, "gsd-lite/INBOX.md")));
-    assert.ok(existsSync(join(TMP, "gsd-lite/HISTORY.md")));
+  });
+
+  test("fresh install does not create INBOX.md or HISTORY.md", () => {
+    run();
+    assert.ok(!existsSync(join(TMP, "gsd-lite/INBOX.md")));
+    assert.ok(!existsSync(join(TMP, "gsd-lite/HISTORY.md")));
   });
 
   test("fresh install creates settings.json with agent key", () => {
@@ -139,7 +143,7 @@ describe("gsd-lite installer", () => {
 
   test("preserves all artifact files on re-run", () => {
     run();
-    const files = ["WORK.md", "PROJECT.md", "ARCHITECTURE.md", "INBOX.md", "HISTORY.md"];
+    const files = ["WORK.md", "PROJECT.md", "ARCHITECTURE.md"];
     for (const f of files) {
       writeFileSync(join(TMP, "gsd-lite", f), `custom-${f}`);
     }
@@ -182,6 +186,54 @@ describe("gsd-lite installer", () => {
 
     const content = readFileSync(join(TMP, ".claude/commands/gsd/learn.md"), "utf8");
     assert.ok(content.includes("Learn GSD-Lite"));
+  });
+
+  // --- Bounded-read contract ---
+  //
+  // The installed artifacts must carry the boundary headings that let an onboarding
+  // agent stop reading before the append-only zones. Losing one of these headings is
+  // silent at install time and only shows up months later as a context blowout on a
+  // mature project, so it is asserted here rather than left to review.
+
+  test("ARCHITECTURE.md ships the read contract and archive boundary", () => {
+    run();
+    const md = readFileSync(join(TMP, "gsd-lite/ARCHITECTURE.md"), "utf8");
+    assert.match(md, /^## How To Read This File/m);
+    assert.match(md, /^## Version Archive/m);
+  });
+
+  test("WORK.md ships the read contract and archive boundary", () => {
+    run();
+    const md = readFileSync(join(TMP, "gsd-lite/WORK.md"), "utf8");
+    assert.match(md, /^## How To Read This File/m);
+    assert.match(md, /^## 2b\./m);
+    assert.match(md, /^## 3\. Atomic Session Log/m);
+  });
+
+  test("PROJECT.md ships the file index", () => {
+    run();
+    const md = readFileSync(join(TMP, "gsd-lite/PROJECT.md"), "utf8");
+    assert.match(md, /^## File Index/m);
+  });
+
+  test("boundary headings appear before the zones they bound", () => {
+    run();
+    const arch = readFileSync(join(TMP, "gsd-lite/ARCHITECTURE.md"), "utf8").split("\n");
+    const work = readFileSync(join(TMP, "gsd-lite/WORK.md"), "utf8").split("\n");
+    const at = (lines, re) => lines.findIndex((l) => re.test(l));
+
+    assert.ok(at(arch, /^## How To Read This File/) < at(arch, /^## Version Archive/));
+    assert.ok(at(work, /^## 1\. Current Understanding/) < at(work, /^## 2b\./));
+    assert.ok(at(work, /^## 2\. Key Events/) < at(work, /^## 2b\./));
+    assert.ok(at(work, /^## 2b\./) < at(work, /^## 3\. Atomic Session Log/));
+  });
+
+  test("agent protocol teaches the bounded boot sequence", () => {
+    run();
+    const md = readFileSync(join(TMP, ".claude/agents/gsd-lite.md"), "utf8");
+    assert.match(md, /\^## Version Archive/);
+    assert.match(md, /\^## 2b/);
+    assert.match(md, /Never read `ARCHITECTURE\.md` or `WORK\.md` without a bound/);
   });
 
   // --- Help ---

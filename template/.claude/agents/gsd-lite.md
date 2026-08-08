@@ -23,12 +23,19 @@ Before writing to `WORK.md` or `INBOX.md`:
 
 If user says "look at LOG-071" on turn 1, respond: "I'll get to LOG-071 right after I review the project context."
 
-**Boot sequence:**
+**Boot sequence — bounded reads, in this order:**
 
-Read these files on first turn:
-1. `gsd-lite/PROJECT.md` — project vision
-2. `gsd-lite/ARCHITECTURE.md` — technical landscape
-3. `gsd-lite/WORK.md` — current state (first ~100 lines covers Sections 1-2)
+1. `gsd-lite/PROJECT.md` — project vision. Whole file; it is small by design and its File Index restates the contract below.
+2. `gsd-lite/ARCHITECTURE.md` — technical landscape, **zone A only**. `rg -n '^## Version Archive' gsd-lite/ARCHITECTURE.md` → line N, then read with `limit: N`.
+3. `gsd-lite/WORK.md` — current state, **sections 1 and 2 only**. `rg -n '^## 2b\.' gsd-lite/WORK.md` → line N, then read with `limit: N`.
+
+**Never read `ARCHITECTURE.md` or `WORK.md` without a bound.** Both are append-only and grow without limit. On a mature project the architecture file reaches tens of thousands of words and the work log thousands of lines — an unbounded read of either spends most of a context window before any work starts. This is the single most expensive mistake available on turn 1.
+
+If a boundary `rg` returns no match, the file is either a fresh template or predates the archive convention. Read it whole *this once*, then add the missing boundary heading before it grows.
+
+**Section 3 of `WORK.md` is index-then-read, never scan** — including when the user opens with "look at LOG-071". `rg -n '^### \[LOG-' gsd-lite/WORK.md` gives the index; read only that entry's line range.
+
+**Heading grep hygiene:** grep these artifacts with `^#{2,4} `, never `^#{1,4} `. Fenced code blocks contain shell comments starting with `# `, and a level-1 grep reports those as headings — producing an index that looks trustworthy and is not.
 
 After reading: **Echo understanding to user** — prove you grasped context before proceeding.
 
@@ -51,13 +58,25 @@ If files are empty templates, acknowledge that and ask the user what they want t
 
 ## 4. File Guide
 
-| File | Purpose |
-|------|---------|  
-| `gsd-lite/WORK.md` | Session state + execution log |
-| `gsd-lite/INBOX.md` | Loop capture (parked ideas) |
-| `gsd-lite/HISTORY.md` | Completed tasks/phases |
-| `gsd-lite/PROJECT.md` | Project vision |
-| `gsd-lite/ARCHITECTURE.md` | Codebase structure |
+| File | Purpose | Installed |
+|------|---------|-----------|
+| `gsd-lite/PROJECT.md` | Project vision | yes |
+| `gsd-lite/ARCHITECTURE.md` | Codebase structure | yes |
+| `gsd-lite/WORK.md` | Session state + execution log | yes |
+| `gsd-lite/INBOX.md` | Loop capture (parked ideas) | no — create on first park |
+
+### Growth policy (why the archive zones exist)
+
+Every artifact here is append-only, and the two zones read on every session — `ARCHITECTURE.md` zone A and `WORK.md` sections 1-2 — are exactly the ones that must not grow. Each has an archive half below it that is never read at boot.
+
+| File | Always-read zone | Archive half | Evict when |
+|------|------------------|--------------|------------|
+| `ARCHITECTURE.md` | `## ` sections above `## Version Archive` | `### ` entries under `## Version Archive` | a fact becomes version-stamped or superseded |
+| `WORK.md` | `## 1.` and `## 2.` | `## 2b. Archive` | either section passes ~40 lines |
+
+Both directions are required. **Demote** anything historical. **Promote** anything in an archive that is still true and still consulted — otherwise live knowledge hides behind a date and the next agent re-derives it from scratch.
+
+The specific failure to avoid: a version-stamped section written at `## ` level. It makes the archive indistinguishable from the reference above it in a heading grep, the index stops being useful, and the file gets read whole every session from then on.
 
 ---
 
@@ -237,20 +256,26 @@ If not, do not commit.
 
 ---
 
-## 10. WORK.md Structure (3 Sections)
+## 10. WORK.md Structure
 
-WORK.md has three level-2 sections:
+Four level-2 zones, ordered so a single bounded read from line 1 covers exactly what boot needs.
 
 ### Sections 1+2: Current Understanding + Key Events (Always Read Together)
 - **Purpose:** 30-second context + project foundation decisions
 - **Contains:** current_mode, active_task, parked_tasks, vision, decisions, blockers, next_action + Key Events table
-- **When to read:** ALWAYS on session start
+- **When to read:** ALWAYS on session start — `rg -n '^## 2b\.'` → line N, read with `limit: N`
 - **When to update:** At checkpoint, or when significant state changes
+- **Size discipline:** keep each under ~40 lines; evict the stale tail to Section 2b
+
+### Section 2b: Archive (Never Read At Boot)
+- **Purpose:** hold superseded state and older events so sections 1-2 stay cheap
+- **Contains:** prior sprint statuses, older key-events rows
+- **When to read:** only when project history is explicitly in scope
 
 ### Section 3: Atomic Session Log (Chronological)
 - **Purpose:** Full history of all work
 - **Contains:** Type-tagged entries: [VISION], [DECISION], [DISCOVERY], [PLAN], etc.
-- **When to read:** Only when user references specific log IDs
+- **When to read:** never whole. Index with `rg -n '^### \[LOG-'`, then read one entry's line range — this holds even when the user names a log ID on turn 1
 - **When to write:** During execution, following Journalism Standard
 
 ### Log Entry Template
@@ -312,6 +337,10 @@ WORK.md has three level-2 sections:
 - **Checklist walking** — Going through categories regardless of context
 - **Prose dump** — Burying findings in long text instead of tables/bullets
 - **Piecemeal response** — Asking one question, waiting, then asking another
+- **Unbounded artifact read** — Reading `ARCHITECTURE.md` or `WORK.md` whole on turn 1 instead of stopping at the archive boundary. The most expensive mistake available in this protocol, and it costs more every week the project lives
+- **Scanning the session log** — Reading Section 3 of `WORK.md` sequentially to find an entry instead of indexing with `rg -n '^### \[LOG-'` first
+- **Level-1 heading grep** — `rg '^#{1,4} '` on these artifacts; fenced shell comments masquerade as headings and the resulting index is wrong
+- **Archive at `## ` level** — Writing a version-stamped or historical section as a top-level heading, which destroys the boundary between reference and archive
 
 ---
 
