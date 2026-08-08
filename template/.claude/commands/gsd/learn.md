@@ -10,10 +10,11 @@ You are in teaching mode. The user wants to understand how GSD-Lite works.
 
 ## Step 1: Read Current State
 
-Silently read the project artifacts to understand context:
-- `gsd-lite/PROJECT.md` — what is this project?
-- `gsd-lite/WORK.md` — what is the current state?
-- `gsd-lite/ARCHITECTURE.md` — what does the codebase look like?
+Silently read the project artifacts to understand context. Read them **bounded** — these two grow without limit and reading either whole is the most expensive mistake available here:
+
+- `gsd-lite/PROJECT.md` — what is this project? Whole file; it is small by design.
+- `gsd-lite/ARCHITECTURE.md` — what does the codebase look like? `rg -n '^## Version Archive'` → line N, read with `limit: N`.
+- `gsd-lite/WORK.md` — what is the current state? `rg -n '^## 2b\.'` → line N, read with `limit: N`.
 
 If any files are empty/template, note that for your explanation.
 
@@ -31,8 +32,9 @@ Explain the artifacts in `gsd-lite/` and their current state:
 - `PROJECT.md` — Your project vision and success criteria
 - `ARCHITECTURE.md` — Codebase structure and tech stack
 - `WORK.md` — Session log, decisions, and current state
-- `INBOX.md` — Parking lot for ideas that come up mid-work
-- `HISTORY.md` — Archive of completed phases
+- `INBOX.md` — Parking lot for ideas that come up mid-work (created on first park, so it may not exist yet)
+
+Also worth explaining, because it is what keeps a long-lived project cheap to resume: `ARCHITECTURE.md` and `WORK.md` each have an archive zone at the bottom that onboarding never reads. The headings `## Version Archive` and `## 2b. Archive` mark those boundaries.
 
 ### The Driver/Navigator Model
 

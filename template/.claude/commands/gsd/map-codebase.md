@@ -65,11 +65,14 @@ Format as bulleted list with paths and descriptions.
 
 ### Step 5: Write ARCHITECTURE.md
 
-Write to `gsd-lite/ARCHITECTURE.md`:
+Write to `gsd-lite/ARCHITECTURE.md`, **preserving the two-zone skeleton**:
 
 # Architecture
 
 *Mapped: [today's date]*
+
+## How To Read This File - bounded-read contract, agents start here
+[keep the template's block verbatim - it is the read contract every future agent depends on]
 
 ## Project Structure Overview
 [Table mapping directories to semantic meaning]
@@ -83,13 +86,19 @@ Write to `gsd-lite/ARCHITECTURE.md`:
 ## Entry Points
 [3-5 files with paths and descriptions]
 
+## Version Archive - STOP: onboarding does not read past this line
+[leave empty on a fresh map; future version-stamped notes land here as `###` entries]
+
 ---
 
 Ask for validation: "Does this capture your codebase structure accurately?"
+
+**Zone discipline when refreshing an existing file:** everything above `## Version Archive` is current-state reference and is the only part read at boot. Never add a version-stamped or historical section at `##` level - demote it to a `###` entry under the archive. If the existing file has no archive boundary, add one before writing.
 
 ## Anti-Patterns
 
 - Reading every file (use grep/glob to discover, only read key files)
 - Generic descriptions ("Main code" vs "FastAPI route handlers")
-- Over-documenting (aim for 40-70 lines)
+- Over-documenting (aim for 40-70 lines of zone A; the archive below may grow freely)
+- Dropping the `## How To Read This File` or `## Version Archive` headings when rewriting the file
 - Listing all dependencies (focus on 2-5 critical ones)

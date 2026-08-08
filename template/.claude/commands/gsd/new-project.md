@@ -107,6 +107,9 @@ Project succeeds when:
 ## Constraints
 [Bulleted list or "None identified"]
 
+## File Index — how agents read these artifacts
+[keep the template's block verbatim — it is the read contract every future agent depends on, and it belongs in PROJECT.md because that is the one artifact always read whole and read first]
+
 ---
 
 Ask for validation: "Does this capture your vision accurately?"

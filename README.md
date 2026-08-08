@@ -28,12 +28,12 @@ your-project/
     commands/gsd/            # Slash commands
     settings.json            # Points Claude to gsd-lite agent
   gsd-lite/
-    PROJECT.md               # Your project vision
-    ARCHITECTURE.md           # Codebase structure
-    WORK.md                  # Session log + decisions
-    INBOX.md                 # Parked ideas
-    HISTORY.md               # Completed work archive
+    PROJECT.md               # Your project vision + the artifact read contract
+    ARCHITECTURE.md          # Codebase structure, above a never-read-at-boot version archive
+    WORK.md                  # Session log + decisions, above a never-read-at-boot archive
 ```
+
+`INBOX.md` is not installed; the agent creates it the first time you park an idea.
 
 ### First session
 
@@ -94,8 +94,6 @@ graph TD
         W[gsd-lite/WORK.md<br/>Preserved on re-run]
         P[gsd-lite/PROJECT.md<br/>Preserved on re-run]
         AR[gsd-lite/ARCHITECTURE.md<br/>Preserved on re-run]
-        I[gsd-lite/INBOX.md<br/>Preserved on re-run]
-        HI[gsd-lite/HISTORY.md<br/>Preserved on re-run]
     end
 
     S1 --- GA
@@ -194,9 +192,8 @@ Every session starts by reading artifacts, not chat history. This means:
 
 ```mermaid
 graph LR
-    P[PROJECT.md<br/>Vision + Goals] --> W[WORK.md<br/>Active State + Logs]
+    P[PROJECT.md<br/>Vision + read contract] --> W[WORK.md<br/>Active State + Logs]
     A[ARCHITECTURE.md<br/>Codebase Map] --> W
-    W --> H[HISTORY.md<br/>Completed Work]
     I[INBOX.md<br/>Parked Ideas] -.-> W
 ```
 
@@ -261,10 +258,25 @@ When new ideas pop up mid-work, the agent suggests parking them:
 | `gsd-lite/PROJECT.md` | Project vision, core value, success criteria | `/gsd new-project` |
 | `gsd-lite/ARCHITECTURE.md` | Codebase structure, tech stack, data flow | `/gsd map-codebase` |
 | `gsd-lite/WORK.md` | Session state, decisions, execution log | Agent during work |
-| `gsd-lite/INBOX.md` | Parked ideas and questions | Agent when scope creeps |
-| `gsd-lite/HISTORY.md` | Archive of completed phases | Agent at milestones |
+| `gsd-lite/INBOX.md` | Parked ideas and questions | Agent when scope creeps (not installed) |
 | `.claude/agents/gsd-lite.md` | The protocol itself | `npx @luutuankiet/gsd-lite` |
 | `.claude/settings.json` | Points Claude to gsd-lite agent | `npx @luutuankiet/gsd-lite` |
+
+### Why these files stay cheap to read
+
+Two of them are append-only and would otherwise grow without limit — the codebase map accumulates a note per release, the work log accumulates an entry per session. An agent that reads either one whole on its first turn can spend most of a context window before doing any work, and the cost grows every week the project lives.
+
+So each carries an archive zone that onboarding never reads, marked by a heading an agent can grep for:
+
+| File | Always read | Boundary heading | Below the boundary |
+|---|---|---|---|
+| `PROJECT.md` | whole file | — | small by design |
+| `ARCHITECTURE.md` | top zone | `## Version Archive` | version-stamped history |
+| `WORK.md` | sections 1-2 | `## 2b. Archive` | superseded state, then the full session log |
+
+The boundaries are written into the heading text rather than a comment, because an agent orienting itself greps for headings — so the index it gets back reads as instructions. `PROJECT.md` restates the whole contract in its File Index, and the protocol teaches the two-step bounded read: locate the boundary with `rg`, then read up to that line.
+
+Keeping this working is a maintenance habit, in both directions: demote anything that becomes historical, and promote anything in an archive that is still true and still consulted.
 
 ---
 
